@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { ElMessage } from "element-plus";
-import InputPanel from "./components/InputPanel.vue";
 import CalendarView from "./components/CalendarView.vue";
 import ListView from "./components/ListView.vue";
 import StatisticsView from "./components/StatisticsView.vue";
@@ -15,18 +14,15 @@ import { useTheme } from "@/composables/useTheme";
 import type { CalendarEvent } from "@/types";
 
 // Initialize theme on app startup
-useTheme();
+const { toggleMode } = useTheme();
 
 /**
- * Main Application Layout
+ * Main Application Layout - Minimal Sidebar Design
  *
  * Requirements:
- * - Task 11.1: Create App.vue main layout
- * - Task 11.2: Integrate input panel
- * - Task 11.3: Integrate calendar view
- * - Task 11.4: Implement responsive layout
- * - Task 19: Integrate list view
- * - Task 20: Integrate timeline view
+ * - 需求 1.1, 1.2, 1.3: 极简侧边栏布局，导航和主内容区域分离
+ * - 需求 1.4: 移动端响应式适配
+ * - 需求 1.5: 平滑过渡动画
  */
 
 // Composables
@@ -72,7 +68,6 @@ const handleEventSave = async (event: CalendarEvent) => {
 		ElMessage.success("事件已更新");
 	} catch (error) {
 		console.error("Failed to update event:", error);
-		// Error is already handled by useEvents composable
 	}
 };
 
@@ -85,7 +80,6 @@ const handleEventDelete = async (id: string) => {
 		ElMessage.success("事件已删除");
 	} catch (error) {
 		console.error("Failed to delete event:", error);
-		// Error is already handled by useEvents composable
 	}
 };
 
@@ -105,127 +99,96 @@ const handleShareAllEvents = () => {
 </script>
 
 <template>
-	<!-- Main Application Layout -->
-	<div class="app-container">
-		<!-- Header -->
-		<header class="app-header">
-			<div class="app-header__content">
-				<h1 class="app-header__title">
-					<span class="app-header__icon">📅</span>
-					CalenParse
-				</h1>
-				<p class="app-header__subtitle">智能日历解析器</p>
+	<div class="app-layout">
+		<!-- Minimal Sidebar -->
+		<aside class="sidebar">
+			<!-- Logo / Home -->
+			<div class="sidebar-header">
+				<div class="sidebar-item" title="CalenParse">
+					<span class="sidebar-item-icon">📅</span>
+					<span class="sidebar-item-label">日历</span>
+				</div>
 			</div>
-		</header>
 
-		<!-- Main Content -->
-		<main class="app-main">
-			<div class="app-main__container">
-				<!-- Input Panel Section -->
-				<section class="app-section app-section--input">
-					<InputPanel />
-				</section>
+			<!-- Main Navigation -->
+			<nav class="sidebar-nav">
+				<div class="sidebar-divider"></div>
 
-				<!-- View Section (Calendar or List) -->
-				<section class="app-section app-section--view">
-					<div class="app-section__header">
-						<h2 class="app-section__title">
-							{{
-								currentViewMode === "calendar"
-									? "日历视图"
-									: currentViewMode === "list"
-									? "列表视图"
-									: "统计分析"
-							}}
-						</h2>
-						<div class="header-actions">
-							<button
-								class="action-button"
-								@click="tagManagerDialogVisible = true"
-								title="标签管理">
-								<span class="button-icon">🏷️</span>
-								<span class="button-label">标签</span>
-							</button>
-							<button
-								class="action-button"
-								@click="handleShareAllEvents"
-								title="分享所有事件">
-								<span class="button-icon">📤</span>
-								<span class="button-label">分享</span>
-							</button>
-							<button
-								class="action-button"
-								@click="themeSettingsDialogVisible = true"
-								title="主题设置">
-								<span class="button-icon">🎨</span>
-								<span class="button-label">主题</span>
-							</button>
-							<button
-								class="action-button"
-								@click="importExportDialogVisible = true"
-								title="导入/导出">
-								<span class="button-icon">📦</span>
-								<span class="button-label">导入/导出</span>
-							</button>
-							<div class="view-mode-switcher">
-								<button
-									:class="[
-										'view-mode-button',
-										{
-											active:
-												currentViewMode ===
-												'calendar',
-										},
-									]"
-									@click="switchViewMode('calendar')"
-									title="日历视图">
-									<span class="view-mode-icon">📅</span>
-									<span class="view-mode-label">日历</span>
-								</button>
-								<button
-									:class="[
-										'view-mode-button',
-										{ active: currentViewMode === 'list' },
-									]"
-									@click="switchViewMode('list')"
-									title="列表视图">
-									<span class="view-mode-icon">📋</span>
-									<span class="view-mode-label">列表</span>
-								</button>
-								<button
-									:class="[
-										'view-mode-button',
-										{
-											active:
-												currentViewMode ===
-												'statistics',
-										},
-									]"
-									@click="switchViewMode('statistics')"
-									title="统计分析">
-									<span class="view-mode-icon">📊</span>
-									<span class="view-mode-label">统计</span>
-								</button>
-							</div>
-						</div>
-					</div>
-					<div class="app-section__content">
-						<CalendarView
-							v-if="currentViewMode === 'calendar'"
-							@event-click="handleEventClick" />
-						<ListView
-							v-else-if="currentViewMode === 'list'"
-							@event-click="handleEventClick" />
-						<StatisticsView v-else-if="currentViewMode === 'statistics'" />
-					</div>
-				</section>
+				<!-- View Navigation -->
+				<div
+					:class="['sidebar-item', { active: currentViewMode === 'calendar' }]"
+					@click="switchViewMode('calendar')"
+					title="日历视图">
+					<span class="sidebar-item-icon">📅</span>
+					<span class="sidebar-item-label">日历</span>
+				</div>
+
+				<div
+					:class="['sidebar-item', { active: currentViewMode === 'list' }]"
+					@click="switchViewMode('list')"
+					title="列表视图">
+					<span class="sidebar-item-icon">📋</span>
+					<span class="sidebar-item-label">列表</span>
+				</div>
+
+				<div
+					:class="['sidebar-item', { active: currentViewMode === 'statistics' }]"
+					@click="switchViewMode('statistics')"
+					title="统计分析">
+					<span class="sidebar-item-icon">📊</span>
+					<span class="sidebar-item-label">统计</span>
+				</div>
+
+				<div class="sidebar-divider"></div>
+
+				<!-- Tools -->
+				<div class="sidebar-item" @click="tagManagerDialogVisible = true" title="标签管理">
+					<span class="sidebar-item-icon">🏷️</span>
+					<span class="sidebar-item-label">标签</span>
+				</div>
+
+				<div class="sidebar-item" @click="handleShareAllEvents" title="分享">
+					<span class="sidebar-item-icon">📤</span>
+					<span class="sidebar-item-label">分享</span>
+				</div>
+
+				<div class="sidebar-item" @click="importExportDialogVisible = true" title="导入/导出">
+					<span class="sidebar-item-icon">📦</span>
+					<span class="sidebar-item-label">导入导出</span>
+				</div>
+			</nav>
+
+			<!-- Footer Actions -->
+			<div class="sidebar-footer">
+				<div class="sidebar-divider"></div>
+
+				<div class="sidebar-item" @click="toggleMode" title="主题切换">
+					<span class="sidebar-item-icon">🎨</span>
+					<span class="sidebar-item-label">主题</span>
+				</div>
+
+				<div class="sidebar-item" @click="themeSettingsDialogVisible = true" title="设置">
+					<span class="sidebar-item-icon">⚙️</span>
+					<span class="sidebar-item-label">设置</span>
+				</div>
+			</div>
+		</aside>
+
+		<!-- Main Content Area -->
+		<main class="main-content">
+			<div class="content-container">
+				<!-- View Content -->
+				<div class="view-wrapper">
+					<CalendarView
+						v-if="currentViewMode === 'calendar'"
+						@event-click="handleEventClick" />
+					<ListView
+						v-else-if="currentViewMode === 'list'"
+						@event-click="handleEventClick" />
+					<StatisticsView v-else-if="currentViewMode === 'statistics'" />
+				</div>
 			</div>
 		</main>
-
-		<!-- Footer -->
-		<footer class="app-footer">
-			<p class="app-footer__text">CalenParse - 让日程管理更智能</p>
-		</footer>
 
 		<!-- Event Details Dialog -->
 		<EventDialog
@@ -267,82 +230,124 @@ const handleShareAllEvents = () => {
 </template>
 
 <style scoped>
-/* Main Container */
-.app-container {
+/* Main Layout Container */
+.app-layout {
 	display: flex;
-	flex-direction: column;
 	min-height: 100vh;
 	background-color: var(--bg-color);
 }
 
-/* Header */
-.app-header {
-	background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
-	color: white;
-	padding: 32px 24px;
-	box-shadow: 0 2px 12px var(--shadow);
-}
-
-.app-header__content {
-	max-width: 1400px;
-	margin: 0 auto;
-	text-align: center;
-}
-
-.app-header__title {
-	margin: 0;
-	font-size: 2.5em;
-	font-weight: 700;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	gap: 12px;
-}
-
-.app-header__icon {
-	font-size: 1.2em;
-}
-
-.app-header__subtitle {
-	margin: 8px 0 0 0;
-	font-size: 1.1em;
-	font-weight: 400;
-	opacity: 0.95;
-}
-
-/* Main Content */
-.app-main {
-	flex: 1;
-	padding: 24px;
-}
-
-.app-main__container {
-	max-width: 1400px;
-	margin: 0 auto;
+/* Minimal Sidebar - 80px width with text labels */
+.sidebar {
+	width: 80px;
+	height: 100vh;
+	background: var(--bg-secondary);
+	border-right: 1px solid var(--border-light);
 	display: flex;
 	flex-direction: column;
-	gap: 24px;
-}
-
-/* Section Styles */
-.app-section {
-	background: var(--bg-secondary);
-	border-radius: 12px;
-	box-shadow: 0 2px 12px var(--shadow);
-	overflow: hidden;
+	position: fixed;
+	left: 0;
+	top: 0;
+	z-index: 50;
 	transition: all 0.3s ease;
-	animation: fadeInUp 0.5s ease-out;
+	box-shadow: 2px 0 8px var(--shadow);
 }
 
-.app-section:hover {
-	box-shadow: 0 4px 16px var(--shadow);
-	transform: translateY(-2px);
+.sidebar-header {
+	padding: var(--spacing-md) 0;
+	display: flex;
+	justify-content: center;
+	border-bottom: 1px solid var(--border-light);
 }
 
-@keyframes fadeInUp {
+.sidebar-nav {
+	flex: 1;
+	padding: var(--spacing-sm) 0;
+	overflow-y: auto;
+	display: flex;
+	flex-direction: column;
+	gap: var(--spacing-xs);
+}
+
+.sidebar-footer {
+	padding: var(--spacing-sm) 0;
+	border-top: 1px solid var(--border-light);
+}
+
+/* Sidebar Item */
+.sidebar-item {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	width: 72px;
+	min-height: 64px;
+	margin: 0 auto;
+	padding: var(--spacing-xs);
+	color: var(--text-secondary);
+	cursor: pointer;
+	transition: all 0.2s ease;
+	border-radius: var(--radius-lg);
+	position: relative;
+	gap: 2px;
+}
+
+.sidebar-item:hover {
+	background: var(--bg-hover);
+	color: var(--text-primary);
+}
+
+.sidebar-item.active {
+	background: var(--primary-color);
+	color: white;
+}
+
+.sidebar-item-icon {
+	font-size: 22px;
+	line-height: 1;
+}
+
+.sidebar-item-label {
+	font-size: 10px;
+	font-weight: 500;
+	text-align: center;
+	line-height: 1.2;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	max-width: 100%;
+}
+
+/* Divider */
+.sidebar-divider {
+	width: 32px;
+	height: 1px;
+	background: var(--border-light);
+	margin: var(--spacing-sm) auto;
+}
+
+/* Main Content Area */
+.main-content {
+	margin-left: 80px;
+	min-height: 100vh;
+	flex: 1;
+	display: flex;
+	justify-content: center;
+	transition: margin-left 0.3s ease;
+	background: var(--bg-color);
+}
+
+.content-container {
+	width: 100%;
+	max-width: 1200px;
+	padding: var(--spacing-lg);
+	animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
 	from {
 		opacity: 0;
-		transform: translateY(20px);
+		transform: translateY(10px);
 	}
 	to {
 		opacity: 1;
@@ -350,254 +355,90 @@ const handleShareAllEvents = () => {
 	}
 }
 
-.app-section--input {
-	padding: 0;
-}
-
-.app-section--view {
-	padding: 24px;
-}
-
-.app-section__header {
-	margin-bottom: 20px;
-	padding-bottom: 16px;
-	border-bottom: 2px solid var(--border-light);
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	flex-wrap: wrap;
-	gap: 16px;
-}
-
-.header-actions {
-	display: flex;
-	align-items: center;
-	gap: 16px;
-	flex-wrap: wrap;
-}
-
-.app-section__title {
-	margin: 0;
-	font-size: 1.5em;
-	font-weight: 600;
-	color: var(--text-primary);
-	display: flex;
-	align-items: center;
-	gap: 8px;
-}
-
-/* Action Buttons */
-.action-button {
-	display: flex;
-	align-items: center;
-	gap: 6px;
-	padding: 8px 16px;
-	border: 2px solid var(--primary-color);
+.view-wrapper {
 	background: var(--bg-secondary);
-	border-radius: 6px;
-	cursor: pointer;
-	transition: all 0.3s ease;
-	font-size: 14px;
-	font-weight: 500;
-	color: var(--primary-color);
-	box-shadow: 0 1px 3px var(--shadow);
+	border-radius: var(--radius-xl);
+	box-shadow: 0 2px 12px var(--shadow);
+	padding: var(--spacing-lg);
+	min-height: 600px;
 }
 
-.action-button:hover {
-	background: var(--primary-color);
-	color: white;
-	border-color: var(--primary-dark);
-	transform: translateY(-1px);
-	box-shadow: 0 2px 6px var(--shadow);
-}
-
-.button-icon {
-	font-size: 18px;
-	line-height: 1;
-}
-
-.button-label {
-	font-size: 14px;
-	font-weight: 600;
-}
-
-/* View Mode Switcher */
-.view-mode-switcher {
-	display: flex;
-	gap: 8px;
-	padding: 4px;
-	background: var(--bg-color);
-	border-radius: 8px;
-}
-
-.view-mode-button {
-	display: flex;
-	align-items: center;
-	gap: 6px;
-	padding: 8px 16px;
-	border: 2px solid transparent;
-	background: var(--bg-secondary);
-	border-radius: 6px;
-	cursor: pointer;
-	transition: all 0.3s ease;
-	font-size: 14px;
-	font-weight: 500;
-	color: var(--text-secondary);
-	box-shadow: 0 1px 3px var(--shadow);
-}
-
-.view-mode-button:hover {
-	background: var(--primary-color);
-	color: white;
-	border-color: var(--primary-light);
-	transform: translateY(-1px);
-	box-shadow: 0 2px 6px var(--shadow);
-}
-
-.view-mode-button.active {
-	background: var(--primary-color);
-	color: white;
-	border-color: var(--primary-color);
-	box-shadow: 0 2px 8px var(--shadow);
-}
-
-.view-mode-button.active:hover {
-	background: var(--primary-light);
-	border-color: var(--primary-light);
-}
-
-.view-mode-icon {
-	font-size: 18px;
-	line-height: 1;
-}
-
-.view-mode-label {
-	font-size: 14px;
-	font-weight: 600;
-}
-
-.app-section__content {
-	/* Calendar content wrapper */
-}
-
-/* Footer */
-.app-footer {
-	background: var(--bg-secondary);
-	border-top: 1px solid var(--border-light);
-	padding: 20px 24px;
-	text-align: center;
-}
-
-.app-footer__text {
-	margin: 0;
-	font-size: 14px;
-	color: var(--text-tertiary);
-}
-
-/* Responsive Design */
-@media (max-width: 1200px) {
-	.app-main__container {
-		max-width: 100%;
-	}
-}
-
+/* Responsive Design - Tablet */
 @media (max-width: 768px) {
-	.app-header {
-		padding: 24px 16px;
-	}
-
-	.app-header__title {
-		font-size: 1.8em;
-	}
-
-	.app-header__subtitle {
-		font-size: 1em;
-	}
-
-	.app-main {
-		padding: 16px;
-	}
-
-	.app-main__container {
-		gap: 16px;
-	}
-
-	.app-section--view {
-		padding: 16px;
-	}
-
-	.app-section__header {
-		flex-direction: column;
-		align-items: flex-start;
-		gap: 12px;
-	}
-
-	.app-section__title {
-		font-size: 1.3em;
-	}
-
-	.header-actions {
+	.sidebar {
 		width: 100%;
-		flex-direction: column;
+		height: 56px;
+		bottom: 0;
+		top: auto;
+		border-right: none;
+		border-top: 1px solid var(--border-light);
+		flex-direction: row;
 	}
 
-	.action-button {
-		width: 100%;
-		justify-content: center;
+	.sidebar-header {
+		display: none;
 	}
 
-	.view-mode-switcher {
-		width: 100%;
-		justify-content: center;
+	.sidebar-nav {
+		flex-direction: row;
+		justify-content: space-around;
+		padding: 0;
+		flex: 1;
+		overflow-x: auto;
+		overflow-y: hidden;
+	}
+
+	.sidebar-footer {
+		display: flex;
+		flex-direction: row;
+		border-top: none;
+		border-left: 1px solid var(--border-light);
+		padding: 0 var(--spacing-sm);
+	}
+
+	.sidebar-item {
+		width: 64px;
+		min-height: 56px;
+	}
+
+	.sidebar-item-label {
+		font-size: 9px;
+	}
+
+	.sidebar-divider {
+		display: none;
+	}
+
+	.main-content {
+		margin-left: 0;
+		margin-bottom: 56px;
+	}
+
+	.content-container {
+		padding: var(--spacing-md);
+	}
+
+	.view-wrapper {
+		padding: var(--spacing-md);
 	}
 }
 
+/* Responsive Design - Mobile */
 @media (max-width: 480px) {
-	.app-header {
-		padding: 20px 12px;
+	.content-container {
+		padding: var(--spacing-sm);
 	}
 
-	.app-header__title {
-		font-size: 1.5em;
-		flex-direction: column;
-		gap: 8px;
+	.view-wrapper {
+		padding: var(--spacing-sm);
+		border-radius: var(--radius-lg);
 	}
+}
 
-	.app-header__subtitle {
-		font-size: 0.9em;
-	}
-
-	.app-main {
-		padding: 12px;
-	}
-
-	.app-section--view {
-		padding: 12px;
-	}
-
-	.app-section__title {
-		font-size: 1.2em;
-	}
-
-	.view-mode-button {
-		padding: 6px 12px;
-		font-size: 13px;
-	}
-
-	.view-mode-icon {
-		font-size: 16px;
-	}
-
-	.view-mode-label {
-		font-size: 13px;
-	}
-
-	.app-footer {
-		padding: 16px 12px;
-	}
-
-	.app-footer__text {
-		font-size: 12px;
+/* Large screens - add more breathing room */
+@media (min-width: 1400px) {
+	.content-container {
+		padding: var(--spacing-2xl) var(--spacing-xl);
 	}
 }
 </style>
