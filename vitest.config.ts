@@ -6,7 +6,7 @@ export default defineConfig({
 	plugins: [vue()],
 	test: {
 		globals: true,
-		environment: "jsdom", // Better compatibility with Element Plus
+		environment: "happy-dom", // Better compatibility with Element Plus
 		setupFiles: ["./src/test/setup.ts"],
 		include: ["**/*.{test,spec}.{js,ts,jsx,tsx}"],
 		exclude: ["node_modules", "dist", ".kiro"],

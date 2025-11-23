@@ -1,5 +1,11 @@
 /* Global Styles for CalenParse */
 
+/* Import button system styles */
+@import "./utils/buttons.css";
+
+/* Import animation system styles */
+@import "./utils/animations.css";
+
 :root {
 	/* Font System */
 	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",

@@ -827,12 +827,16 @@ defineExpose({
 	font-family: inherit;
 	background: var(--bg-secondary);
 	border-radius: var(--radius-xl);
+	padding: var(--spacing-md);
 }
 
+/* Typography Hierarchy - Requirement 12.1 */
 :deep(.fc-toolbar-title) {
 	font-size: var(--font-size-3xl);
-	font-weight: var(--font-weight-semibold);
+	font-weight: var(--font-weight-bold);
 	color: var(--text-primary);
+	letter-spacing: -0.5px;
+	line-height: var(--line-height-tight);
 }
 
 :deep(.fc-button) {
@@ -925,13 +929,15 @@ defineExpose({
 	padding-left: var(--spacing-sm);
 }
 
+/* Event Content Typography - Requirement 12.1: Font size hierarchy */
 :deep(.fc-event-time) {
 	font-size: var(--font-size-xs);
-	font-weight: var(--font-weight-semibold);
+	font-weight: var(--font-weight-bold);
 	color: var(--primary-color);
 	display: flex;
 	align-items: center;
 	gap: var(--spacing-xs);
+	line-height: var(--line-height-tight);
 }
 
 :deep(.fc-event-time::before) {
@@ -939,9 +945,10 @@ defineExpose({
 	font-size: 12px;
 }
 
+/* Primary content - larger, bolder - Requirement 12.1 */
 :deep(.fc-event-title) {
 	font-size: var(--font-size-sm);
-	font-weight: var(--font-weight-medium);
+	font-weight: var(--font-weight-semibold);
 	color: var(--text-primary);
 	overflow: hidden;
 	text-overflow: ellipsis;
@@ -949,6 +956,7 @@ defineExpose({
 	line-height: var(--line-height-normal);
 }
 
+/* Secondary content - smaller, lighter - Requirement 12.1 */
 :deep(.fc-event-location) {
 	font-size: var(--font-size-xs);
 	color: var(--text-secondary);
@@ -958,6 +966,7 @@ defineExpose({
 	display: flex;
 	align-items: center;
 	gap: 2px;
+	line-height: var(--line-height-normal);
 }
 
 :deep(.fc-event-tags) {
@@ -978,19 +987,22 @@ defineExpose({
 	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
+/* Day numbers - Requirement 12.1: Clear typography */
 :deep(.fc-daygrid-day-number) {
 	padding: var(--spacing-sm);
 	font-size: var(--font-size-base);
-	font-weight: var(--font-weight-medium);
+	font-weight: var(--font-weight-semibold);
 	color: var(--text-secondary);
+	line-height: var(--line-height-tight);
 }
 
-/* Enhanced today's date styling */
+/* Enhanced today's date styling - Requirement 12.2: Color contrast for important info */
 :deep(.fc-day-today) {
 	background: linear-gradient(135deg, #f0f9ff 0%, #e6f4ff 100%) !important;
 	position: relative;
 }
 
+/* Today's date - high visual weight - Requirement 12.4 */
 :deep(.fc-day-today .fc-daygrid-day-number) {
 	background: var(--primary-color);
 	color: white;
@@ -1001,6 +1013,7 @@ defineExpose({
 	align-items: center;
 	justify-content: center;
 	font-weight: var(--font-weight-bold);
+	font-size: var(--font-size-base);
 	box-shadow: 0 2px 8px rgba(64, 158, 255, 0.3);
 }
 
@@ -1013,9 +1026,10 @@ defineExpose({
 	pointer-events: none;
 }
 
+/* Day frame - Requirement 12.3: Whitespace for separation */
 :deep(.fc-daygrid-day-frame) {
 	min-height: 100px;
-	padding: var(--spacing-xs);
+	padding: var(--spacing-sm);
 	transition: background-color 0.2s ease;
 }
 

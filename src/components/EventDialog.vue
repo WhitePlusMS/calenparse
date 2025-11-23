@@ -64,6 +64,12 @@ const isEditMode = ref(false);
 // Local editable copy of the event
 const editableEvent = ref<Partial<CalendarEvent>>({});
 
+// Form validation errors
+const formErrors = ref<{
+	title?: string;
+	dateRange?: string;
+}>({});
+
 // Available tags
 const availableTags = ref<Tag[]>([]);
 
@@ -242,36 +248,40 @@ const cancelEdit = () => {
 			updatedAt: props.event.updatedAt,
 		};
 	}
+	// Clear validation errors
+	formErrors.value = {};
 	isEditMode.value = false;
+};
+
+// Validate form fields
+const validateForm = (): boolean => {
+	formErrors.value = {};
+	let isValid = true;
+
+	// Validate title
+	if (!editableEvent.value.title || !editableEvent.value.title.trim()) {
+		formErrors.value.title = "标题不能为空";
+		isValid = false;
+	}
+
+	// Validate date range
+	if (!editableEvent.value.startTime || !editableEvent.value.endTime) {
+		formErrors.value.dateRange = "请选择开始和结束时间";
+		isValid = false;
+	} else if (editableEvent.value.startTime >= editableEvent.value.endTime) {
+		formErrors.value.dateRange = "结束时间必须晚于开始时间";
+		isValid = false;
+	}
+
+	return isValid;
 };
 
 // Save changes
 const saveChanges = () => {
-	// Validate required fields
-	if (!editableEvent.value.title || !editableEvent.value.title.trim()) {
+	// Validate form
+	if (!validateForm()) {
 		ElMessage({
-			message: "标题不能为空",
-			type: "warning",
-			duration: 3000,
-			showClose: true,
-		});
-		return;
-	}
-
-	if (!editableEvent.value.startTime || !editableEvent.value.endTime) {
-		ElMessage({
-			message: "请选择开始和结束时间",
-			type: "warning",
-			duration: 3000,
-			showClose: true,
-		});
-		return;
-	}
-
-	// Validate time range
-	if (editableEvent.value.startTime >= editableEvent.value.endTime) {
-		ElMessage({
-			message: "结束时间必须晚于开始时间",
+			message: "请检查表单中的错误",
 			type: "warning",
 			duration: 3000,
 			showClose: true,
@@ -281,6 +291,7 @@ const saveChanges = () => {
 
 	// Emit save event with updated data
 	emit("save", editableEvent.value as CalendarEvent);
+	formErrors.value = {};
 	isEditMode.value = false;
 };
 
@@ -333,7 +344,8 @@ const handleToggleCompletion = async () => {
 		:title="isEditMode ? '编辑事件' : '事件详情'"
 		width="600px"
 		:before-close="handleClose"
-		class="event-dialog">
+		class="event-dialog"
+		:close-on-click-modal="false">
 		<div v-if="editableEvent" class="event-dialog__content">
 			<!-- View Mode -->
 			<div v-if="!isEditMode" class="event-dialog__view">
@@ -428,90 +440,141 @@ const handleToggleCompletion = async () => {
 
 			<!-- Edit Mode -->
 			<el-form v-else label-width="100px" class="event-dialog__form">
-				<!-- Title -->
-				<el-form-item label="标题" required>
-					<el-input
-						v-model="editableEvent.title"
-						placeholder="请输入事件标题"
-						maxlength="200"
-						show-word-limit />
-				</el-form-item>
+				<!-- Basic Information Section -->
+				<div class="form-section">
+					<div class="form-section__header">
+						<span class="form-section__icon">📝</span>
+						<span class="form-section__title">基本信息</span>
+					</div>
+					<div class="form-section__divider"></div>
 
-				<!-- Date and Time Range -->
-				<el-form-item label="时间" required>
-					<el-date-picker
-						v-model="dateRange"
-						type="datetimerange"
-						range-separator="至"
-						start-placeholder="开始时间"
-						end-placeholder="结束时间"
-						format="YYYY-MM-DD HH:mm"
-						style="width: 100%" />
-				</el-form-item>
+					<!-- Title -->
+					<el-form-item label="标题" required :error="formErrors.title">
+						<el-input
+							v-model="editableEvent.title"
+							placeholder="请输入事件标题"
+							maxlength="200"
+							show-word-limit
+							@input="
+								() => formErrors.title && (formErrors.title = undefined)
+							" />
+					</el-form-item>
 
-				<!-- All-day event -->
-				<el-form-item label="全天事件">
-					<el-switch v-model="editableEvent.isAllDay" />
-				</el-form-item>
+					<!-- Date and Time Range -->
+					<el-form-item label="时间" required :error="formErrors.dateRange">
+						<el-date-picker
+							v-model="dateRange"
+							type="datetimerange"
+							range-separator="至"
+							start-placeholder="开始时间"
+							end-placeholder="结束时间"
+							format="YYYY-MM-DD HH:mm"
+							style="width: 100%"
+							@change="
+								() =>
+									formErrors.dateRange &&
+									(formErrors.dateRange = undefined)
+							" />
+					</el-form-item>
 
-				<!-- Completion Status -->
-				<el-form-item label="完成状态">
-					<el-switch
-						v-model="editableEvent.isCompleted"
-						active-text="已完成"
-						inactive-text="未完成" />
-				</el-form-item>
+					<!-- All-day event -->
+					<el-form-item label="全天事件">
+						<el-switch v-model="editableEvent.isAllDay" />
+					</el-form-item>
 
-				<!-- Location -->
-				<el-form-item label="地点">
-					<el-input
-						v-model="editableEvent.location"
-						placeholder="请输入地点"
-						maxlength="200"
-						show-word-limit />
-				</el-form-item>
+					<!-- Completion Status -->
+					<el-form-item label="完成状态">
+						<el-switch
+							v-model="editableEvent.isCompleted"
+							active-text="已完成"
+							inactive-text="未完成" />
+					</el-form-item>
+				</div>
 
-				<!-- Tags -->
-				<el-form-item label="标签">
-					<el-select
-						v-model="editableEvent.tagIds"
-						multiple
-						filterable
-						allow-create
-						default-first-option
-						placeholder="选择或创建标签"
-						no-data-text="暂无标签，输入名称创建新标签"
-						style="width: 100%"
-						@change="handleTagChange">
-						<el-option
-							v-for="tag in availableTags"
-							:key="tag.id"
-							:label="tag.name"
-							:value="tag.id">
-							<div style="display: flex; align-items: center; gap: 8px">
+				<!-- Detailed Information Section -->
+				<div class="form-section">
+					<div class="form-section__header">
+						<span class="form-section__icon">📄</span>
+						<span class="form-section__title">详细信息</span>
+					</div>
+					<div class="form-section__divider"></div>
+
+					<!-- Location -->
+					<el-form-item label="地点">
+						<template #label>
+							<span class="form-label-with-icon">
+								<span class="form-label-icon">📍</span>
+								<span>地点</span>
+							</span>
+						</template>
+						<el-input
+							v-model="editableEvent.location"
+							placeholder="请输入地点"
+							maxlength="200"
+							show-word-limit />
+					</el-form-item>
+
+					<!-- Tags -->
+					<el-form-item label="标签">
+						<template #label>
+							<span class="form-label-with-icon">
+								<span class="form-label-icon">🏷️</span>
+								<span>标签</span>
+							</span>
+						</template>
+						<el-select
+							v-model="editableEvent.tagIds"
+							multiple
+							filterable
+							allow-create
+							default-first-option
+							placeholder="选择或创建标签"
+							no-data-text="暂无标签，输入名称创建新标签"
+							style="width: 100%"
+							@change="handleTagChange">
+							<el-option
+								v-for="tag in availableTags"
+								:key="tag.id"
+								:label="tag.name"
+								:value="tag.id">
 								<div
 									style="
-										width: 12px;
-										height: 12px;
-										border-radius: 2px;
-									"
-									:style="{ backgroundColor: tag.color }"></div>
-								<span>{{ tag.name }}</span>
-							</div>
-						</el-option>
-					</el-select>
-				</el-form-item>
+										display: flex;
+										align-items: center;
+										gap: 8px;
+									">
+									<div
+										style="
+											width: 12px;
+											height: 12px;
+											border-radius: 2px;
+										"
+										:style="{
+											backgroundColor: tag.color,
+										}"></div>
+									<span>{{ tag.name }}</span>
+								</div>
+							</el-option>
+						</el-select>
+					</el-form-item>
 
-				<!-- Description -->
-				<el-form-item label="描述">
-					<el-input
-						v-model="editableEvent.description"
-						type="textarea"
-						:rows="4"
-						placeholder="请输入描述或备注"
-						maxlength="1000"
-						show-word-limit />
-				</el-form-item>
+					<!-- Description -->
+					<el-form-item label="描述">
+						<template #label>
+							<span class="form-label-with-icon">
+								<span class="form-label-icon">📋</span>
+								<span>描述</span>
+							</span>
+						</template>
+						<el-input
+							v-model="editableEvent.description"
+							type="textarea"
+							:rows="4"
+							placeholder="请输入描述或备注"
+							maxlength="1000"
+							show-word-limit />
+					</el-form-item>
+				</div>
 			</el-form>
 		</div>
 
@@ -544,6 +607,35 @@ const handleToggleCompletion = async () => {
 </template>
 
 <style scoped>
+/* Dialog Animation */
+:deep(.el-dialog) {
+	animation: dialogFadeIn 0.3s ease;
+}
+
+@keyframes dialogFadeIn {
+	from {
+		opacity: 0;
+		transform: scale(0.95);
+	}
+	to {
+		opacity: 1;
+		transform: scale(1);
+	}
+}
+
+:deep(.el-overlay) {
+	animation: overlayFadeIn 0.3s ease;
+}
+
+@keyframes overlayFadeIn {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
 .event-dialog__content {
 	padding: 8px 0;
 }
@@ -620,6 +712,78 @@ const handleToggleCompletion = async () => {
 /* Edit Mode Styles */
 .event-dialog__form {
 	margin-top: 8px;
+}
+
+/* Form Section Styles */
+.form-section {
+	margin-bottom: 24px;
+}
+
+.form-section:last-child {
+	margin-bottom: 0;
+}
+
+.form-section__header {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 12px;
+}
+
+.form-section__icon {
+	font-size: 18px;
+	line-height: 1;
+}
+
+.form-section__title {
+	font-size: 15px;
+	font-weight: 600;
+	color: var(--text-primary);
+}
+
+.form-section__divider {
+	height: 1px;
+	background: var(--border-light);
+	margin-bottom: 16px;
+}
+
+/* Form Label with Icon */
+.form-label-with-icon {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.form-label-icon {
+	font-size: 14px;
+	line-height: 1;
+}
+
+/* Form Error Styles */
+:deep(.el-form-item.is-error .el-input__wrapper) {
+	box-shadow: 0 0 0 1px var(--el-color-danger) inset;
+}
+
+:deep(.el-form-item.is-error .el-textarea__inner) {
+	box-shadow: 0 0 0 1px var(--el-color-danger) inset;
+}
+
+:deep(.el-form-item__error) {
+	font-size: 12px;
+	color: var(--el-color-danger);
+	padding-top: 4px;
+	animation: errorSlideIn 0.3s ease;
+}
+
+@keyframes errorSlideIn {
+	from {
+		opacity: 0;
+		transform: translateY(-4px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
 }
 
 /* Footer Styles */

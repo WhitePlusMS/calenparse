@@ -38,6 +38,28 @@ const {
 	getSelectedEvents,
 } = useBatchSelection();
 
+// Import useSupabase for tags
+import { useSupabase } from "@/composables/useSupabase";
+import { onMounted } from "vue";
+import type { Tag } from "@/types";
+
+const { getAllTags } = useSupabase();
+const availableTags = ref<Tag[]>([]);
+
+// Load tags on mount
+onMounted(async () => {
+	try {
+		availableTags.value = await getAllTags();
+	} catch (error) {
+		console.error("Failed to load tags:", error);
+	}
+});
+
+// Get tag by ID
+const getTagById = (id: string): Tag | undefined => {
+	return availableTags.value.find((tag) => tag.id === id);
+};
+
 // Batch edit dialog state
 const showBatchEditDialog = ref(false);
 
@@ -330,20 +352,14 @@ const handleToggleCompletion = async (event: CalendarEvent, e: Event) => {
 						@click="handleCheckboxClick(event, $event)" />
 				</div>
 
-				<!-- Completion Status Checkbox (always visible) -->
-				<!-- Requirement 23.4: Display completion status indicator in list view -->
-				<!-- Requirement 23.6: Click to toggle completion status -->
-				<div v-if="!isSelectionMode" class="event-completion-container">
-					<input
-						type="checkbox"
-						class="event-completion-checkbox"
-						:checked="event.isCompleted"
-						:title="event.isCompleted ? '标记为未完成' : '标记为完成'"
-						@click="handleToggleCompletion(event, $event)" />
-				</div>
-
 				<!-- Date Badge -->
-				<div class="event-date-badge">
+				<div
+					class="event-date-badge"
+					:title="event.isCompleted ? '点击标记为未完成' : '点击标记为完成'"
+					@click.stop="handleToggleCompletion(event, $event)">
+					<!-- Completion Status Indicator -->
+					<div v-if="event.isCompleted" class="completion-badge">✓</div>
+
 					<div class="event-date-badge__day">
 						{{ dayjs(event.startTime).format("DD") }}
 					</div>
@@ -398,6 +414,19 @@ const handleToggleCompletion = async (event: CalendarEvent, e: Event) => {
 					<div v-if="event.description" class="event-description">
 						{{ event.description }}
 					</div>
+
+					<!-- Event Tags -->
+					<div v-if="event.tagIds && event.tagIds.length > 0" class="event-tags">
+						<span
+							v-for="tagId in event.tagIds"
+							:key="tagId"
+							class="event-tag"
+							:style="{
+								backgroundColor: getTagById(tagId)?.color || '#409EFF',
+							}">
+							{{ getTagById(tagId)?.name || "未知标签" }}
+						</span>
+					</div>
 				</div>
 
 				<!-- Arrow Icon -->
@@ -439,12 +468,13 @@ const handleToggleCompletion = async (event: CalendarEvent, e: Event) => {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	padding: 12px 16px;
-	margin-bottom: 16px;
+	padding: var(--spacing-md) var(--spacing-lg);
+	margin-bottom: var(--spacing-lg);
 	background: var(--bg-secondary);
-	border: 2px solid var(--border-light);
-	border-radius: 8px;
-	gap: 16px;
+	border: 1px solid var(--border-light);
+	border-radius: var(--radius-xl);
+	gap: var(--spacing-lg);
+	box-shadow: 0 2px 8px var(--shadow);
 }
 
 .batch-toolbar-left {
@@ -456,30 +486,33 @@ const handleToggleCompletion = async (event: CalendarEvent, e: Event) => {
 .batch-toggle-btn {
 	display: flex;
 	align-items: center;
-	gap: 8px;
-	padding: 8px 16px;
+	gap: var(--spacing-sm);
+	padding: var(--spacing-sm) var(--spacing-lg);
 	background: var(--bg-secondary);
 	border: 2px solid var(--primary-color);
-	border-radius: 6px;
+	border-radius: var(--radius-lg);
 	color: var(--primary-color);
-	font-size: 14px;
-	font-weight: 500;
+	font-size: var(--font-size-base);
+	font-weight: var(--font-weight-medium);
 	cursor: pointer;
 	transition: all 0.3s ease;
+	box-shadow: 0 2px 4px var(--shadow);
 }
 
 .batch-toggle-btn:hover {
 	background: var(--bg-hover);
-	transform: translateY(-1px);
+	transform: translateY(-2px);
+	box-shadow: 0 4px 8px var(--shadow);
 }
 
 .batch-toggle-btn.active {
-	background: var(--primary-color);
+	background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
 	color: white;
+	border-color: var(--primary-dark);
 }
 
 .batch-toggle-btn.active:hover {
-	background: var(--primary-light);
+	background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-color) 100%);
 }
 
 .batch-icon {
@@ -518,17 +551,20 @@ const handleToggleCompletion = async (event: CalendarEvent, e: Event) => {
 }
 
 .selection-count {
-	font-size: 14px;
+	font-size: var(--font-size-base);
 	color: var(--text-secondary);
-	padding: 8px 16px;
-	background: var(--bg-hover);
-	border-radius: 6px;
+	padding: var(--spacing-sm) var(--spacing-lg);
+	background: linear-gradient(135deg, var(--bg-hover) 0%, var(--bg-color) 100%);
+	border-radius: var(--radius-lg);
 	border: 1px solid var(--border-light);
+	font-weight: var(--font-weight-medium);
+	box-shadow: 0 2px 4px var(--shadow);
 }
 
 .selection-count strong {
 	color: var(--primary-color);
-	font-weight: 600;
+	font-weight: var(--font-weight-bold);
+	font-size: var(--font-size-lg);
 }
 
 /* Loading State */
@@ -596,28 +632,37 @@ const handleToggleCompletion = async (event: CalendarEvent, e: Event) => {
 /* Empty State */
 .empty-state {
 	text-align: center;
-	padding: 80px 20px;
+	padding: var(--spacing-2xl) var(--spacing-lg);
 	color: var(--text-tertiary);
 	animation: fadeIn 0.5s ease-out;
+	background: var(--bg-secondary);
+	border-radius: var(--radius-xl);
+	border: 2px dashed var(--border-color);
+	margin: var(--spacing-lg) 0;
 }
 
 .empty-icon {
-	font-size: 64px;
-	margin-bottom: 16px;
-	opacity: 0.5;
+	font-size: 80px;
+	margin-bottom: var(--spacing-lg);
+	opacity: 0.6;
+	filter: grayscale(0.3);
 }
 
 .empty-title {
-	font-size: 18px;
-	font-weight: 500;
-	color: var(--text-secondary);
-	margin-bottom: 8px;
+	font-size: var(--font-size-2xl);
+	font-weight: var(--font-weight-semibold);
+	color: var(--text-primary);
+	margin-bottom: var(--spacing-sm);
 }
 
 .empty-hint {
-	font-size: 14px;
-	margin-top: 10px;
-	color: var(--text-tertiary);
+	font-size: var(--font-size-base);
+	margin-top: var(--spacing-md);
+	color: var(--text-secondary);
+	line-height: var(--line-height-relaxed);
+	max-width: 400px;
+	margin-left: auto;
+	margin-right: auto;
 }
 
 /* Event List */
@@ -632,15 +677,16 @@ const handleToggleCompletion = async (event: CalendarEvent, e: Event) => {
 .event-item {
 	display: flex;
 	align-items: stretch;
-	gap: 16px;
-	padding: 16px;
+	gap: var(--spacing-lg);
+	padding: var(--spacing-lg);
 	background: var(--bg-secondary);
-	border: 2px solid var(--border-light);
-	border-radius: 12px;
+	border: 1px solid var(--border-light);
+	border-radius: var(--radius-xl);
 	cursor: pointer;
 	transition: all 0.3s ease;
 	animation: slideInUp 0.4s ease-out;
 	position: relative;
+	box-shadow: 0 2px 8px var(--shadow);
 }
 
 .event-item--selectable {
@@ -668,27 +714,24 @@ const handleToggleCompletion = async (event: CalendarEvent, e: Event) => {
 	accent-color: var(--primary-color);
 }
 
-/* Completion Status Checkbox */
+/* Completion Status Badge */
 /* Requirement 23.4: Display completion status indicator in list view */
-.event-completion-container {
+.completion-badge {
+	position: absolute;
+	top: 4px;
+	right: 4px;
+	width: 24px;
+	height: 24px;
+	background: rgba(255, 255, 255, 0.95);
+	color: var(--success-color);
+	border-radius: var(--radius-full);
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	flex-shrink: 0;
-	width: 28px;
-	padding-right: 8px;
-}
-
-.event-completion-checkbox {
-	width: 20px;
-	height: 20px;
-	cursor: pointer;
-	accent-color: #67c23a;
-	transition: all 0.3s ease;
-}
-
-.event-completion-checkbox:hover {
-	transform: scale(1.1);
+	font-size: 14px;
+	font-weight: var(--font-weight-bold);
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+	z-index: 1;
 }
 
 /* Completed Event Styles */
@@ -734,8 +777,8 @@ const handleToggleCompletion = async (event: CalendarEvent, e: Event) => {
 
 .event-item:hover {
 	border-color: var(--primary-color);
-	box-shadow: 0 4px 12px var(--shadow);
-	transform: translateY(-2px);
+	box-shadow: 0 8px 24px var(--shadow-lg);
+	transform: translateY(-4px);
 }
 
 .event-item--today {
@@ -765,19 +808,38 @@ const handleToggleCompletion = async (event: CalendarEvent, e: Event) => {
 	box-shadow: 0 4px 12px var(--shadow);
 }
 
-/* Date Badge */
+/* Date Badge - Square Design */
 .event-date-badge {
 	flex-shrink: 0;
 	display: flex;
 	flex-direction: column;
 	align-items: center;
 	justify-content: center;
-	width: 70px;
-	padding: 12px 8px;
+	width: 90px;
+	height: 90px;
 	background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
-	border-radius: 8px;
+	border-radius: var(--radius-xl);
 	color: white;
 	text-align: center;
+	box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+	position: relative;
+	overflow: hidden;
+}
+
+.event-date-badge::before {
+	content: "";
+	position: absolute;
+	top: -50%;
+	left: -50%;
+	width: 200%;
+	height: 200%;
+	background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, transparent 70%);
+	opacity: 0;
+	transition: opacity 0.3s ease;
+}
+
+.event-item:hover .event-date-badge::before {
+	opacity: 1;
 }
 
 .event-item--today .event-date-badge {
@@ -793,23 +855,24 @@ const handleToggleCompletion = async (event: CalendarEvent, e: Event) => {
 }
 
 .event-date-badge__day {
-	font-size: 28px;
-	font-weight: 700;
-	line-height: 1;
-	margin-bottom: 4px;
+	font-size: var(--font-size-4xl);
+	font-weight: var(--font-weight-bold);
+	line-height: var(--line-height-tight);
+	margin-bottom: var(--spacing-xs);
 }
 
 .event-date-badge__month {
-	font-size: 12px;
-	font-weight: 600;
+	font-size: var(--font-size-xs);
+	font-weight: var(--font-weight-semibold);
 	text-transform: uppercase;
 	opacity: 0.9;
 	margin-bottom: 2px;
+	letter-spacing: 0.5px;
 }
 
 .event-date-badge__weekday {
-	font-size: 11px;
-	font-weight: 500;
+	font-size: var(--font-size-xs);
+	font-weight: var(--font-weight-medium);
 	opacity: 0.85;
 }
 
@@ -818,7 +881,7 @@ const handleToggleCompletion = async (event: CalendarEvent, e: Event) => {
 	flex: 1;
 	display: flex;
 	flex-direction: column;
-	gap: 8px;
+	gap: var(--spacing-sm);
 	min-width: 0;
 }
 
@@ -826,82 +889,115 @@ const handleToggleCompletion = async (event: CalendarEvent, e: Event) => {
 	display: flex;
 	align-items: flex-start;
 	justify-content: space-between;
-	gap: 12px;
+	gap: var(--spacing-md);
 }
 
 .event-title {
 	margin: 0;
-	font-size: 18px;
-	font-weight: 600;
+	font-size: var(--font-size-xl);
+	font-weight: var(--font-weight-semibold);
 	color: var(--text-primary);
-	line-height: 1.4;
+	line-height: var(--line-height-normal);
 	word-break: break-word;
 }
 
 .event-badges {
 	display: flex;
-	gap: 6px;
+	gap: var(--spacing-sm);
 	flex-shrink: 0;
+	flex-wrap: wrap;
 }
 
 .badge {
-	padding: 2px 8px;
-	border-radius: 4px;
-	font-size: 11px;
-	font-weight: 600;
+	padding: var(--spacing-xs) var(--spacing-sm);
+	border-radius: var(--radius-md);
+	font-size: var(--font-size-xs);
+	font-weight: var(--font-weight-semibold);
 	white-space: nowrap;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .badge--today {
-	background: var(--bg-hover);
-	color: var(--primary-light);
-	border: 1px solid var(--border-light);
+	background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-color) 100%);
+	color: white;
+	border: none;
 }
 
 .badge--upcoming {
-	background: var(--bg-hover);
-	color: var(--primary-dark);
-	border: 1px solid var(--border-light);
+	background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-color) 100%);
+	color: white;
+	border: none;
 }
 
 .badge--allday {
 	background: var(--bg-hover);
-	color: var(--text-tertiary);
-	border: 1px solid var(--border-light);
+	color: var(--text-secondary);
+	border: 1px solid var(--border-color);
 }
 
 .event-meta {
 	display: flex;
 	flex-wrap: wrap;
-	gap: 16px;
+	gap: var(--spacing-lg);
 }
 
 .event-meta-item {
 	display: flex;
 	align-items: center;
-	gap: 6px;
-	font-size: 14px;
+	gap: var(--spacing-sm);
+	font-size: var(--font-size-base);
 	color: var(--text-secondary);
+	font-weight: var(--font-weight-medium);
 }
 
 .event-meta-icon {
-	font-size: 16px;
+	font-size: var(--font-size-lg);
 	line-height: 1;
 }
 
 .event-meta-text {
-	line-height: 1.4;
+	line-height: var(--line-height-normal);
 }
 
 .event-description {
-	font-size: 14px;
+	font-size: var(--font-size-sm);
 	color: var(--text-tertiary);
-	line-height: 1.6;
+	line-height: var(--line-height-relaxed);
 	overflow: hidden;
 	text-overflow: ellipsis;
 	display: -webkit-box;
 	-webkit-line-clamp: 2;
 	-webkit-box-orient: vertical;
+	padding: var(--spacing-sm);
+	background: var(--bg-hover);
+	border-radius: var(--radius-md);
+	border-left: 3px solid var(--primary-color);
+}
+
+/* Event Tags */
+.event-tags {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--spacing-sm);
+	margin-top: var(--spacing-xs);
+}
+
+.event-tag {
+	display: inline-flex;
+	align-items: center;
+	padding: var(--spacing-xs) var(--spacing-sm);
+	border-radius: var(--radius-md);
+	font-size: var(--font-size-xs);
+	font-weight: var(--font-weight-semibold);
+	color: white;
+	white-space: nowrap;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+	transition: all 0.2s ease;
+}
+
+.event-tag:hover {
+	transform: translateY(-1px);
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 
 /* Arrow Icon */
@@ -968,12 +1064,13 @@ const handleToggleCompletion = async (event: CalendarEvent, e: Event) => {
 	}
 
 	.event-date-badge {
-		width: 60px;
-		padding: 10px 6px;
+		width: 70px;
+		height: 70px;
+		padding: var(--spacing-xs);
 	}
 
 	.event-date-badge__day {
-		font-size: 24px;
+		font-size: var(--font-size-3xl);
 	}
 
 	.event-date-badge__month {
@@ -982,6 +1079,12 @@ const handleToggleCompletion = async (event: CalendarEvent, e: Event) => {
 
 	.event-date-badge__weekday {
 		font-size: 10px;
+	}
+
+	.completion-badge {
+		width: 20px;
+		height: 20px;
+		font-size: 12px;
 	}
 
 	.event-title {

@@ -1,0 +1,232 @@
+/**
+ * 按钮系统样式
+ * 
+ * 实现需求 9.1-9.6：
+ * - 主要按钮（填充样式，主色调）
+ * - 次要按钮（轮廓样式，中性色）
+ * - 危险按钮（红色警告色）
+ * - 悬停、按下、禁用状态
+ */
+
+/* ========== 基础按钮样式 ========== */
+.btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	padding: 10px 20px;
+	font-size: 14px;
+	font-weight: 500;
+	line-height: 1.5;
+	border-radius: 8px;
+	border: 2px solid transparent;
+	cursor: pointer;
+	transition: all 0.3s ease;
+	user-select: none;
+	white-space: nowrap;
+	text-decoration: none;
+}
+
+.btn:focus {
+	outline: none;
+	box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+}
+
+/* ========== 主要按钮 ========== */
+/* 需求 9.1: 填充样式，主色调 */
+.btn-primary {
+	background: var(--primary-color);
+	color: white;
+	border-color: var(--primary-color);
+}
+
+/* 需求 9.4: 悬停状态 - 颜色加深和轻微提升效果 */
+.btn-primary:hover:not(:disabled) {
+	background: var(--primary-light);
+	border-color: var(--primary-light);
+	transform: translateY(-2px);
+	box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+/* 需求 9.5: 按下状态 - 按下动画效果 */
+.btn-primary:active:not(:disabled) {
+	transform: translateY(0);
+	box-shadow: 0 2px 6px rgba(102, 126, 234, 0.2);
+}
+
+/* 需求 9.6: 禁用状态 - 降低不透明度和禁用光标 */
+.btn-primary:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+	transform: none;
+	box-shadow: none;
+}
+
+/* ========== 次要按钮 ========== */
+/* 需求 9.2: 轮廓样式，中性色 */
+.btn-secondary {
+	background: transparent;
+	color: var(--text-primary);
+	border-color: var(--border-color);
+}
+
+/* 需求 9.4: 悬停状态 */
+.btn-secondary:hover:not(:disabled) {
+	background: var(--bg-hover);
+	border-color: var(--text-secondary);
+	transform: translateY(-2px);
+	box-shadow: 0 4px 12px var(--shadow);
+}
+
+/* 需求 9.5: 按下状态 */
+.btn-secondary:active:not(:disabled) {
+	transform: translateY(0);
+	box-shadow: 0 2px 6px var(--shadow);
+}
+
+/* 需求 9.6: 禁用状态 */
+.btn-secondary:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+	transform: none;
+	box-shadow: none;
+}
+
+/* ========== 危险按钮 ========== */
+/* 需求 9.3: 红色警告色 */
+.btn-danger {
+	background: #f56c6c;
+	color: white;
+	border-color: #f56c6c;
+}
+
+/* 需求 9.4: 悬停状态 */
+.btn-danger:hover:not(:disabled) {
+	background: #f78989;
+	border-color: #f78989;
+	transform: translateY(-2px);
+	box-shadow: 0 4px 12px rgba(245, 108, 108, 0.3);
+}
+
+/* 需求 9.5: 按下状态 */
+.btn-danger:active:not(:disabled) {
+	transform: translateY(0);
+	box-shadow: 0 2px 6px rgba(245, 108, 108, 0.2);
+}
+
+/* 需求 9.6: 禁用状态 */
+.btn-danger:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+	transform: none;
+	box-shadow: none;
+}
+
+/* ========== 按钮尺寸变体 ========== */
+.btn-small {
+	padding: 6px 12px;
+	font-size: 12px;
+	border-radius: 6px;
+}
+
+.btn-large {
+	padding: 14px 28px;
+	font-size: 16px;
+	border-radius: 10px;
+}
+
+/* ========== 图标按钮 ========== */
+.btn-icon {
+	padding: 10px;
+	border-radius: 50%;
+	width: 40px;
+	height: 40px;
+}
+
+.btn-icon.btn-small {
+	width: 32px;
+	height: 32px;
+	padding: 6px;
+}
+
+.btn-icon.btn-large {
+	width: 48px;
+	height: 48px;
+	padding: 12px;
+}
+
+/* ========== 块级按钮 ========== */
+.btn-block {
+	display: flex;
+	width: 100%;
+}
+
+/* ========== 按钮组 ========== */
+.btn-group {
+	display: inline-flex;
+	gap: 8px;
+}
+
+.btn-group .btn {
+	margin: 0;
+}
+
+/* ========== 加载状态 ========== */
+.btn-loading {
+	position: relative;
+	pointer-events: none;
+	opacity: 0.7;
+}
+
+.btn-loading::after {
+	content: "";
+	position: absolute;
+	width: 16px;
+	height: 16px;
+	top: 50%;
+	left: 50%;
+	margin-left: -8px;
+	margin-top: -8px;
+	border: 2px solid currentColor;
+	border-radius: 50%;
+	border-top-color: transparent;
+	animation: btn-spin 0.6s linear infinite;
+}
+
+@keyframes btn-spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+/* ========== 响应式设计 ========== */
+@media (max-width: 768px) {
+	.btn {
+		padding: 12px 20px;
+		font-size: 15px;
+		min-height: 44px; /* 触摸友好的最小高度 */
+	}
+
+	.btn-small {
+		padding: 8px 14px;
+		font-size: 13px;
+		min-height: 36px;
+	}
+
+	.btn-large {
+		padding: 16px 28px;
+		font-size: 17px;
+		min-height: 52px;
+	}
+}
+
+/* ========== 深色模式适配 ========== */
+:root.dark-mode .btn-secondary {
+	border-color: var(--border-color);
+	color: var(--text-primary);
+}
+
+:root.dark-mode .btn-secondary:hover:not(:disabled) {
+	background: var(--bg-hover);
+	border-color: var(--text-secondary);
+}

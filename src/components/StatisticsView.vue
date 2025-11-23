@@ -81,20 +81,53 @@ const timeChartData = computed(() => {
 });
 
 // Chart options for time distribution
-const timeChartOptions = {
+const timeChartOptions = computed(() => ({
 	responsive: true,
 	maintainAspectRatio: false,
 	plugins: {
 		legend: {
 			display: true,
 			position: "top" as const,
+			labels: {
+				font: {
+					size: 13,
+					weight: "600" as const,
+				},
+				padding: 16,
+				usePointStyle: true,
+				pointStyle: "circle",
+			},
 		},
 		title: {
 			display: true,
 			text: "时间段分布统计",
 			font: {
-				size: 16,
-				weight: "bold" as const,
+				size: 18,
+				weight: "700" as const,
+			},
+			padding: {
+				top: 0,
+				bottom: 24,
+			},
+		},
+		tooltip: {
+			backgroundColor: "rgba(0, 0, 0, 0.8)",
+			titleFont: {
+				size: 14,
+				weight: "600" as const,
+			},
+			bodyFont: {
+				size: 13,
+			},
+			padding: 12,
+			cornerRadius: 8,
+			displayColors: true,
+			callbacks: {
+				label: function (context: any) {
+					const label = context.dataset.label || "";
+					const value = context.parsed.y || 0;
+					return `${label}: ${value} 个事件`;
+				},
 			},
 		},
 	},
@@ -103,10 +136,30 @@ const timeChartOptions = {
 			beginAtZero: true,
 			ticks: {
 				stepSize: 1,
+				font: {
+					size: 12,
+				},
+			},
+			grid: {
+				color: "rgba(0, 0, 0, 0.05)",
+			},
+		},
+		x: {
+			ticks: {
+				font: {
+					size: 12,
+				},
+			},
+			grid: {
+				display: false,
 			},
 		},
 	},
-};
+	interaction: {
+		mode: "index" as const,
+		intersect: false,
+	},
+}));
 
 // Chart data for location distribution
 const locationChartData = computed(() => {
@@ -136,35 +189,80 @@ const locationChartData = computed(() => {
 });
 
 // Chart options for location distribution
-const locationChartOptions = {
+const locationChartOptions = computed(() => ({
 	responsive: true,
 	maintainAspectRatio: false,
 	plugins: {
 		legend: {
 			display: true,
 			position: "right" as const,
+			labels: {
+				font: {
+					size: 13,
+					weight: "600" as const,
+				},
+				padding: 12,
+				usePointStyle: true,
+				pointStyle: "circle",
+				generateLabels: function (chart: any) {
+					const data = chart.data;
+					if (data.labels.length && data.datasets.length) {
+						return data.labels.map((label: string, i: number) => {
+							const value = data.datasets[0].data[i];
+							const percentage =
+								locationDistribution.value[i]?.percentage || 0;
+							return {
+								text: `${label} (${percentage}%)`,
+								fillStyle: data.datasets[0].backgroundColor[i],
+								hidden: false,
+								index: i,
+							};
+						});
+					}
+					return [];
+				},
+			},
 		},
 		title: {
 			display: true,
 			text: "地点分布统计",
 			font: {
-				size: 16,
-				weight: "bold" as const,
+				size: 18,
+				weight: "700" as const,
+			},
+			padding: {
+				top: 0,
+				bottom: 24,
 			},
 		},
 		tooltip: {
+			backgroundColor: "rgba(0, 0, 0, 0.8)",
+			titleFont: {
+				size: 14,
+				weight: "600" as const,
+			},
+			bodyFont: {
+				size: 13,
+			},
+			padding: 12,
+			cornerRadius: 8,
+			displayColors: true,
 			callbacks: {
 				label: function (context: any) {
 					const label = context.label || "";
 					const value = context.parsed || 0;
 					const percentage =
 						locationDistribution.value[context.dataIndex]?.percentage || 0;
-					return `${label}: ${value} (${percentage}%)`;
+					return `${label}: ${value} 个事件 (${percentage}%)`;
 				},
 			},
 		},
 	},
-};
+	interaction: {
+		mode: "point" as const,
+		intersect: true,
+	},
+}));
 
 // Shortcuts for date range picker
 const shortcuts = [
@@ -336,99 +434,136 @@ const clearDateRange = () => {
 }
 
 .statistics-summary {
-	display: flex;
-	gap: 16px;
-	margin-bottom: 24px;
-	flex-wrap: wrap;
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+	gap: 20px;
+	margin-bottom: 32px;
 }
 
 .summary-card {
-	flex: 1;
-	min-width: 200px;
 	display: flex;
+	flex-direction: column;
 	align-items: center;
-	gap: 16px;
-	padding: 20px;
-	background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
-	border-radius: 12px;
-	box-shadow: 0 2px 8px var(--shadow);
-	color: white;
-	transition: transform 0.3s ease, box-shadow 0.3s ease;
+	justify-content: center;
+	padding: 32px 24px;
+	background: var(--bg-color);
+	border: 2px solid var(--border-light);
+	border-radius: 16px;
+	box-shadow: 0 2px 12px var(--shadow);
+	transition: all 0.3s ease;
+	position: relative;
+	overflow: hidden;
+}
+
+.summary-card::before {
+	content: "";
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: 4px;
+	background: linear-gradient(90deg, var(--primary-color) 0%, var(--primary-light) 100%);
 }
 
 .summary-card:hover {
-	transform: translateY(-2px);
-	box-shadow: 0 4px 12px var(--shadow);
+	transform: translateY(-4px);
+	box-shadow: 0 8px 24px var(--shadow);
+	border-color: var(--primary-color);
 }
 
 .summary-icon {
-	font-size: 48px;
+	font-size: 56px;
 	line-height: 1;
+	margin-bottom: 16px;
+	opacity: 0.9;
 }
 
 .summary-content {
-	flex: 1;
+	text-align: center;
+	width: 100%;
 }
 
 .summary-label {
 	font-size: 14px;
-	opacity: 0.9;
-	margin-bottom: 4px;
+	font-weight: 600;
+	color: var(--text-secondary);
+	margin-bottom: 8px;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
 }
 
 .summary-value {
-	font-size: 32px;
+	font-size: 48px;
 	font-weight: 700;
+	color: var(--primary-color);
+	line-height: 1;
 }
 
 /* Filters */
 .statistics-filters {
 	display: flex;
-	gap: 24px;
+	gap: 32px;
 	flex-wrap: wrap;
 	align-items: center;
-	padding: 20px;
+	padding: 24px;
 	background: var(--bg-color);
-	border-radius: 8px;
+	border-radius: 12px;
 	border: 2px solid var(--border-light);
+	box-shadow: 0 2px 8px var(--shadow);
 }
 
 .filter-group {
 	display: flex;
 	align-items: center;
-	gap: 12px;
+	gap: 14px;
 }
 
 .filter-label {
 	font-size: 14px;
-	font-weight: 600;
+	font-weight: 700;
 	color: var(--text-primary);
 	white-space: nowrap;
+	letter-spacing: 0.3px;
 }
 
 /* Empty State */
 .empty-state {
 	text-align: center;
-	padding: 80px 20px;
+	padding: 100px 20px;
+	background: var(--bg-color);
+	border-radius: 16px;
+	border: 2px dashed var(--border-light);
 }
 
 .empty-icon {
-	font-size: 80px;
-	margin-bottom: 16px;
-	opacity: 0.5;
+	font-size: 96px;
+	margin-bottom: 24px;
+	opacity: 0.6;
+	animation: emptyFloat 3s ease-in-out infinite;
+}
+
+@keyframes emptyFloat {
+	0%,
+	100% {
+		transform: translateY(0);
+	}
+	50% {
+		transform: translateY(-10px);
+	}
 }
 
 .empty-text {
-	font-size: 18px;
-	font-weight: 600;
-	color: var(--text-secondary);
-	margin: 0 0 8px 0;
+	font-size: 20px;
+	font-weight: 700;
+	color: var(--text-primary);
+	margin: 0 0 12px 0;
 }
 
 .empty-hint {
-	font-size: 14px;
-	color: var(--text-tertiary);
+	font-size: 15px;
+	color: var(--text-secondary);
 	margin: 0;
+	line-height: 1.6;
 }
 
 /* Charts */
@@ -440,92 +575,105 @@ const clearDateRange = () => {
 
 .chart-container {
 	background: var(--bg-color);
-	border-radius: 12px;
-	padding: 24px;
-	box-shadow: 0 2px 8px var(--shadow);
+	border-radius: 16px;
+	padding: 32px;
+	box-shadow: 0 2px 12px var(--shadow);
 	border: 2px solid var(--border-light);
+	transition: all 0.3s ease;
+}
+
+.chart-container:hover {
+	box-shadow: 0 4px 20px var(--shadow);
+	border-color: var(--primary-light);
 }
 
 .chart-wrapper {
-	height: 400px;
+	height: 420px;
 	position: relative;
+	margin-bottom: 8px;
 }
 
 .chart-wrapper--pie {
-	height: 350px;
+	height: 380px;
 }
 
 /* Location Details */
 .location-details {
-	margin-top: 24px;
-	padding-top: 24px;
+	margin-top: 32px;
+	padding-top: 32px;
 	border-top: 2px solid var(--border-light);
 }
 
 .details-title {
-	font-size: 16px;
-	font-weight: 600;
+	font-size: 17px;
+	font-weight: 700;
 	color: var(--text-primary);
-	margin: 0 0 16px 0;
+	margin: 0 0 20px 0;
+	letter-spacing: 0.3px;
 }
 
 .details-table {
 	display: flex;
 	flex-direction: column;
-	gap: 12px;
+	gap: 10px;
 }
 
 .details-row {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
-	padding: 12px 16px;
+	padding: 16px 20px;
 	background: var(--bg-secondary);
-	border-radius: 8px;
-	transition: background 0.2s ease;
+	border: 1px solid var(--border-light);
+	border-radius: 12px;
+	transition: all 0.2s ease;
 }
 
 .details-row:hover {
 	background: var(--bg-hover);
+	border-color: var(--primary-light);
+	transform: translateX(4px);
+	box-shadow: 0 2px 8px var(--shadow);
 }
 
 .details-location {
 	display: flex;
 	align-items: center;
-	gap: 12px;
+	gap: 14px;
 	flex: 1;
 }
 
 .location-badge {
-	width: 16px;
-	height: 16px;
-	border-radius: 4px;
+	width: 20px;
+	height: 20px;
+	border-radius: 6px;
 	flex-shrink: 0;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .location-name {
-	font-size: 14px;
-	font-weight: 500;
+	font-size: 15px;
+	font-weight: 600;
 	color: var(--text-primary);
 }
 
 .details-stats {
 	display: flex;
 	align-items: center;
-	gap: 16px;
+	gap: 20px;
 }
 
 .stats-count {
 	font-size: 14px;
 	font-weight: 600;
-	color: var(--text-primary);
+	color: var(--text-secondary);
 }
 
 .stats-percentage {
-	font-size: 14px;
-	font-weight: 600;
+	font-size: 16px;
+	font-weight: 700;
 	color: var(--primary-color);
-	min-width: 50px;
+	min-width: 60px;
 	text-align: right;
 }
 
@@ -533,6 +681,10 @@ const clearDateRange = () => {
 @media (max-width: 1200px) {
 	.statistics-charts {
 		grid-template-columns: 1fr;
+	}
+
+	.statistics-summary {
+		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
 	}
 }
 
@@ -542,29 +694,45 @@ const clearDateRange = () => {
 	}
 
 	.statistics-summary {
-		flex-direction: column;
+		grid-template-columns: 1fr;
+		gap: 16px;
 	}
 
 	.summary-card {
-		min-width: 100%;
+		padding: 24px 20px;
+	}
+
+	.summary-icon {
+		font-size: 48px;
+	}
+
+	.summary-value {
+		font-size: 40px;
 	}
 
 	.statistics-filters {
 		flex-direction: column;
 		align-items: stretch;
+		gap: 20px;
+		padding: 20px;
 	}
 
 	.filter-group {
 		flex-direction: column;
 		align-items: stretch;
+		gap: 10px;
 	}
 
 	.chart-wrapper {
-		height: 300px;
+		height: 320px;
 	}
 
 	.chart-wrapper--pie {
-		height: 280px;
+		height: 300px;
+	}
+
+	.chart-container {
+		padding: 24px;
 	}
 }
 
@@ -573,27 +741,58 @@ const clearDateRange = () => {
 		padding: 12px;
 	}
 
+	.summary-card {
+		padding: 20px 16px;
+	}
+
 	.summary-icon {
-		font-size: 36px;
+		font-size: 40px;
+		margin-bottom: 12px;
 	}
 
 	.summary-value {
-		font-size: 24px;
+		font-size: 36px;
+	}
+
+	.summary-label {
+		font-size: 13px;
 	}
 
 	.chart-container {
-		padding: 16px;
+		padding: 20px;
+	}
+
+	.chart-wrapper {
+		height: 280px;
+	}
+
+	.chart-wrapper--pie {
+		height: 260px;
 	}
 
 	.details-row {
 		flex-direction: column;
 		align-items: flex-start;
-		gap: 8px;
+		gap: 12px;
+		padding: 14px 16px;
 	}
 
 	.details-stats {
 		width: 100%;
 		justify-content: space-between;
+	}
+
+	.location-details {
+		margin-top: 24px;
+		padding-top: 24px;
+	}
+
+	.empty-state {
+		padding: 60px 20px;
+	}
+
+	.empty-icon {
+		font-size: 72px;
 	}
 }
 </style>
