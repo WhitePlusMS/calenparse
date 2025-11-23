@@ -1,0 +1,21 @@
+{
+  "enabled": true,
+  "name": "Auto-translate Localization Files",
+  "description": "Monitors changes to localization files (.json, .yaml, .yml) containing user-facing text content in Chinese (primary language). When changes are detected, automatically identifies new or modified text and generates translations for all configured target languages while maintaining proper context, meaning, and locale-specific conventions.",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "**/*.json",
+      "**/*.yaml",
+      "**/*.yml",
+      "**/locales/**/*",
+      "**/i18n/**/*",
+      "**/lang/**/*"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "A localization file has been modified. Please analyze the changes and:\n\n1. Identify any new or modified Chinese text entries in the file\n2. Determine what target languages are configured in the project (look for other locale files like en.json, ja.json, etc.)\n3. For each new or modified Chinese text entry, generate accurate translations for all target languages\n4. Ensure translations:\n   - Maintain the original context and meaning\n   - Follow locale-specific conventions and cultural norms\n   - Preserve any placeholders, variables, or formatting codes (e.g., {0}, %s, {{variable}})\n   - Match the tone and style of existing translations\n5. Update the corresponding target language files with the new translations\n6. Provide a summary of what was translated\n\nThe primary language is Chinese (汉语), so treat Chinese text as the source for translations."
+  }
+}
