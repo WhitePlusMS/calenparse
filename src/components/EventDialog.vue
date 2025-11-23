@@ -404,6 +404,7 @@ const handleToggleCompletion = async () => {
 						<el-tag
 							v-for="tagId in editableEvent.tagIds"
 							:key="tagId"
+							v-show="getTagById(tagId)"
 							:color="getTagById(tagId)?.color"
 							style="color: white; border: none; margin-right: 8px">
 							{{ getTagById(tagId)?.name }}

@@ -308,10 +308,38 @@ export function useSupabase() {
 	};
 
 	/**
-	 * Delete a tag from the database
+	 * Delete a tag from the database and remove it from all events
 	 */
 	const deleteTag = async (id: string): Promise<void> => {
 		try {
+			// First, get all events that have this tag
+			const { data: eventsWithTag, error: fetchError } = await supabase
+				.from("events")
+				.select("id, tag_ids")
+				.contains("tag_ids", [id]);
+
+			if (fetchError) {
+				throw new Error(`查询关联事件失败: ${fetchError.message}`);
+			}
+
+			// Remove the tag from all events using batch update
+			if (eventsWithTag && eventsWithTag.length > 0) {
+				const updates = eventsWithTag.map((event) => ({
+					id: event.id,
+					tag_ids:
+						((event.tag_ids as string[]) || []).filter(
+							(tagId: string) => tagId !== id
+						) || null,
+				}));
+
+				const { error: updateError } = await supabase.from("events").upsert(updates);
+
+				if (updateError) {
+					throw new Error(`更新关联事件失败: ${updateError.message}`);
+				}
+			}
+
+			// Then delete the tag
 			const { error } = await supabase.from("tags").delete().eq("id", id);
 
 			if (error) {

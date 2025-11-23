@@ -459,11 +459,12 @@ const handleRetry = async () => {
 						<span
 							v-for="tagId in event.tagIds"
 							:key="tagId"
+							v-show="getTagById(tagId)"
 							class="event-tag"
 							:style="{
 								backgroundColor: getTagById(tagId)?.color || '#409EFF',
 							}">
-							{{ getTagById(tagId)?.name || "未知标签" }}
+							{{ getTagById(tagId)?.name }}
 						</span>
 					</div>
 				</div>
