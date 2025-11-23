@@ -2,9 +2,26 @@ import { ref } from "vue";
 import type { ParsedEvent } from "@/types";
 import { handleApiError, isNetworkError, retryWithBackoff } from "@/utils/errorHandler";
 
-// Cache for parsed results to avoid redundant API calls (currently unused, reserved for future optimization)
-// const parseCache = new Map<string, { result: ParsedEvent[]; timestamp: number }>();
-// const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+// Constants
+const MAX_TEXT_LENGTH = 10000;
+const API_RETRY_COUNT = 2;
+const API_RETRY_DELAY_MS = 1000;
+const DEFAULT_EVENT_DURATION_MS = 60 * 60 * 1000; // 1 hour
+const LLM_TEMPERATURE = 0.3;
+const DEFAULT_MODEL = "gpt-3.5-turbo";
+
+// Error messages
+const ERROR_MESSAGES = {
+	EMPTY_INPUT: "输入文本不能为空",
+	MISSING_CONFIG: "LLM API 配置缺失，请检查环境变量 VITE_LLM_API_KEY 和 VITE_LLM_API_ENDPOINT",
+	AUTH_FAILED: "API 认证失败，请检查 API 密钥是否正确",
+	RATE_LIMIT: "API 调用次数超限，请稍后再试",
+	SERVICE_UNAVAILABLE: "LLM 服务暂时不可用，请稍后再试",
+	NETWORK_ERROR: "网络连接失败，请检查网络后重试",
+	NO_EVENTS_FOUND: "无法从文本中识别任何有效的日程信息，请检查输入或手动创建",
+	INVALID_RESPONSE: "LLM 返回的响应格式无效",
+	PARSE_ERROR: "无法解析 LLM 返回的 JSON 格式",
+} as const;
 
 export function useLLM() {
 	const isLoading = ref(false);
@@ -19,151 +36,30 @@ export function useLLM() {
 	 * - Handles multiple events in one text
 	 * - Handles missing fields gracefully (leaves them undefined)
 	 * - Handles repeat patterns if present
+	 *
+	 * @param text - The announcement text to parse
+	 * @param existingTags - Optional array of existing tag names to suggest from
 	 */
-	const parseText = async (text: string): Promise<ParsedEvent[]> => {
-		// Validate input (Requirement 1.3)
-		if (!text || text.trim().length === 0) {
-			throw new Error("输入文本不能为空");
-		}
-
-		// Warn for very long text (Requirement 1.4)
-		if (text.length > 10000) {
-			console.warn("输入文本超过10000字符，可能影响解析性能");
-		}
+	const parseText = async (text: string, existingTags?: string[]): Promise<ParsedEvent[]> => {
+		validateInput(text);
 
 		isLoading.value = true;
 		error.value = null;
 
 		try {
-			const apiKey = import.meta.env.VITE_LLM_API_KEY;
-			const apiEndpoint = import.meta.env.VITE_LLM_API_ENDPOINT;
-			const model = import.meta.env.VITE_LLM_MODEL || "gpt-3.5-turbo";
-
-			// Requirement 10.3: Validate API configuration
-			if (!apiKey || !apiEndpoint) {
-				const configError = new Error(
-					"LLM API 配置缺失，请检查环境变量 VITE_LLM_API_KEY 和 VITE_LLM_API_ENDPOINT"
-				);
-				handleApiError(configError, "LLM API 配置");
-				throw configError;
-			}
-
-			// Construct the prompt for LLM
-			const prompt = buildPrompt(text);
-
-			if (import.meta.env.DEV) {
-				console.log("Using LLM model:", model);
-				console.log("API Endpoint:", apiEndpoint);
-			}
-
-			// Call LLM API with retry logic for network errors
-			const callApi = async () => {
-				const requestBody = {
-					model,
-					messages: [
-						{
-							role: "system",
-							content: "You are a helpful assistant that extracts calendar event information from announcement text. Always respond with valid JSON.",
-						},
-						{
-							role: "user",
-							content: prompt,
-						},
-					],
-					temperature: 0.3,
-				};
-
-				if (import.meta.env.DEV) {
-					console.log("Request body:", JSON.stringify(requestBody, null, 2));
-				}
-
-				const response = await fetch(apiEndpoint, {
-					method: "POST",
-					headers: {
-						"Content-Type": "application/json",
-						Authorization: `Bearer ${apiKey}`,
-					},
-					body: JSON.stringify(requestBody),
-				});
-
-				// Handle HTTP errors
-				if (!response.ok) {
-					let errorMessage = `LLM API 调用失败 (${response.status})`;
-					let errorData: any = null;
-
-					try {
-						errorData = await response.json();
-						console.error("LLM API Error Response:", errorData);
-						errorMessage =
-							errorData.error?.message || errorData.message || errorMessage;
-					} catch {
-						// If can't parse error response, use status text
-						errorMessage = `${errorMessage}: ${response.statusText}`;
-					}
-
-					// Create specific error based on status code
-					if (response.status === 401 || response.status === 403) {
-						throw new Error("API 认证失败，请检查 API 密钥是否正确");
-					} else if (response.status === 429) {
-						throw new Error("API 调用次数超限，请稍后再试");
-					} else if (response.status >= 500) {
-						throw new Error("LLM 服务暂时不可用，请稍后再试");
-					} else {
-						throw new Error(errorMessage);
-					}
-				}
-
-				return response;
-			};
-
-			// Retry API call for network errors
-			const response = await retryWithBackoff(callApi, 2, 1000);
-			const data = await response.json();
-
-			// Log the response for debugging
-			if (import.meta.env.DEV) {
-				console.log("LLM API Response:", data);
-			}
-
-			// Extract the response content
-			const content = data.choices?.[0]?.message?.content;
-			if (!content) {
-				console.error("Invalid LLM response structure:", JSON.stringify(data, null, 2));
-				throw new Error(
-					`LLM 返回的响应格式无效。请检查 API 端点是否正确。收到的响应: ${JSON.stringify(
-						data
-					).substring(0, 200)}`
-				);
-			}
-
-			if (import.meta.env.DEV) {
-				console.log("LLM Response Content:", content);
-			}
-
-			// Parse the JSON response
-			const parsedResponse = parseResponse(content);
-
-			// Validate and process the parsed events
+			const config = getApiConfig();
+			const prompt = buildPrompt(text, existingTags);
+			const response = await callLLMApi(config, prompt);
+			const parsedResponse = parseResponse(response);
 			const events = processEvents(parsedResponse);
 
-			// Requirement 2.13: If no valid events found, throw error
 			if (events.length === 0) {
-				throw new Error("无法从文本中识别任何有效的日程信息，请检查输入或手动创建");
+				throw new Error(ERROR_MESSAGES.NO_EVENTS_FOUND);
 			}
 
 			return events;
 		} catch (err) {
-			const errorMessage = err instanceof Error ? err.message : "未知错误";
-			error.value = errorMessage;
-
-			// Handle network errors specifically
-			if (isNetworkError(err)) {
-				handleApiError(new Error("网络连接失败，请检查网络后重试"), "LLM API");
-			} else if (err instanceof Error && !err.message.includes("无法从文本中识别")) {
-				// Don't show notification for "no events found" error (already shown in UI)
-				handleApiError(err, "LLM API");
-			}
-
+			handleParseError(err);
 			throw err;
 		} finally {
 			isLoading.value = false;
@@ -171,12 +67,162 @@ export function useLLM() {
 	};
 
 	/**
+	 * Validate input text
+	 * Requirement 1.3, 1.4
+	 */
+	const validateInput = (text: string): void => {
+		if (!text || text.trim().length === 0) {
+			throw new Error(ERROR_MESSAGES.EMPTY_INPUT);
+		}
+
+		if (text.length > MAX_TEXT_LENGTH) {
+			console.warn(`输入文本超过${MAX_TEXT_LENGTH}字符，可能影响解析性能`);
+		}
+	};
+
+	/**
+	 * Get and validate API configuration
+	 * Requirement 10.3
+	 */
+	const getApiConfig = () => {
+		const apiKey = import.meta.env.VITE_LLM_API_KEY;
+		const apiEndpoint = import.meta.env.VITE_LLM_API_ENDPOINT;
+		const model = import.meta.env.VITE_LLM_MODEL || DEFAULT_MODEL;
+
+		if (!apiKey || !apiEndpoint) {
+			const configError = new Error(ERROR_MESSAGES.MISSING_CONFIG);
+			handleApiError(configError, "LLM API 配置");
+			throw configError;
+		}
+
+		if (import.meta.env.DEV) {
+			console.log("LLM Config:", { model, apiEndpoint });
+		}
+
+		return { apiKey, apiEndpoint, model };
+	};
+
+	/**
+	 * Call LLM API with retry logic
+	 */
+	const callLLMApi = async (
+		config: { apiKey: string; apiEndpoint: string; model: string },
+		prompt: string
+	): Promise<string> => {
+		const { apiKey, apiEndpoint, model } = config;
+
+		const callApi = async () => {
+			const requestBody = {
+				model,
+				messages: [
+					{
+						role: "system",
+						content: "You are a helpful assistant that extracts calendar event information from announcement text. Always respond with valid JSON.",
+					},
+					{
+						role: "user",
+						content: prompt,
+					},
+				],
+				temperature: LLM_TEMPERATURE,
+			};
+
+			if (import.meta.env.DEV) {
+				console.log("LLM Request:", JSON.stringify(requestBody, null, 2));
+			}
+
+			const response = await fetch(apiEndpoint, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${apiKey}`,
+				},
+				body: JSON.stringify(requestBody),
+			});
+
+			if (!response.ok) {
+				throw await createHttpError(response);
+			}
+
+			return response;
+		};
+
+		const response = await retryWithBackoff(callApi, API_RETRY_COUNT, API_RETRY_DELAY_MS);
+		const data = await response.json();
+
+		if (import.meta.env.DEV) {
+			console.log("LLM Response:", data);
+		}
+
+		const content = data.choices?.[0]?.message?.content;
+		if (!content) {
+			console.error("Invalid LLM response structure:", JSON.stringify(data, null, 2));
+			throw new Error(
+				`${
+					ERROR_MESSAGES.INVALID_RESPONSE
+				}。请检查 API 端点是否正确。收到的响应: ${JSON.stringify(data).substring(0, 200)}`
+			);
+		}
+
+		return content;
+	};
+
+	/**
+	 * Create appropriate error from HTTP response
+	 */
+	const createHttpError = async (response: Response): Promise<Error> => {
+		let errorMessage = `LLM API 调用失败 (${response.status})`;
+
+		try {
+			const errorData = await response.json();
+			console.error("LLM API Error Response:", errorData);
+			errorMessage = errorData.error?.message || errorData.message || errorMessage;
+		} catch {
+			errorMessage = `${errorMessage}: ${response.statusText}`;
+		}
+
+		// Map status codes to user-friendly messages
+		if (response.status === 401 || response.status === 403) {
+			return new Error(ERROR_MESSAGES.AUTH_FAILED);
+		} else if (response.status === 429) {
+			return new Error(ERROR_MESSAGES.RATE_LIMIT);
+		} else if (response.status >= 500) {
+			return new Error(ERROR_MESSAGES.SERVICE_UNAVAILABLE);
+		}
+
+		return new Error(errorMessage);
+	};
+
+	/**
+	 * Handle parsing errors consistently
+	 */
+	const handleParseError = (err: unknown): void => {
+		const errorMessage = err instanceof Error ? err.message : "未知错误";
+		error.value = errorMessage;
+
+		if (isNetworkError(err)) {
+			handleApiError(new Error(ERROR_MESSAGES.NETWORK_ERROR), "LLM API");
+		} else if (err instanceof Error && !err.message.includes(ERROR_MESSAGES.NO_EVENTS_FOUND)) {
+			// Don't show notification for "no events found" error (already shown in UI)
+			handleApiError(err, "LLM API");
+		}
+	};
+
+	/**
 	 * Build the prompt for LLM to extract event information
 	 * Requirement 18.7: LLM should identify and suggest tags
 	 */
-	const buildPrompt = (text: string): string => {
+	const buildPrompt = (text: string, existingTags?: string[]): string => {
 		const today = new Date();
 		const currentDate = today.toISOString().split("T")[0]; // YYYY-MM-DD format
+
+		// Build existing tags section
+		const existingTagsSection =
+			existingTags && existingTags.length > 0
+				? `\n\n现有标签列表：${existingTags.join(
+						", "
+				  )}\n请优先从现有标签中选择合适的标签。如果现有标签都不合适，可以建议新标签，但请尽量精简。`
+				: "";
 
 		return `请从以下通告文本中提取日程事件信息。如果文本中包含多个事件，请全部提取。
 
@@ -193,14 +239,14 @@ export function useLLM() {
    - eventType: 事件类型（如：会议、考试、活动、截止日期等）
    - participants: 参与人员
    - contact: 联系方式
-   - suggestedTags: 建议的标签数组（字符串数组，如：["会议", "重要", "学术"]）
+   - suggestedTags: 建议的标签数组（字符串数组，如：["会议", "重要", "学术"]）${existingTagsSection}
 
 2. 如果某个字段无法识别或不存在，请不要包含该字段（不要生成虚假信息）
 3. 对于相对日期（如"明天"、"下周三"），请基于今天的日期 ${currentDate} 转换为绝对日期
 4. 如果只有日期没有具体时间，设置 isAllDay 为 true
 5. 如果文本包含重复规则（如"每周二"），请在 description 中说明
 6. 年份推断规则：如果文本中没有明确年份，使用今天的年份 ${today.getFullYear()}
-7. 标签建议：根据事件类型、主题、重要性等因素，建议2-4个合适的标签
+7. 标签建议：根据事件类型、主题、重要性等因素，建议1-3个合适的标签
 
 请以 JSON 数组格式返回，每个事件是一个对象。
 
@@ -212,8 +258,9 @@ ${text}
 
 	/**
 	 * Parse the LLM response content
+	 * Extracts JSON from markdown code blocks if present
 	 */
-	const parseResponse = (content: string): any => {
+	const parseResponse = (content: string): any[] => {
 		try {
 			// Try to extract JSON from the response
 			// Sometimes LLM might wrap JSON in markdown code blocks
@@ -231,7 +278,7 @@ ${text}
 		} catch (err) {
 			console.error("Failed to parse LLM response:", content);
 			console.error("Parse error:", err);
-			throw new Error(`无法解析 LLM 返回的 JSON 格式。响应内容: ${content.substring(0, 200)}...`);
+			throw new Error(`${ERROR_MESSAGES.PARSE_ERROR}。响应内容: ${content.substring(0, 200)}...`);
 		}
 	};
 
@@ -254,7 +301,9 @@ ${text}
 				// Parse dates
 				if (rawEvent.startTime) {
 					const startDate = new Date(rawEvent.startTime);
-					console.log("Parsing startTime:", rawEvent.startTime, "->", startDate);
+					if (import.meta.env.DEV) {
+						console.log("Parsing startTime:", rawEvent.startTime, "->", startDate);
+					}
 					if (!isNaN(startDate.getTime())) {
 						event.startTime = startDate;
 					}
@@ -262,15 +311,12 @@ ${text}
 
 				if (rawEvent.endTime) {
 					const endDate = new Date(rawEvent.endTime);
-					console.log("Parsing endTime:", rawEvent.endTime, "->", endDate);
+					if (import.meta.env.DEV) {
+						console.log("Parsing endTime:", rawEvent.endTime, "->", endDate);
+					}
 					if (!isNaN(endDate.getTime())) {
 						event.endTime = endDate;
 					}
-				}
-
-				// If no end time but has start time, set end time to start time + 1 hour
-				if (event.startTime && !event.endTime) {
-					event.endTime = new Date(event.startTime.getTime() + 60 * 60 * 1000);
 				}
 
 				// All-day event flag
@@ -278,6 +324,27 @@ ${text}
 					event.isAllDay = rawEvent.isAllDay;
 				} else {
 					event.isAllDay = false;
+				}
+
+				// Handle end time
+				if (event.startTime && !event.endTime) {
+					// If no end time, set end time to start time + 1 hour
+					event.endTime = new Date(event.startTime.getTime() + DEFAULT_EVENT_DURATION_MS);
+				} else if (event.startTime && event.endTime) {
+					// If end time equals start time (common for all-day events)
+					if (event.endTime.getTime() === event.startTime.getTime()) {
+						if (event.isAllDay) {
+							// For all-day events, set end time to end of day
+							const endOfDay = new Date(event.startTime);
+							endOfDay.setHours(23, 59, 59, 999);
+							event.endTime = endOfDay;
+						} else {
+							// For regular events, add 1 hour
+							event.endTime = new Date(
+								event.startTime.getTime() + DEFAULT_EVENT_DURATION_MS
+							);
+						}
+					}
 				}
 
 				// Optional fields
@@ -319,12 +386,14 @@ ${text}
 
 				// Only add event if it has at least a title or start time
 				if (event.title || event.startTime) {
-					console.log("Processed event:", event);
-					console.log(
-						"startTime type:",
-						typeof event.startTime,
-						event.startTime instanceof Date
-					);
+					if (import.meta.env.DEV) {
+						console.log("Processed event:", event);
+						console.log(
+							"startTime type:",
+							typeof event.startTime,
+							event.startTime instanceof Date
+						);
+					}
 					events.push(event);
 				}
 			} catch (err) {

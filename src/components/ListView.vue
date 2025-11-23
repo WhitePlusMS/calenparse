@@ -263,10 +263,23 @@ const isUpcoming = (date: Date): boolean => {
  */
 const handleToggleCompletion = async (event: CalendarEvent, e: Event) => {
 	e.stopPropagation();
+
+	// 二次确认
+	const action = event.isCompleted ? "标记为未完成" : "标记为完成";
 	try {
+		await ElMessageBox.confirm(`确定要将"${event.title}"${action}吗？`, "确认操作", {
+			confirmButtonText: "确定",
+			cancelButtonText: "取消",
+			type: "warning",
+		});
+
 		await toggleEventCompletion(event.id);
 		ElMessage.success(event.isCompleted ? "已标记为未完成" : "已标记为完成");
 	} catch (error) {
+		if (error === "cancel") {
+			// 用户取消操作
+			return;
+		}
 		console.error("Toggle completion failed:", error);
 		ElMessage.error("更新完成状态失败");
 	}
@@ -370,12 +383,16 @@ const handleRetry = async () => {
 				</div>
 
 				<!-- Date Badge -->
-				<div
-					class="event-date-badge"
-					:title="event.isCompleted ? '点击标记为未完成' : '点击标记为完成'"
-					@click.stop="handleToggleCompletion(event, $event)">
-					<!-- Completion Status Indicator -->
-					<div v-if="event.isCompleted" class="completion-badge">✓</div>
+				<div class="event-date-badge">
+					<!-- Completion Toggle Button -->
+					<button
+						class="completion-toggle-btn"
+						:class="{ 'completion-toggle-btn--completed': event.isCompleted }"
+						:title="event.isCompleted ? '标记为未完成' : '标记为完成'"
+						@click.stop="handleToggleCompletion(event, $event)">
+						<span v-if="event.isCompleted" class="completion-icon">✓</span>
+						<span v-else class="completion-icon">○</span>
+					</button>
 
 					<div class="event-date-badge__day">
 						{{ dayjs(event.startTime).format("DD") }}
@@ -394,11 +411,16 @@ const handleRetry = async () => {
 					<div class="event-header">
 						<h3 class="event-title">{{ event.title }}</h3>
 						<div class="event-badges">
-							<span v-if="isToday(event.startTime)" class="badge badge--today"
+							<span v-if="event.isCompleted" class="badge badge--completed"
+								>已完成</span
+							>
+							<span
+								v-if="isToday(event.startTime) && !event.isCompleted"
+								class="badge badge--today"
 								>今天</span
 							>
 							<span
-								v-if="isUpcoming(event.startTime)"
+								v-if="isUpcoming(event.startTime) && !event.isCompleted"
 								class="badge badge--upcoming"
 								>即将到来</span
 							>
@@ -734,24 +756,72 @@ const handleRetry = async () => {
 	accent-color: var(--primary-color);
 }
 
-/* Completion Status Badge */
+/* Completion Toggle Button */
 /* Requirement 23.4: Display completion status indicator in list view */
-.completion-badge {
+.completion-toggle-btn {
 	position: absolute;
-	top: 4px;
-	right: 4px;
-	width: 24px;
-	height: 24px;
-	background: rgba(255, 255, 255, 0.95);
-	color: var(--success-color);
+	top: -12px;
+	right: -12px;
+	width: 32px;
+	height: 32px;
+	background: linear-gradient(135deg, #ffffff 0%, #f5f7fa 100%);
+	border: 2.5px solid #e4e7ed;
 	border-radius: var(--radius-full);
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	font-size: 14px;
+	cursor: pointer;
+	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+	z-index: 2;
+	padding: 0;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+.completion-toggle-btn:hover {
+	transform: scale(1.15) rotate(5deg);
+	border-color: #67c23a;
+	background: linear-gradient(135deg, #f0f9ff 0%, #e6f4ff 100%);
+	box-shadow: 0 6px 16px rgba(103, 194, 58, 0.2), 0 3px 6px rgba(103, 194, 58, 0.1);
+}
+
+.completion-toggle-btn:active {
+	transform: scale(1.05);
+}
+
+.completion-toggle-btn--completed {
+	background: linear-gradient(135deg, #67c23a 0%, #85ce61 100%);
+	border-color: #67c23a;
+	box-shadow: 0 4px 12px rgba(103, 194, 58, 0.3), 0 2px 4px rgba(103, 194, 58, 0.2);
+}
+
+.completion-toggle-btn--completed:hover {
+	background: linear-gradient(135deg, #85ce61 0%, #95d475 100%);
+	border-color: #85ce61;
+	transform: scale(1.15) rotate(-5deg);
+	box-shadow: 0 6px 20px rgba(103, 194, 58, 0.4), 0 3px 8px rgba(103, 194, 58, 0.3);
+}
+
+.completion-icon {
+	font-size: 18px;
 	font-weight: var(--font-weight-bold);
-	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-	z-index: 1;
+	line-height: 1;
+	color: #c0c4cc;
+	transition: all 0.3s ease;
+}
+
+.completion-toggle-btn:hover .completion-icon {
+	color: #67c23a;
+	transform: scale(1.1);
+}
+
+.completion-toggle-btn--completed .completion-icon {
+	color: white;
+	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.completion-toggle-btn--completed:hover .completion-icon {
+	color: white;
+	transform: scale(1.2);
 }
 
 /* Completed Event Styles */
@@ -843,8 +913,7 @@ const handleRetry = async () => {
 	text-align: center;
 	box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 	position: relative;
-	overflow: hidden;
-	cursor: pointer;
+	overflow: visible;
 	transition: all 0.3s ease;
 }
 
@@ -948,6 +1017,13 @@ const handleRetry = async () => {
 	border: 1px solid transparent;
 	line-height: var(--line-height-tight);
 	transition: all 0.2s ease;
+}
+
+.badge--completed {
+	background: linear-gradient(135deg, #67c23a 0%, #85ce61 100%);
+	color: white;
+	border: none;
+	box-shadow: 0 2px 6px rgba(103, 194, 58, 0.3);
 }
 
 .badge--today {

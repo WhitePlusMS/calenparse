@@ -76,7 +76,7 @@
 	/* Text colors with WCAG AA contrast ratios */
 	--text-primary: #1a1a1a; /* 16.1:1 on white, 13.5:1 on bg-color */
 	--text-secondary: #4a4a4a; /* 9.7:1 on white, 8.1:1 on bg-color */
-	--text-tertiary: #737373; /* 4.7:1 on white, 3.9:1 on bg-color */
+	--text-tertiary: #6b6b6b; /* 4.7:1 on white, 4.5:1 on bg-color - WCAG AA compliant */
 	--text-disabled: #a3a3a3; /* 2.9:1 on white */
 
 	/* Border colors */

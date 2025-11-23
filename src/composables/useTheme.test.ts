@@ -230,4 +230,145 @@ describe("Theme System Property Tests", () => {
 			{ numRuns: 100 }
 		);
 	});
+
+	/**
+	 * Property 5: Color contrast meets WCAG AA standards
+	 *
+	 * Feature: ui-ux-redesign, Property 5: 颜色对比度符合WCAG AA标准
+	 * Validates: Requirements 15.4, 15.5
+	 *
+	 * For any theme mode (light or dark), the color contrast between text and background
+	 * should meet WCAG AA standards (4.5:1 for normal text, 3:1 for large text).
+	 */
+	it("should maintain WCAG AA contrast ratio for text colors", () => {
+		/**
+		 * Calculate relative luminance of a color
+		 * https://www.w3.org/TR/WCAG20/#relativeluminancedef
+		 */
+		function getRelativeLuminance(hex: string): number {
+			// Remove # if present
+			const cleanHex = hex.replace("#", "");
+
+			// Parse RGB values
+			const r = parseInt(cleanHex.substring(0, 2), 16) / 255;
+			const g = parseInt(cleanHex.substring(2, 4), 16) / 255;
+			const b = parseInt(cleanHex.substring(4, 6), 16) / 255;
+
+			// Apply gamma correction
+			const rsRGB = r <= 0.03928 ? r / 12.92 : Math.pow((r + 0.055) / 1.055, 2.4);
+			const gsRGB = g <= 0.03928 ? g / 12.92 : Math.pow((g + 0.055) / 1.055, 2.4);
+			const bsRGB = b <= 0.03928 ? b / 12.92 : Math.pow((b + 0.055) / 1.055, 2.4);
+
+			// Calculate luminance
+			return 0.2126 * rsRGB + 0.7152 * gsRGB + 0.0722 * bsRGB;
+		}
+
+		/**
+		 * Calculate contrast ratio between two colors
+		 * https://www.w3.org/TR/WCAG20/#contrast-ratiodef
+		 */
+		function getContrastRatio(color1: string, color2: string): number {
+			const l1 = getRelativeLuminance(color1);
+			const l2 = getRelativeLuminance(color2);
+
+			const lighter = Math.max(l1, l2);
+			const darker = Math.min(l1, l2);
+
+			return (lighter + 0.05) / (darker + 0.05);
+		}
+
+		// Define the color values from style.css for both light and dark modes
+		const lightModeColors = {
+			"--bg-color": "#f5f7fa",
+			"--bg-secondary": "#ffffff",
+			"--text-primary": "#1a1a1a",
+			"--text-secondary": "#4a4a4a",
+			"--text-tertiary": "#6b6b6b",
+		};
+
+		const darkModeColors = {
+			"--bg-color": "#0a0a0a",
+			"--bg-secondary": "#1a1a1a",
+			"--text-primary": "#fafafa",
+			"--text-secondary": "#d4d4d4",
+			"--text-tertiary": "#a3a3a3",
+		};
+
+		fc.assert(
+			fc.property(fc.constantFrom("light" as const, "dark" as const), (themeMode) => {
+				// Select the appropriate color set based on theme mode
+				const colors = themeMode === "light" ? lightModeColors : darkModeColors;
+
+				// Define color pairs to test
+				const colorPairs: Array<{
+					text: string;
+					background: string;
+					minRatio: number;
+					description: string;
+				}> = [
+					{
+						text: "--text-primary",
+						background: "--bg-color",
+						minRatio: 4.5, // WCAG AA for normal text
+						description: "Primary text on main background",
+					},
+					{
+						text: "--text-primary",
+						background: "--bg-secondary",
+						minRatio: 4.5,
+						description: "Primary text on secondary background",
+					},
+					{
+						text: "--text-secondary",
+						background: "--bg-color",
+						minRatio: 4.5,
+						description: "Secondary text on main background",
+					},
+					{
+						text: "--text-secondary",
+						background: "--bg-secondary",
+						minRatio: 4.5,
+						description: "Secondary text on secondary background",
+					},
+					{
+						text: "--text-tertiary",
+						background: "--bg-color",
+						minRatio: 4.5,
+						description: "Tertiary text on main background",
+					},
+					{
+						text: "--text-tertiary",
+						background: "--bg-secondary",
+						minRatio: 4.5,
+						description: "Tertiary text on secondary background",
+					},
+				];
+
+				// Test each color pair
+				for (const pair of colorPairs) {
+					const textColor = colors[pair.text as keyof typeof colors];
+					const bgColor = colors[pair.background as keyof typeof colors];
+
+					// Calculate contrast ratio
+					const ratio = getContrastRatio(textColor, bgColor);
+
+					// Check if it meets the minimum ratio
+					if (ratio < pair.minRatio) {
+						console.error(
+							`WCAG AA violation in ${themeMode} mode: ${pair.description}`,
+							`\n  Text: ${pair.text} = ${textColor}`,
+							`\n  Background: ${pair.background} = ${bgColor}`,
+							`\n  Contrast ratio: ${ratio.toFixed(2)}:1 (minimum: ${
+								pair.minRatio
+							}:1)`
+						);
+						return false;
+					}
+				}
+
+				return true;
+			}),
+			{ numRuns: 100 }
+		);
+	});
 });

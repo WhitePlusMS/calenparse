@@ -356,55 +356,6 @@ defineExpose({
 
 <template>
 	<div class="calendar-view">
-		<!-- Tag Filter -->
-		<!-- Requirement 18.5: Filter events by clicking tags -->
-		<div v-if="availableTags.length > 0" class="tag-filter-container">
-			<button class="tag-filter-toggle" @click="showTagFilter = !showTagFilter">
-				<span class="filter-icon">🏷️</span>
-				<span class="filter-label">标签筛选</span>
-				<span v-if="selectedTagIds.length > 0" class="filter-count">{{
-					selectedTagIds.length
-				}}</span>
-				<span class="filter-arrow" :class="{ expanded: showTagFilter }">▼</span>
-			</button>
-
-			<div v-show="showTagFilter" class="tag-filter-panel">
-				<div class="tag-filter-header">
-					<span class="tag-filter-title">选择标签筛选</span>
-					<button
-						v-if="selectedTagIds.length > 0"
-						class="clear-filters-btn"
-						@click="clearTagFilters">
-						清除筛选
-					</button>
-				</div>
-				<div class="tag-filter-list">
-					<button
-						v-for="tag in availableTags"
-						:key="tag.id"
-						:class="[
-							'tag-filter-item',
-							{ active: selectedTagIds.includes(tag.id) },
-						]"
-						:style="{
-							'--tag-color': tag.color,
-							backgroundColor: selectedTagIds.includes(tag.id)
-								? tag.color
-								: 'white',
-							color: selectedTagIds.includes(tag.id) ? 'white' : '#606266',
-							borderColor: tag.color,
-						}"
-						@click="toggleTagFilter(tag.id)">
-						<span
-							class="tag-color-dot"
-							:style="{ backgroundColor: tag.color }"></span>
-						<span class="tag-name">{{ tag.name }}</span>
-						<span v-if="selectedTagIds.includes(tag.id)" class="tag-check">✓</span>
-					</button>
-				</div>
-			</div>
-		</div>
-
 		<!-- View Switcher -->
 		<!-- Requirement 3.5, 3.6, 3.7, 3.8: Multiple view support -->
 		<div class="view-switcher">
@@ -476,6 +427,59 @@ defineExpose({
 			<!-- Requirement 3.8: Year view showing schedule density -->
 			<FullCalendar ref="calendarRef" :options="calendarOptions" />
 
+			<!-- Tag Filter - Below Calendar -->
+			<!-- Requirement 18.5: Filter events by clicking tags -->
+			<div v-if="availableTags.length > 0" class="tag-filter-container">
+				<button class="tag-filter-toggle" @click="showTagFilter = !showTagFilter">
+					<span class="filter-icon">🏷️</span>
+					<span class="filter-label">标签筛选</span>
+					<span v-if="selectedTagIds.length > 0" class="filter-count">{{
+						selectedTagIds.length
+					}}</span>
+					<span class="filter-arrow" :class="{ expanded: showTagFilter }">▼</span>
+				</button>
+
+				<div v-show="showTagFilter" class="tag-filter-panel">
+					<div class="tag-filter-header">
+						<span class="tag-filter-title">选择标签筛选</span>
+						<button
+							v-if="selectedTagIds.length > 0"
+							class="clear-filters-btn"
+							@click="clearTagFilters">
+							清除筛选
+						</button>
+					</div>
+					<div class="tag-filter-list">
+						<button
+							v-for="tag in availableTags"
+							:key="tag.id"
+							:class="[
+								'tag-filter-item',
+								{ active: selectedTagIds.includes(tag.id) },
+							]"
+							:style="{
+								'--tag-color': tag.color,
+								backgroundColor: selectedTagIds.includes(tag.id)
+									? tag.color
+									: 'white',
+								color: selectedTagIds.includes(tag.id)
+									? 'white'
+									: '#606266',
+								borderColor: tag.color,
+							}"
+							@click="toggleTagFilter(tag.id)">
+							<span
+								class="tag-color-dot"
+								:style="{ backgroundColor: tag.color }"></span>
+							<span class="tag-name">{{ tag.name }}</span>
+							<span v-if="selectedTagIds.includes(tag.id)" class="tag-check"
+								>✓</span
+							>
+						</button>
+					</div>
+				</div>
+			</div>
+
 			<!-- Empty State -->
 			<!-- Requirement 13.2: Friendly empty state with illustration and guidance -->
 			<div v-if="events.length === 0" class="empty-state">
@@ -498,7 +502,7 @@ defineExpose({
 
 /* Tag Filter Styles */
 .tag-filter-container {
-	margin-bottom: 16px;
+	margin-top: 20px;
 }
 
 .tag-filter-toggle {

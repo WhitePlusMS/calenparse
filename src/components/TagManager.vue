@@ -6,10 +6,18 @@ import type { Tag } from "@/types";
 
 const { getAllTags, createTag, updateTag, deleteTag } = useSupabase();
 
+// Emit events
+const emit = defineEmits<{
+	tagsChanged: [];
+}>();
+
 const tags = ref<Tag[]>([]);
 const loading = ref(false);
 const dialogVisible = ref(false);
 const editingTag = ref<Tag | null>(null);
+
+// Batch selection
+const selectedTags = ref<Tag[]>([]);
 
 // Form data
 const tagForm = ref({
@@ -109,9 +117,67 @@ const handleDelete = async (tag: Tag) => {
 		await deleteTag(tag.id);
 		ElMessage.success("标签删除成功");
 		await loadTags();
+		emit("tagsChanged");
 	} catch (error) {
 		if (error !== "cancel") {
 			ElMessage.error(error instanceof Error ? error.message : "删除标签失败");
+		}
+	} finally {
+		loading.value = false;
+	}
+};
+
+// Handle selection change
+const handleSelectionChange = (selection: Tag[]) => {
+	selectedTags.value = selection;
+};
+
+// Batch delete tags
+const handleBatchDelete = async () => {
+	if (selectedTags.value.length === 0) {
+		ElMessage.warning("请先选择要删除的标签");
+		return;
+	}
+
+	try {
+		await ElMessageBox.confirm(
+			`确定要删除选中的 ${selectedTags.value.length} 个标签吗？删除后，所有事件中的这些标签也会被移除。`,
+			"确认批量删除",
+			{
+				confirmButtonText: "删除",
+				cancelButtonText: "取消",
+				type: "warning",
+			}
+		);
+
+		loading.value = true;
+		let successCount = 0;
+		let failCount = 0;
+
+		for (const tag of selectedTags.value) {
+			try {
+				await deleteTag(tag.id);
+				successCount++;
+			} catch (error) {
+				console.error(`Failed to delete tag ${tag.name}:`, error);
+				failCount++;
+			}
+		}
+
+		if (successCount > 0) {
+			ElMessage.success(
+				`成功删除 ${successCount} 个标签${failCount > 0 ? `，${failCount} 个失败` : ""}`
+			);
+			emit("tagsChanged");
+		} else {
+			ElMessage.error("批量删除失败");
+		}
+
+		selectedTags.value = [];
+		await loadTags();
+	} catch (error) {
+		if (error !== "cancel") {
+			ElMessage.error("批量删除失败");
 		}
 	} finally {
 		loading.value = false;
@@ -127,10 +193,20 @@ onMounted(() => {
 	<div class="tag-manager">
 		<div class="header">
 			<h3>标签管理</h3>
-			<el-button type="primary" @click="openCreateDialog"> ➕ 创建标签 </el-button>
+			<div class="header-actions">
+				<el-button v-if="selectedTags.length > 0" type="danger" @click="handleBatchDelete">
+					🗑️ 批量删除 ({{ selectedTags.length }})
+				</el-button>
+				<el-button type="primary" @click="openCreateDialog"> ➕ 创建标签 </el-button>
+			</div>
 		</div>
 
-		<el-table :data="tags" v-loading="loading" style="width: 100%">
+		<el-table
+			:data="tags"
+			v-loading="loading"
+			style="width: 100%"
+			@selection-change="handleSelectionChange">
+			<el-table-column type="selection" width="55" />
 			<el-table-column label="标签名称" prop="name">
 				<template #default="{ row }">
 					<el-tag :color="row.color" style="color: white; border: none">
@@ -210,6 +286,12 @@ onMounted(() => {
 	margin: 0;
 	font-size: 18px;
 	font-weight: 600;
+}
+
+.header-actions {
+	display: flex;
+	gap: 12px;
+	align-items: center;
 }
 
 .color-preview {

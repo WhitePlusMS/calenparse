@@ -4,7 +4,6 @@ import { ElMessage, ElMessageBox } from "element-plus";
 import { useLLM } from "@/composables/useLLM";
 import { useEvents } from "@/composables/useEvents";
 import { useSupabase } from "@/composables/useSupabase";
-import PreviewDialog from "./PreviewDialog.vue";
 import type { ParsedEvent } from "@/types";
 
 /**
@@ -25,13 +24,12 @@ const isExpanded = ref(false);
 const inputRef = ref<HTMLTextAreaElement | null>(null);
 
 const { parseText, isLoading } = useLLM();
-const { createEvent } = useEvents();
-const { getAllTags, createTag } = useSupabase();
+const { getAllTags } = useSupabase();
 
-// Preview dialog state
-const showPreview = ref(false);
-const parsedEvents = ref<ParsedEvent[]>([]);
-const originalText = ref("");
+// Emit events
+const emit = defineEmits<{
+	showPreview: [events: ParsedEvent[], originalText: string];
+}>();
 
 // Character count with warning
 const charCount = computed(() => inputText.value.length);
@@ -87,48 +85,6 @@ const handleKeydown = (e: KeyboardEvent) => {
 };
 
 /**
- * Match or create tags from tag names
- */
-const matchOrCreateTags = async (tagNames: string[]): Promise<string[]> => {
-	if (!tagNames || tagNames.length === 0) return [];
-
-	try {
-		const existingTags = await getAllTags();
-		const tagIds: string[] = [];
-		const colors = [
-			"#409EFF",
-			"#67C23A",
-			"#E6A23C",
-			"#F56C6C",
-			"#909399",
-			"#B37FEB",
-			"#FF85C0",
-			"#13C2C2",
-			"#52C41A",
-			"#FA8C16",
-		];
-
-		for (const tagName of tagNames) {
-			const normalizedName = tagName.trim().toLowerCase();
-			const existingTag = existingTags.find((tag) => tag.name.toLowerCase() === normalizedName);
-
-			if (existingTag) {
-				tagIds.push(existingTag.id);
-			} else {
-				const color = colors[Math.floor(Math.random() * colors.length)] || "#409EFF";
-				const newTag = await createTag(tagName.trim(), color);
-				tagIds.push(newTag.id);
-			}
-		}
-
-		return tagIds;
-	} catch (error) {
-		console.error("Failed to match or create tags:", error);
-		return [];
-	}
-};
-
-/**
  * Handle send button click
  */
 const handleSend = async () => {
@@ -156,81 +112,21 @@ const handleSend = async () => {
 	}
 
 	try {
-		const events = await parseText(trimmedText);
-		parsedEvents.value = events;
-		originalText.value = trimmedText;
-		showPreview.value = true;
+		// Get existing tags to help LLM suggest better tags
+		const existingTags = await getAllTags();
+		const existingTagNames = existingTags.map((tag) => tag.name);
+
+		const events = await parseText(trimmedText, existingTagNames);
+		emit("showPreview", events, trimmedText);
 		ElMessage.success(`成功解析 ${events.length} 个日程事件`);
+		// Clear input after successful parse
+		inputText.value = "";
+		isExpanded.value = false;
 	} catch (err) {
 		if (err instanceof Error && err.message.includes("无法从文本中识别")) {
 			ElMessage.warning(err.message);
 		}
 	}
-};
-
-/**
- * Handle preview confirmation
- */
-const handlePreviewConfirm = async (events: ParsedEvent[]) => {
-	try {
-		let successCount = 0;
-		for (const event of events) {
-			if (!event.title && !event.startTime) {
-				continue;
-			}
-
-			const startTime =
-				event.startTime instanceof Date
-					? event.startTime
-					: event.startTime
-					? new Date(event.startTime)
-					: new Date();
-
-			const endTime =
-				event.endTime instanceof Date
-					? event.endTime
-					: event.endTime
-					? new Date(event.endTime)
-					: startTime;
-
-			let tagIds: string[] = [];
-			if (event.tags && event.tags.length > 0) {
-				tagIds = await matchOrCreateTags(event.tags);
-			}
-
-			const eventData = {
-				title: event.title || "未命名事件",
-				startTime,
-				endTime,
-				isAllDay: event.isAllDay || false,
-				location: event.location,
-				description: event.description,
-				originalText: originalText.value,
-				tagIds: tagIds.length > 0 ? tagIds : undefined,
-			};
-
-			await createEvent(eventData);
-			successCount++;
-		}
-
-		ElMessage.success(`成功创建 ${successCount} 个日程事件`);
-
-		// Clear input and collapse
-		inputText.value = "";
-		parsedEvents.value = [];
-		originalText.value = "";
-		isExpanded.value = false;
-	} catch (err) {
-		console.error("Failed to create events:", err);
-	}
-};
-
-/**
- * Handle preview cancellation
- */
-const handlePreviewCancel = () => {
-	parsedEvents.value = [];
-	originalText.value = "";
 };
 </script>
 
@@ -299,14 +195,6 @@ const handlePreviewCancel = () => {
 				<span v-else class="send-icon">🚀</span>
 			</button>
 		</div>
-
-		<!-- Preview Dialog -->
-		<PreviewDialog
-			v-model:visible="showPreview"
-			:events="parsedEvents"
-			:original-text="originalText"
-			@confirm="handlePreviewConfirm"
-			@cancel="handlePreviewCancel" />
 	</div>
 </template>
 

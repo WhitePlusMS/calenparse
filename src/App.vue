@@ -10,12 +10,14 @@ import ThemeSettings from "./components/ThemeSettings.vue";
 import ShareDialog from "./components/ShareDialog.vue";
 import TagManager from "./components/TagManager.vue";
 import FloatingInput from "./components/FloatingInput.vue";
+import PreviewDialog from "./components/PreviewDialog.vue";
 import { useEvents } from "@/composables/useEvents";
 import { useTheme } from "@/composables/useTheme";
-import type { CalendarEvent } from "@/types";
+import { useSupabase } from "@/composables/useSupabase";
+import type { CalendarEvent, ParsedEvent } from "@/types";
 
 // Initialize theme on app startup
-const { toggleMode } = useTheme();
+const { toggleMode, theme } = useTheme();
 
 /**
  * Main Application Layout - Minimal Sidebar Design
@@ -27,7 +29,8 @@ const { toggleMode } = useTheme();
  */
 
 // Composables
-const { events, updateEvent, deleteEvent } = useEvents();
+const { events, updateEvent, deleteEvent, createEvent, fetchEvents } = useEvents();
+const { getAllTags, createTag } = useSupabase();
 
 // View mode: 'calendar', 'list', 'statistics'
 const currentViewMode = ref<"calendar" | "list" | "statistics">("calendar");
@@ -47,6 +50,11 @@ const shareDialogVisible = ref(false);
 
 // Tag manager dialog
 const tagManagerDialogVisible = ref(false);
+
+// Preview dialog state
+const previewDialogVisible = ref(false);
+const parsedEvents = ref<ParsedEvent[]>([]);
+const originalText = ref("");
 
 const handleEventClick = (event: CalendarEvent) => {
 	selectedEvent.value = event;
@@ -96,6 +104,119 @@ const handleShareAllEvents = () => {
 		return;
 	}
 	shareDialogVisible.value = true;
+};
+
+// Handle preview from FloatingInput
+const handleShowPreview = (events: ParsedEvent[], text: string) => {
+	parsedEvents.value = events;
+	originalText.value = text;
+	previewDialogVisible.value = true;
+};
+
+// Match tags from tag names (only match existing tags, don't create new ones)
+const matchTags = async (tagNames: string[]): Promise<string[]> => {
+	if (!tagNames || tagNames.length === 0) return [];
+
+	try {
+		const existingTags = await getAllTags();
+		const tagIds: string[] = [];
+
+		for (const tagName of tagNames) {
+			const normalizedName = tagName.trim().toLowerCase();
+			const existingTag = existingTags.find((tag) => tag.name.toLowerCase() === normalizedName);
+
+			if (existingTag) {
+				tagIds.push(existingTag.id);
+			}
+			// Don't create new tags automatically - user can create them manually in PreviewDialog
+		}
+
+		return tagIds;
+	} catch (error) {
+		console.error("Failed to match tags:", error);
+		return [];
+	}
+};
+
+// Handle preview confirmation
+const handlePreviewConfirm = async (events: ParsedEvent[]) => {
+	try {
+		let successCount = 0;
+		for (const event of events) {
+			if (!event.title && !event.startTime) {
+				continue;
+			}
+
+			let startTime =
+				event.startTime instanceof Date
+					? event.startTime
+					: event.startTime
+					? new Date(event.startTime)
+					: new Date();
+
+			let endTime =
+				event.endTime instanceof Date
+					? event.endTime
+					: event.endTime
+					? new Date(event.endTime)
+					: startTime;
+
+			// Ensure end time is after start time
+			if (endTime.getTime() <= startTime.getTime()) {
+				if (event.isAllDay) {
+					// For all-day events, set end time to end of day
+					endTime = new Date(startTime);
+					endTime.setHours(23, 59, 59, 999);
+				} else {
+					// For regular events, add 1 hour
+					endTime = new Date(startTime.getTime() + 60 * 60 * 1000);
+				}
+			}
+
+			let tagIds: string[] = [];
+			if (event.tags && event.tags.length > 0) {
+				tagIds = await matchTags(event.tags);
+			}
+
+			const eventData = {
+				title: event.title || "未命名事件",
+				startTime,
+				endTime,
+				isAllDay: event.isAllDay || false,
+				location: event.location,
+				description: event.description,
+				originalText: originalText.value,
+				tagIds: tagIds.length > 0 ? tagIds : undefined,
+			};
+
+			await createEvent(eventData);
+			successCount++;
+		}
+
+		ElMessage.success(`成功创建 ${successCount} 个日程事件`);
+		previewDialogVisible.value = false;
+		parsedEvents.value = [];
+		originalText.value = "";
+	} catch (err) {
+		console.error("Failed to create events:", err);
+		ElMessage.error("创建事件失败");
+	}
+};
+
+// Handle preview cancellation
+const handlePreviewCancel = () => {
+	previewDialogVisible.value = false;
+	parsedEvents.value = [];
+	originalText.value = "";
+};
+
+// Handle tags changed (refresh all views)
+const handleTagsChanged = async () => {
+	try {
+		await fetchEvents();
+	} catch (error) {
+		console.error("Failed to refresh events after tag change:", error);
+	}
 };
 </script>
 
@@ -163,9 +284,16 @@ const handleShareAllEvents = () => {
 			<div class="sidebar-footer">
 				<div class="sidebar-divider"></div>
 
-				<div class="sidebar-item" @click="toggleMode" title="主题切换">
-					<span class="sidebar-item-icon">🎨</span>
-					<span class="sidebar-item-label">主题</span>
+				<div
+					class="sidebar-item"
+					@click="toggleMode"
+					:title="`切换到${theme.mode === 'light' ? '深色' : '浅色'}模式`">
+					<span class="sidebar-item-icon">{{
+						theme.mode === "light" ? "🌙" : "☀️"
+					}}</span>
+					<span class="sidebar-item-label">{{
+						theme.mode === "light" ? "Dark" : "Light"
+					}}</span>
 				</div>
 
 				<div class="sidebar-item" @click="themeSettingsDialogVisible = true" title="设置">
@@ -225,11 +353,22 @@ const handleShareAllEvents = () => {
 			title="标签管理"
 			width="800px"
 			:close-on-click-modal="false">
-			<TagManager />
+			<TagManager @tags-changed="handleTagsChanged" />
 		</el-dialog>
 
 		<!-- Floating Input - ChatGPT Style -->
-		<FloatingInput />
+		<!-- Only show in calendar and list views -->
+		<FloatingInput
+			v-if="currentViewMode === 'calendar' || currentViewMode === 'list'"
+			@show-preview="handleShowPreview" />
+
+		<!-- Preview Dialog - Independent floating window -->
+		<PreviewDialog
+			v-model:visible="previewDialogVisible"
+			:events="parsedEvents"
+			:original-text="originalText"
+			@confirm="handlePreviewConfirm"
+			@cancel="handlePreviewCancel" />
 	</div>
 </template>
 

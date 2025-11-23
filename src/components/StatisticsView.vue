@@ -442,7 +442,6 @@ const handleRetry = async () => {
 					</div>
 				</div>
 			</div>
-			</div>
 		</div>
 	</div>
 </template>
