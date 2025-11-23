@@ -427,12 +427,27 @@ defineExpose({
 			</button>
 		</div>
 
-		<div v-if="loading" class="loading-overlay">
-			<div class="loading-spinner">
-				<div class="spinner-ring"></div>
-				<div class="spinner-ring"></div>
-				<div class="spinner-ring"></div>
-				<div class="loading-text">加载日程中...</div>
+		<!-- Skeleton Loading State -->
+		<div v-if="loading" class="skeleton-loader">
+			<div class="skeleton-header">
+				<div class="skeleton-bar skeleton-bar--title"></div>
+				<div class="skeleton-buttons">
+					<div class="skeleton-bar skeleton-bar--button"></div>
+					<div class="skeleton-bar skeleton-bar--button"></div>
+					<div class="skeleton-bar skeleton-bar--button"></div>
+				</div>
+			</div>
+			<div class="skeleton-calendar">
+				<div class="skeleton-week-header">
+					<div v-for="i in 7" :key="i" class="skeleton-day-name"></div>
+				</div>
+				<div class="skeleton-days">
+					<div v-for="i in 35" :key="i" class="skeleton-day">
+						<div class="skeleton-day-number"></div>
+						<div v-if="i % 3 === 0" class="skeleton-event"></div>
+						<div v-if="i % 5 === 0" class="skeleton-event"></div>
+					</div>
+				</div>
 			</div>
 		</div>
 
@@ -671,63 +686,104 @@ defineExpose({
 	font-weight: 600;
 }
 
-.loading-overlay {
-	position: absolute;
-	top: 0;
-	left: 0;
-	right: 0;
-	bottom: 0;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	background: var(--bg-secondary);
-	opacity: 0.95;
-	backdrop-filter: blur(4px);
-	z-index: 10;
+/* Skeleton Loader Styles */
+.skeleton-loader {
 	animation: fadeIn 0.3s ease-out;
 }
 
-.loading-spinner {
+.skeleton-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: var(--spacing-lg);
+	padding: var(--spacing-md);
+	background: var(--bg-secondary);
+	border-radius: var(--radius-lg);
+}
+
+.skeleton-buttons {
+	display: flex;
+	gap: var(--spacing-sm);
+}
+
+.skeleton-bar {
+	background: linear-gradient(90deg, var(--bg-hover) 25%, var(--bg-color) 50%, var(--bg-hover) 75%);
+	background-size: 200% 100%;
+	animation: shimmer 1.5s infinite;
+	border-radius: var(--radius-md);
+}
+
+.skeleton-bar--title {
+	width: 200px;
+	height: 32px;
+}
+
+.skeleton-bar--button {
+	width: 80px;
+	height: 36px;
+}
+
+.skeleton-calendar {
+	background: var(--bg-secondary);
+	border-radius: var(--radius-lg);
+	padding: var(--spacing-md);
+}
+
+.skeleton-week-header {
+	display: grid;
+	grid-template-columns: repeat(7, 1fr);
+	gap: var(--spacing-sm);
+	margin-bottom: var(--spacing-md);
+}
+
+.skeleton-day-name {
+	height: 24px;
+	background: linear-gradient(90deg, var(--bg-hover) 25%, var(--bg-color) 50%, var(--bg-hover) 75%);
+	background-size: 200% 100%;
+	animation: shimmer 1.5s infinite;
+	border-radius: var(--radius-sm);
+}
+
+.skeleton-days {
+	display: grid;
+	grid-template-columns: repeat(7, 1fr);
+	gap: var(--spacing-sm);
+}
+
+.skeleton-day {
+	min-height: 100px;
+	padding: var(--spacing-sm);
+	background: var(--bg-hover);
+	border-radius: var(--radius-md);
 	display: flex;
 	flex-direction: column;
-	align-items: center;
-	gap: 20px;
+	gap: var(--spacing-xs);
 }
 
-.spinner-ring {
-	width: 60px;
-	height: 60px;
-	border: 4px solid #e4e7ed;
-	border-top-color: #409eff;
-	border-radius: 50%;
-	animation: spin 1s linear infinite;
-	position: absolute;
+.skeleton-day-number {
+	width: 24px;
+	height: 24px;
+	background: linear-gradient(90deg, var(--bg-color) 25%, var(--border-light) 50%, var(--bg-color) 75%);
+	background-size: 200% 100%;
+	animation: shimmer 1.5s infinite;
+	border-radius: var(--radius-full);
 }
 
-.spinner-ring:nth-child(2) {
-	width: 50px;
-	height: 50px;
-	border-top-color: #67c23a;
-	animation-delay: 0.1s;
-}
-
-.spinner-ring:nth-child(3) {
-	width: 40px;
+.skeleton-event {
 	height: 40px;
-	border-top-color: #e6a23c;
-	animation-delay: 0.2s;
+	background: linear-gradient(90deg, var(--bg-color) 25%, var(--border-light) 50%, var(--bg-color) 75%);
+	background-size: 200% 100%;
+	animation: shimmer 1.5s infinite;
+	border-radius: var(--radius-md);
+	margin-top: var(--spacing-xs);
 }
 
-.loading-text {
-	margin-top: 80px;
-	font-size: 14px;
-	color: #606266;
-	font-weight: 500;
-}
-
-@keyframes spin {
-	to {
-		transform: rotate(360deg);
+@keyframes shimmer {
+	0% {
+		background-position: 200% 0;
+	}
+	100% {
+		background-position: -200% 0;
 	}
 }
 
@@ -769,42 +825,69 @@ defineExpose({
 /* FullCalendar custom styles */
 :deep(.fc) {
 	font-family: inherit;
+	background: var(--bg-secondary);
+	border-radius: var(--radius-xl);
 }
 
 :deep(.fc-toolbar-title) {
-	font-size: 1.5em;
-	font-weight: 600;
+	font-size: var(--font-size-3xl);
+	font-weight: var(--font-weight-semibold);
+	color: var(--text-primary);
 }
 
 :deep(.fc-button) {
-	background-color: #409eff;
-	border-color: #409eff;
+	background: var(--primary-color);
+	border-color: var(--primary-color);
 	text-transform: none;
-	padding: 6px 12px;
+	padding: var(--spacing-sm) var(--spacing-md);
+	border-radius: var(--radius-md);
+	font-weight: var(--font-weight-medium);
+	transition: all 0.2s ease;
+	box-shadow: 0 2px 4px var(--shadow);
 }
 
 :deep(.fc-button:hover) {
-	background-color: #66b1ff;
-	border-color: #66b1ff;
+	background: var(--primary-light);
+	border-color: var(--primary-light);
+	transform: translateY(-1px);
+	box-shadow: 0 4px 8px var(--shadow);
 }
 
 :deep(.fc-button:disabled) {
-	background-color: #a0cfff;
-	border-color: #a0cfff;
+	background: var(--border-color);
+	border-color: var(--border-color);
+	opacity: 0.6;
+	cursor: not-allowed;
 }
 
 :deep(.fc-event) {
 	cursor: pointer;
-	border-radius: 4px;
-	padding: 2px 4px;
-	margin-bottom: 2px;
-	border-left: 3px solid #409eff;
-	background-color: #ecf5ff;
-	border-color: #409eff;
+	border-radius: var(--radius-lg);
+	padding: var(--spacing-xs) var(--spacing-sm);
+	margin-bottom: var(--spacing-xs);
+	border: none;
+	background: linear-gradient(135deg, #ecf5ff 0%, #d9ecff 100%);
+	box-shadow: 0 2px 4px rgba(64, 158, 255, 0.1);
+	transition: all 0.2s ease;
+	position: relative;
+	overflow: hidden;
+}
+
+:deep(.fc-event::before) {
+	content: "";
+	position: absolute;
+	left: 0;
+	top: 0;
+	bottom: 0;
+	width: 4px;
+	background: var(--primary-color);
+	border-radius: var(--radius-lg) 0 0 var(--radius-lg);
 }
 
 :deep(.fc-event:hover) {
-	background-color: #d9ecff;
+	background: linear-gradient(135deg, #d9ecff 0%, #c6e2ff 100%);
+	box-shadow: 0 4px 12px rgba(64, 158, 255, 0.2);
+	transform: translateY(-2px);
 }
 
 /* Completed Event Styles */
@@ -838,60 +921,106 @@ defineExpose({
 :deep(.fc-event-main-frame) {
 	display: flex;
 	flex-direction: column;
-	gap: 2px;
+	gap: var(--spacing-xs);
+	padding-left: var(--spacing-sm);
 }
 
 :deep(.fc-event-time) {
-	font-size: 11px;
-	font-weight: 600;
-	color: #409eff;
+	font-size: var(--font-size-xs);
+	font-weight: var(--font-weight-semibold);
+	color: var(--primary-color);
+	display: flex;
+	align-items: center;
+	gap: var(--spacing-xs);
+}
+
+:deep(.fc-event-time::before) {
+	content: "🕐";
+	font-size: 12px;
 }
 
 :deep(.fc-event-title) {
-	font-size: 13px;
-	font-weight: 500;
-	color: #303133;
+	font-size: var(--font-size-sm);
+	font-weight: var(--font-weight-medium);
+	color: var(--text-primary);
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
+	line-height: var(--line-height-normal);
 }
 
 :deep(.fc-event-location) {
-	font-size: 11px;
-	color: #606266;
+	font-size: var(--font-size-xs);
+	color: var(--text-secondary);
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
+	display: flex;
+	align-items: center;
+	gap: 2px;
 }
 
 :deep(.fc-event-tags) {
 	display: flex;
 	flex-wrap: wrap;
-	gap: 4px;
-	margin-top: 4px;
+	gap: var(--spacing-xs);
+	margin-top: var(--spacing-xs);
 }
 
 :deep(.fc-event-tag) {
 	display: inline-block;
-	padding: 2px 6px;
-	border-radius: 3px;
+	padding: 2px var(--spacing-sm);
+	border-radius: var(--radius-sm);
 	font-size: 10px;
-	font-weight: 500;
+	font-weight: var(--font-weight-medium);
 	color: white;
 	white-space: nowrap;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 :deep(.fc-daygrid-day-number) {
-	padding: 8px;
-	font-size: 14px;
+	padding: var(--spacing-sm);
+	font-size: var(--font-size-base);
+	font-weight: var(--font-weight-medium);
+	color: var(--text-secondary);
 }
 
+/* Enhanced today's date styling */
 :deep(.fc-day-today) {
-	background-color: #f0f9ff !important;
+	background: linear-gradient(135deg, #f0f9ff 0%, #e6f4ff 100%) !important;
+	position: relative;
+}
+
+:deep(.fc-day-today .fc-daygrid-day-number) {
+	background: var(--primary-color);
+	color: white;
+	border-radius: var(--radius-full);
+	width: 32px;
+	height: 32px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-weight: var(--font-weight-bold);
+	box-shadow: 0 2px 8px rgba(64, 158, 255, 0.3);
+}
+
+:deep(.fc-day-today::after) {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border: 2px solid var(--primary-color);
+	border-radius: var(--radius-md);
+	pointer-events: none;
 }
 
 :deep(.fc-daygrid-day-frame) {
 	min-height: 100px;
+	padding: var(--spacing-xs);
+	transition: background-color 0.2s ease;
+}
+
+:deep(.fc-daygrid-day-frame:hover) {
+	background-color: var(--bg-hover);
 }
 
 /* Time Grid View Styles */
@@ -1076,24 +1205,27 @@ defineExpose({
 		display: none; /* Hide location on very small screens */
 	}
 
-	.spinner-ring {
-		width: 50px;
-		height: 50px;
+	.skeleton-header {
+		flex-direction: column;
+		gap: var(--spacing-md);
 	}
 
-	.spinner-ring:nth-child(2) {
-		width: 40px;
-		height: 40px;
+	.skeleton-bar--title {
+		width: 150px;
+		height: 28px;
 	}
 
-	.spinner-ring:nth-child(3) {
-		width: 30px;
+	.skeleton-bar--button {
+		width: 60px;
+		height: 32px;
+	}
+
+	.skeleton-day {
+		min-height: 60px;
+	}
+
+	.skeleton-event {
 		height: 30px;
-	}
-
-	.loading-text {
-		margin-top: 70px;
-		font-size: 13px;
 	}
 }
 </style>

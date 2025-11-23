@@ -9,6 +9,7 @@ import ImportExport from "./components/ImportExport.vue";
 import ThemeSettings from "./components/ThemeSettings.vue";
 import ShareDialog from "./components/ShareDialog.vue";
 import TagManager from "./components/TagManager.vue";
+import FloatingInput from "./components/FloatingInput.vue";
 import { useEvents } from "@/composables/useEvents";
 import { useTheme } from "@/composables/useTheme";
 import type { CalendarEvent } from "@/types";
@@ -226,6 +227,9 @@ const handleShareAllEvents = () => {
 			:close-on-click-modal="false">
 			<TagManager />
 		</el-dialog>
+
+		<!-- Floating Input - ChatGPT Style -->
+		<FloatingInput />
 	</div>
 </template>
 
