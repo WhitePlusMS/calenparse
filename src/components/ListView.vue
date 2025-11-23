@@ -41,20 +41,38 @@ const {
 
 // Import useSupabase for tags
 import { useSupabase } from "@/composables/useSupabase";
-import { onMounted } from "vue";
+import { onMounted, onUnmounted } from "vue";
 import type { Tag } from "@/types";
 import ErrorState from "./ErrorState.vue";
+
+// Import countdown functionality
+import CountdownIndicator from "./CountdownIndicator.vue";
+import { useCountdownSettings } from "@/composables/useCountdownSettings";
+import { useCountdown } from "@/composables/useCountdown";
 
 const { getAllTags } = useSupabase();
 const availableTags = ref<Tag[]>([]);
 
-// Load tags on mount
+// Countdown settings and auto-update
+const { settings: countdownSettings } = useCountdownSettings();
+const { startAutoUpdate, stopAutoUpdate } = useCountdown();
+
+// Load tags on mount and start countdown auto-update
+// Requirement 5.4, 5.5, 5.6, 5.7: Auto-update countdown
 onMounted(async () => {
 	try {
 		availableTags.value = await getAllTags();
 	} catch (error) {
 		console.error("Failed to load tags:", error);
 	}
+
+	// Start countdown auto-update
+	startAutoUpdate();
+});
+
+// Stop countdown auto-update on unmount
+onUnmounted(() => {
+	stopAutoUpdate();
 });
 
 // Get tag by ID
@@ -66,11 +84,19 @@ const getTagById = (id: string): Tag | undefined => {
 const showBatchEditDialog = ref(false);
 
 /**
- * Sorted events by time order (from nearest to farthest)
+ * Sorted events by completion status and time order
  * Requirement 8.2: Display events in time order (from nearest to farthest)
+ * Requirement 1.1: Uncompleted events before completed events
+ * Requirement 1.2: Within uncompleted events, sort by start time ascending
+ * Requirement 1.3: Within completed events, sort by start time ascending
  */
 const sortedEvents = computed(() => {
 	return [...events.value].sort((a, b) => {
+		// First sort by completion status: uncompleted before completed
+		if (a.isCompleted !== b.isCompleted) {
+			return a.isCompleted ? 1 : -1;
+		}
+		// Then sort by start time: earlier events first
 		return a.startTime.getTime() - b.startTime.getTime();
 	});
 });
@@ -242,10 +268,11 @@ const isToday = (date: Date): boolean => {
 };
 
 /**
- * Check if event is in the past
+ * Check if event is in the past (已结束)
+ * 只有当结束时间已过时才算过去，正在进行中的日程不算
  */
-const isPast = (date: Date): boolean => {
-	return dayjs(date).isBefore(dayjs(), "day");
+const isPast = (event: CalendarEvent): boolean => {
+	return dayjs(event.endTime).isBefore(dayjs());
 };
 
 /**
@@ -365,7 +392,7 @@ const handleRetry = async () => {
 				class="event-item"
 				:class="{
 					'event-item--today': isToday(event.startTime),
-					'event-item--past': isPast(event.startTime),
+					'event-item--past': isPast(event),
 					'event-item--upcoming': isUpcoming(event.startTime),
 					'event-item--selected': isSelectionMode && isSelected(event.id),
 					'event-item--selectable': isSelectionMode,
@@ -411,6 +438,12 @@ const handleRetry = async () => {
 					<div class="event-header">
 						<h3 class="event-title">{{ event.title }}</h3>
 						<div class="event-badges">
+							<!-- Countdown Indicator -->
+							<!-- Requirement 2.1, 2.2, 2.3, 2.4, 3.1, 3.2, 3.3, 3.4, 6.2 -->
+							<CountdownIndicator
+								v-if="countdownSettings.enabled"
+								:event="event"
+								:unit="countdownSettings.unit" />
 							<span v-if="event.isCompleted" class="badge badge--completed"
 								>已完成</span
 							>

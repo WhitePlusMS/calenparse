@@ -1,14 +1,17 @@
 <script setup lang="ts">
 import { useTheme } from "@/composables/useTheme";
+import { useCountdownSettings } from "@/composables/useCountdownSettings";
 import { ElMessage } from "element-plus";
 
 /**
  * Theme Settings Component
  * Implements requirements 14.1-14.6
  * Task 27: Theme customization functionality
+ * Task 6.1: Countdown settings (Requirements 6.1, 6.2, 6.3)
  */
 
 const { theme, setMode, setPrimaryColor, resetTheme, toggleMode } = useTheme();
+const { settings: countdownSettings, updateSettings: updateCountdownSettings } = useCountdownSettings();
 
 // Predefined color options
 const colorPresets = [
@@ -74,6 +77,53 @@ const handleReset = () => {
 				<span class="color-value">{{ theme.primaryColor }}</span>
 			</div>
 			<p class="setting-hint">主色调用于标题栏和主要按钮</p>
+		</div>
+
+		<!-- Countdown Settings -->
+		<div class="setting-section">
+			<h3 class="section-title">⏱️ 倒计时设置</h3>
+
+			<!-- Enable/Disable Toggle -->
+			<div class="countdown-toggle">
+				<label class="toggle-label">
+					<input
+						type="checkbox"
+						:checked="countdownSettings.enabled"
+						class="toggle-checkbox"
+						@change="(e) => updateCountdownSettings({ enabled: (e.target as HTMLInputElement).checked })" />
+					<span class="toggle-switch"></span>
+					<span class="toggle-text">显示倒计时</span>
+				</label>
+			</div>
+			<p class="setting-hint">在列表视图中显示日程的倒计时信息</p>
+
+			<!-- Unit Selector -->
+			<div v-if="countdownSettings.enabled" class="unit-selector">
+				<label class="unit-label">倒计时单位：</label>
+				<div class="unit-options">
+					<button
+						:class="['unit-button', { active: countdownSettings.unit === 'day' }]"
+						@click="updateCountdownSettings({ unit: 'day' })">
+						<span class="unit-icon">📅</span>
+						<span class="unit-name">天</span>
+					</button>
+					<button
+						:class="['unit-button', { active: countdownSettings.unit === 'hour' }]"
+						@click="updateCountdownSettings({ unit: 'hour' })">
+						<span class="unit-icon">⏰</span>
+						<span class="unit-name">小时</span>
+					</button>
+					<button
+						:class="[
+							'unit-button',
+							{ active: countdownSettings.unit === 'minute' },
+						]"
+						@click="updateCountdownSettings({ unit: 'minute' })">
+						<span class="unit-icon">⏱️</span>
+						<span class="unit-name">分钟</span>
+					</button>
+				</div>
+			</div>
 		</div>
 
 		<!-- Preview -->
@@ -302,6 +352,117 @@ const handleReset = () => {
 	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
+/* Countdown Settings */
+.countdown-toggle {
+	margin-bottom: 16px;
+}
+
+.toggle-label {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	cursor: pointer;
+	user-select: none;
+}
+
+.toggle-checkbox {
+	display: none;
+}
+
+.toggle-switch {
+	position: relative;
+	width: 50px;
+	height: 28px;
+	background: var(--border-color);
+	border-radius: 14px;
+	transition: all 0.3s ease;
+}
+
+.toggle-switch::after {
+	content: "";
+	position: absolute;
+	top: 3px;
+	left: 3px;
+	width: 22px;
+	height: 22px;
+	background: white;
+	border-radius: 50%;
+	transition: all 0.3s ease;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.toggle-checkbox:checked + .toggle-switch {
+	background: var(--primary-color);
+}
+
+.toggle-checkbox:checked + .toggle-switch::after {
+	left: 25px;
+}
+
+.toggle-text {
+	font-size: 14px;
+	font-weight: 500;
+	color: var(--text-secondary);
+}
+
+.unit-selector {
+	margin-top: 16px;
+}
+
+.unit-label {
+	display: block;
+	margin-bottom: 12px;
+	font-size: 14px;
+	font-weight: 500;
+	color: var(--text-secondary);
+}
+
+.unit-options {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 12px;
+}
+
+.unit-button {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 6px;
+	padding: 16px 12px;
+	border: 2px solid var(--border-color);
+	background: var(--bg-secondary);
+	border-radius: 8px;
+	cursor: pointer;
+	transition: all 0.3s ease;
+}
+
+.unit-button:hover {
+	border-color: var(--primary-color);
+	background: var(--bg-hover);
+	transform: translateY(-2px);
+	box-shadow: 0 4px 12px var(--shadow);
+}
+
+.unit-button.active {
+	border-color: var(--primary-color);
+	background: var(--bg-hover);
+	box-shadow: 0 0 0 3px var(--shadow);
+}
+
+.unit-icon {
+	font-size: 24px;
+}
+
+.unit-name {
+	font-size: 13px;
+	font-weight: 500;
+	color: var(--text-secondary);
+}
+
+.unit-button.active .unit-name {
+	color: var(--primary-color);
+}
+
 /* Actions */
 .setting-actions {
 	display: flex;
@@ -351,6 +512,22 @@ const handleReset = () => {
 	.color-presets {
 		grid-template-columns: repeat(auto-fill, minmax(45px, 1fr));
 		gap: 8px;
+	}
+
+	.unit-options {
+		gap: 8px;
+	}
+
+	.unit-button {
+		padding: 12px 8px;
+	}
+
+	.unit-icon {
+		font-size: 20px;
+	}
+
+	.unit-name {
+		font-size: 12px;
 	}
 
 	.setting-actions {
