@@ -1,0 +1,25 @@
+import { defineConfig } from "vitest/config";
+import vue from "@vitejs/plugin-vue";
+import { fileURLToPath } from "node:url";
+
+export default defineConfig({
+	plugins: [vue()],
+	test: {
+		globals: true,
+		environment: "jsdom", // Better compatibility with Element Plus
+		setupFiles: ["./src/test/setup.ts"],
+		include: ["**/*.{test,spec}.{js,ts,jsx,tsx}"],
+		exclude: ["node_modules", "dist", ".kiro"],
+		css: true, // Process CSS in tests
+		coverage: {
+			provider: "v8",
+			reporter: ["text", "json", "html"],
+			exclude: ["node_modules/", "src/test/", "**/*.spec.ts", "**/*.test.ts"],
+		},
+	},
+	resolve: {
+		alias: {
+			"@": fileURLToPath(new URL("./src", import.meta.url)),
+		},
+	},
+});
