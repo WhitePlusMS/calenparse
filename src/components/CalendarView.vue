@@ -8,6 +8,7 @@ import type { CalendarOptions, EventClickArg } from "@fullcalendar/core";
 import type { CalendarEvent, Tag } from "@/types";
 import { useEvents } from "@/composables/useEvents";
 import { useSupabase } from "@/composables/useSupabase";
+import ErrorState from "./ErrorState.vue";
 
 /**
  * CalendarView Component
@@ -24,7 +25,7 @@ const emit = defineEmits<{
 }>();
 
 // Composables
-const { events, fetchEvents, loading } = useEvents();
+const { events, fetchEvents, loading, error, clearError } = useEvents();
 const { getAllTags } = useSupabase();
 
 // State
@@ -333,6 +334,16 @@ function goNext() {
 	}
 }
 
+/**
+ * Handle retry after error
+ * Requirement 13.3: Error state with retry button
+ */
+const handleRetry = async () => {
+	clearError();
+	await fetchEvents();
+	await loadTags();
+};
+
 // Expose methods for parent component
 defineExpose({
 	goToToday,
@@ -427,8 +438,13 @@ defineExpose({
 			</button>
 		</div>
 
+		<!-- Error State -->
+		<!-- Requirement 13.3: Error state with retry button -->
+		<ErrorState v-if="error && !loading" title="加载日历失败" :message="error" @retry="handleRetry" />
+
 		<!-- Skeleton Loading State -->
-		<div v-if="loading" class="skeleton-loader">
+		<!-- Requirement 13.1: Skeleton screen loading animation -->
+		<div v-else-if="loading" class="skeleton-loader">
 			<div class="skeleton-header">
 				<div class="skeleton-bar skeleton-bar--title"></div>
 				<div class="skeleton-buttons">
@@ -451,18 +467,23 @@ defineExpose({
 			</div>
 		</div>
 
-		<!-- Requirement 3.1: Display newly created events in calendar view -->
-		<!-- Requirement 3.5: Day view with hourly time slots -->
-		<!-- Requirement 3.6: Week view showing 7 days -->
-		<!-- Requirement 3.7: Month view display -->
-		<!-- Requirement 3.8: Year view showing schedule density -->
-		<FullCalendar ref="calendarRef" :options="calendarOptions" />
+		<!-- Calendar Content -->
+		<template v-else>
+			<!-- Requirement 3.1: Display newly created events in calendar view -->
+			<!-- Requirement 3.5: Day view with hourly time slots -->
+			<!-- Requirement 3.6: Week view showing 7 days -->
+			<!-- Requirement 3.7: Month view display -->
+			<!-- Requirement 3.8: Year view showing schedule density -->
+			<FullCalendar ref="calendarRef" :options="calendarOptions" />
 
-		<div v-if="!loading && events.length === 0" class="empty-state">
-			<div class="empty-icon">📅</div>
-			<p class="empty-title">暂无日程事件</p>
-			<p class="empty-hint">使用上方输入框解析通告文本来创建日程</p>
-		</div>
+			<!-- Empty State -->
+			<!-- Requirement 13.2: Friendly empty state with illustration and guidance -->
+			<div v-if="events.length === 0" class="empty-state">
+				<div class="empty-icon">📅</div>
+				<p class="empty-title">暂无日程事件</p>
+				<p class="empty-hint">使用上方输入框解析通告文本来创建日程</p>
+			</div>
+		</template>
 	</div>
 </template>
 
@@ -586,46 +607,58 @@ defineExpose({
 	gap: 8px;
 }
 
+/* Requirement 14.1: Rounded rectangles with soft background */
+/* Requirement 14.2: Text color matches background */
+/* Requirement 14.3: Appropriate spacing */
+/* Requirement 14.4: Hover effect */
 .tag-filter-item {
 	display: flex;
 	align-items: center;
-	gap: 6px;
-	padding: 6px 12px;
+	gap: var(--spacing-sm);
+	padding: var(--spacing-sm) var(--spacing-md);
 	border: 2px solid;
-	border-radius: 6px;
+	border-radius: var(--radius-lg);
 	cursor: pointer;
 	transition: all 0.2s ease;
-	font-size: 13px;
-	font-weight: 500;
+	font-size: var(--font-size-sm);
+	font-weight: var(--font-weight-semibold);
+	background-color: var(--bg-secondary);
 }
 
 .tag-filter-item:hover {
-	transform: translateY(-1px);
-	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+	transform: translateY(-2px);
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+	filter: brightness(1.05);
 }
 
 .tag-filter-item.active {
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+	transform: translateY(-1px);
 }
 
 .tag-color-dot {
-	width: 10px;
-	height: 10px;
-	border-radius: 50%;
+	width: 12px;
+	height: 12px;
+	border-radius: var(--radius-full);
 	flex-shrink: 0;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+	transition: all 0.2s ease;
 }
 
 .tag-filter-item.active .tag-color-dot {
 	background-color: white !important;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .tag-name {
 	flex: 1;
+	line-height: var(--line-height-tight);
 }
 
 .tag-check {
-	font-size: 14px;
-	font-weight: 600;
+	font-size: var(--font-size-lg);
+	font-weight: var(--font-weight-bold);
+	line-height: 1;
 }
 
 /* View Switcher Styles */
@@ -976,15 +1009,26 @@ defineExpose({
 	margin-top: var(--spacing-xs);
 }
 
+/* Requirement 14.1, 14.2: Rounded rectangles with matching text colors */
 :deep(.fc-event-tag) {
-	display: inline-block;
+	display: inline-flex;
+	align-items: center;
 	padding: 2px var(--spacing-sm);
-	border-radius: var(--radius-sm);
+	border-radius: var(--radius-md);
 	font-size: 10px;
-	font-weight: var(--font-weight-medium);
+	font-weight: var(--font-weight-semibold);
 	color: white;
 	white-space: nowrap;
-	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+	transition: all 0.2s ease;
+	border: none;
+}
+
+/* Requirement 14.4: Hover effect for tags */
+:deep(.fc-event-tag:hover) {
+	transform: translateY(-1px);
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+	filter: brightness(1.1);
 }
 
 /* Day numbers - Requirement 12.1: Clear typography */

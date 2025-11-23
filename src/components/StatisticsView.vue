@@ -5,6 +5,7 @@ import { Chart as ChartJS, Title, Tooltip, Legend, BarElement, CategoryScale, Li
 import { useEvents } from "@/composables/useEvents";
 import { useStatistics } from "@/composables/useStatistics";
 import { useTheme } from "@/composables/useTheme";
+import ErrorState from "./ErrorState.vue";
 import dayjs from "dayjs";
 
 /**
@@ -17,7 +18,7 @@ import dayjs from "dayjs";
 ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale, ArcElement);
 
 // Composables
-const { events } = useEvents();
+const { events, loading, error, clearError, fetchEvents } = useEvents();
 const { theme } = useTheme();
 
 // Date range selection
@@ -315,12 +316,36 @@ const shortcuts = [
 const clearDateRange = () => {
 	dateRange.value = null;
 };
+
+/**
+ * Handle retry after error
+ * Requirement 13.3: Error state with retry button
+ */
+const handleRetry = async () => {
+	clearError();
+	await fetchEvents();
+};
 </script>
 
 <template>
 	<div class="statistics-view">
+		<!-- Error State -->
+		<!-- Requirement 13.3: Error state with retry button -->
+		<ErrorState v-if="error && !loading" title="加载统计失败" :message="error" @retry="handleRetry" />
+
+		<!-- Loading State -->
+		<!-- Requirement 13.4: Progress indicator -->
+		<div v-else-if="loading" class="loading-overlay">
+			<div class="loading-spinner">
+				<div class="spinner-ring"></div>
+				<div class="spinner-ring"></div>
+				<div class="spinner-ring"></div>
+				<div class="loading-text">加载统计数据中...</div>
+			</div>
+		</div>
+
 		<!-- Header with filters -->
-		<div class="statistics-header">
+		<div v-else class="statistics-header">
 			<div class="statistics-summary">
 				<div class="summary-card">
 					<div class="summary-icon">📊</div>
@@ -365,6 +390,7 @@ const clearDateRange = () => {
 		</div>
 
 		<!-- Empty state -->
+		<!-- Requirement 13.2: Friendly empty state with illustration and guidance -->
 		<div v-if="filteredEvents.length === 0" class="empty-state">
 			<div class="empty-icon">📭</div>
 			<p class="empty-text">暂无事件数据</p>
@@ -416,6 +442,7 @@ const clearDateRange = () => {
 					</div>
 				</div>
 			</div>
+			</div>
 		</div>
 	</div>
 </template>
@@ -426,6 +453,68 @@ const clearDateRange = () => {
 	background: var(--bg-secondary);
 	border-radius: 12px;
 	min-height: 600px;
+}
+
+/* Loading State */
+.loading-overlay {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 400px;
+	animation: fadeIn 0.3s ease-out;
+}
+
+.loading-spinner {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 20px;
+}
+
+.spinner-ring {
+	width: 60px;
+	height: 60px;
+	border: 4px solid var(--border-light);
+	border-top-color: var(--primary-color);
+	border-radius: 50%;
+	animation: spin 1s linear infinite;
+	position: absolute;
+}
+
+.spinner-ring:nth-child(2) {
+	width: 50px;
+	height: 50px;
+	border-top-color: var(--primary-light);
+	animation-delay: 0.1s;
+}
+
+.spinner-ring:nth-child(3) {
+	width: 40px;
+	height: 40px;
+	border-top-color: var(--primary-dark);
+	animation-delay: 0.2s;
+}
+
+.loading-text {
+	margin-top: 80px;
+	font-size: 14px;
+	color: var(--text-secondary);
+	font-weight: 500;
+}
+
+@keyframes spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
 }
 
 /* Header */
@@ -483,20 +572,24 @@ const clearDateRange = () => {
 	width: 100%;
 }
 
+/* Typography hierarchy - Requirement 12.1: Font sizes distinguish content */
 .summary-label {
-	font-size: 14px;
-	font-weight: 600;
+	font-size: var(--font-size-sm);
+	font-weight: var(--font-weight-semibold);
 	color: var(--text-secondary);
-	margin-bottom: 8px;
+	margin-bottom: var(--spacing-sm);
 	text-transform: uppercase;
-	letter-spacing: 0.5px;
+	letter-spacing: 0.8px;
+	line-height: var(--line-height-tight);
 }
 
+/* Primary metric - Requirement 12.2: Color contrast, 12.4: Visual weight */
 .summary-value {
-	font-size: 48px;
-	font-weight: 700;
+	font-size: var(--font-size-5xl);
+	font-weight: var(--font-weight-bold);
 	color: var(--primary-color);
-	line-height: 1;
+	line-height: var(--line-height-tight);
+	letter-spacing: -1px;
 }
 
 /* Filters */
@@ -518,26 +611,28 @@ const clearDateRange = () => {
 	gap: 14px;
 }
 
+/* Filter labels - Requirement 12.1: Clear typography */
 .filter-label {
-	font-size: 14px;
-	font-weight: 700;
+	font-size: var(--font-size-sm);
+	font-weight: var(--font-weight-bold);
 	color: var(--text-primary);
 	white-space: nowrap;
 	letter-spacing: 0.3px;
+	line-height: var(--line-height-normal);
 }
 
-/* Empty State */
+/* Empty State - Requirement 12.1, 12.2, 12.3: Clear hierarchy */
 .empty-state {
 	text-align: center;
-	padding: 100px 20px;
+	padding: var(--spacing-2xl) var(--spacing-xl);
 	background: var(--bg-color);
-	border-radius: 16px;
+	border-radius: var(--radius-2xl);
 	border: 2px dashed var(--border-light);
 }
 
 .empty-icon {
 	font-size: 96px;
-	margin-bottom: 24px;
+	margin-bottom: var(--spacing-xl);
 	opacity: 0.6;
 	animation: emptyFloat 3s ease-in-out infinite;
 }
@@ -552,18 +647,21 @@ const clearDateRange = () => {
 	}
 }
 
+/* Primary message - Requirement 12.1: Larger font, 12.4: Visual weight */
 .empty-text {
-	font-size: 20px;
-	font-weight: 700;
+	font-size: var(--font-size-2xl);
+	font-weight: var(--font-weight-bold);
 	color: var(--text-primary);
-	margin: 0 0 12px 0;
+	margin: 0 0 var(--spacing-md) 0;
+	line-height: var(--line-height-tight);
 }
 
+/* Secondary message - Requirement 12.1: Smaller font */
 .empty-hint {
-	font-size: 15px;
+	font-size: var(--font-size-base);
 	color: var(--text-secondary);
 	margin: 0;
-	line-height: 1.6;
+	line-height: var(--line-height-relaxed);
 }
 
 /* Charts */
@@ -597,35 +695,38 @@ const clearDateRange = () => {
 	height: 380px;
 }
 
-/* Location Details */
+/* Location Details - Requirement 12.3: Whitespace separation */
 .location-details {
-	margin-top: 32px;
-	padding-top: 32px;
+	margin-top: var(--spacing-xl);
+	padding-top: var(--spacing-xl);
 	border-top: 2px solid var(--border-light);
 }
 
+/* Section title - Requirement 12.1: Font hierarchy */
 .details-title {
-	font-size: 17px;
-	font-weight: 700;
+	font-size: var(--font-size-xl);
+	font-weight: var(--font-weight-bold);
 	color: var(--text-primary);
-	margin: 0 0 20px 0;
-	letter-spacing: 0.3px;
+	margin: 0 0 var(--spacing-lg) 0;
+	letter-spacing: -0.3px;
+	line-height: var(--line-height-tight);
 }
 
 .details-table {
 	display: flex;
 	flex-direction: column;
-	gap: 10px;
+	gap: var(--spacing-sm);
 }
 
+/* Details row - Requirement 12.3: Adequate padding, 12.5: Limited density */
 .details-row {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
-	padding: 16px 20px;
+	padding: var(--spacing-lg) var(--spacing-xl);
 	background: var(--bg-secondary);
 	border: 1px solid var(--border-light);
-	border-radius: 12px;
+	border-radius: var(--radius-xl);
 	transition: all 0.2s ease;
 }
 
@@ -639,42 +740,48 @@ const clearDateRange = () => {
 .details-location {
 	display: flex;
 	align-items: center;
-	gap: 14px;
+	gap: var(--spacing-md);
 	flex: 1;
 }
 
 .location-badge {
 	width: 20px;
 	height: 20px;
-	border-radius: 6px;
+	border-radius: var(--radius-md);
 	flex-shrink: 0;
 	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
+/* Location name - Requirement 12.1: Clear typography */
 .location-name {
-	font-size: 15px;
-	font-weight: 600;
+	font-size: var(--font-size-base);
+	font-weight: var(--font-weight-semibold);
 	color: var(--text-primary);
+	line-height: var(--line-height-normal);
 }
 
 .details-stats {
 	display: flex;
 	align-items: center;
-	gap: 20px;
+	gap: var(--spacing-lg);
 }
 
+/* Secondary stat - Requirement 12.1: Smaller font */
 .stats-count {
-	font-size: 14px;
-	font-weight: 600;
+	font-size: var(--font-size-sm);
+	font-weight: var(--font-weight-semibold);
 	color: var(--text-secondary);
+	line-height: var(--line-height-normal);
 }
 
+/* Primary stat - Requirement 12.2: Color contrast, 12.4: Visual weight */
 .stats-percentage {
-	font-size: 16px;
-	font-weight: 700;
+	font-size: var(--font-size-lg);
+	font-weight: var(--font-weight-bold);
 	color: var(--primary-color);
 	min-width: 60px;
 	text-align: right;
+	line-height: var(--line-height-tight);
 }
 
 /* Responsive Design */

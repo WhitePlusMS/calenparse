@@ -22,7 +22,8 @@ const emit = defineEmits<{
 }>();
 
 // Composables
-const { events, loading, batchDeleteEvents, batchUpdateEvents, toggleEventCompletion } = useEvents();
+const { events, loading, error, clearError, fetchEvents, batchDeleteEvents, batchUpdateEvents, toggleEventCompletion } =
+	useEvents();
 const {
 	isSelectionMode,
 	selectedCount,
@@ -42,6 +43,7 @@ const {
 import { useSupabase } from "@/composables/useSupabase";
 import { onMounted } from "vue";
 import type { Tag } from "@/types";
+import ErrorState from "./ErrorState.vue";
 
 const { getAllTags } = useSupabase();
 const availableTags = ref<Tag[]>([]);
@@ -269,6 +271,15 @@ const handleToggleCompletion = async (event: CalendarEvent, e: Event) => {
 		ElMessage.error("更新完成状态失败");
 	}
 };
+
+/**
+ * Handle retry after error
+ * Requirement 13.3: Error state with retry button
+ */
+const handleRetry = async () => {
+	clearError();
+	await fetchEvents();
+};
 </script>
 
 <template>
@@ -307,8 +318,13 @@ const handleToggleCompletion = async (event: CalendarEvent, e: Event) => {
 			</div>
 		</div>
 
+		<!-- Error State -->
+		<!-- Requirement 13.3: Error state with retry button -->
+		<ErrorState v-if="error && !loading" title="加载列表失败" :message="error" @retry="handleRetry" />
+
 		<!-- Loading State -->
-		<div v-if="loading" class="loading-overlay">
+		<!-- Requirement 13.4: Progress indicator -->
+		<div v-else-if="loading" class="loading-overlay">
 			<div class="loading-spinner">
 				<div class="spinner-ring"></div>
 				<div class="spinner-ring"></div>
@@ -319,6 +335,7 @@ const handleToggleCompletion = async (event: CalendarEvent, e: Event) => {
 
 		<!-- Empty State -->
 		<!-- Requirement 8.6: Display empty state prompt when no events exist -->
+		<!-- Requirement 13.2: Friendly empty state with illustration and guidance -->
 		<div v-else-if="isEmpty" class="empty-state">
 			<div class="empty-icon">📋</div>
 			<p class="empty-title">暂无日程事件</p>
@@ -629,7 +646,7 @@ const handleToggleCompletion = async (event: CalendarEvent, e: Event) => {
 	}
 }
 
-/* Empty State */
+/* Empty State - Requirement 12.1, 12.2, 12.3: Clear hierarchy with spacing */
 .empty-state {
 	text-align: center;
 	padding: var(--spacing-2xl) var(--spacing-lg);
@@ -643,21 +660,24 @@ const handleToggleCompletion = async (event: CalendarEvent, e: Event) => {
 
 .empty-icon {
 	font-size: 80px;
-	margin-bottom: var(--spacing-lg);
+	margin-bottom: var(--spacing-xl);
 	opacity: 0.6;
 	filter: grayscale(0.3);
 }
 
+/* Primary message - Requirement 12.1: Larger, bolder */
 .empty-title {
 	font-size: var(--font-size-2xl);
-	font-weight: var(--font-weight-semibold);
+	font-weight: var(--font-weight-bold);
 	color: var(--text-primary);
-	margin-bottom: var(--spacing-sm);
+	margin-bottom: var(--spacing-md);
+	line-height: var(--line-height-tight);
 }
 
+/* Secondary message - Requirement 12.1: Smaller, lighter */
 .empty-hint {
 	font-size: var(--font-size-base);
-	margin-top: var(--spacing-md);
+	margin-top: var(--spacing-sm);
 	color: var(--text-secondary);
 	line-height: var(--line-height-relaxed);
 	max-width: 400px;
@@ -808,7 +828,7 @@ const handleToggleCompletion = async (event: CalendarEvent, e: Event) => {
 	box-shadow: 0 4px 12px var(--shadow);
 }
 
-/* Date Badge - Square Design */
+/* Date Badge - Requirement 12.2: Color contrast, 12.4: Visual weight */
 .event-date-badge {
 	flex-shrink: 0;
 	display: flex;
@@ -824,6 +844,8 @@ const handleToggleCompletion = async (event: CalendarEvent, e: Event) => {
 	box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 	position: relative;
 	overflow: hidden;
+	cursor: pointer;
+	transition: all 0.3s ease;
 }
 
 .event-date-badge::before {
@@ -842,6 +864,7 @@ const handleToggleCompletion = async (event: CalendarEvent, e: Event) => {
 	opacity: 1;
 }
 
+/* Color coding for different states - Requirement 12.2 */
 .event-item--today .event-date-badge {
 	background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-color) 100%);
 }
@@ -854,6 +877,7 @@ const handleToggleCompletion = async (event: CalendarEvent, e: Event) => {
 	background: linear-gradient(135deg, var(--text-tertiary) 0%, var(--text-secondary) 100%);
 }
 
+/* Typography hierarchy within badge - Requirement 12.1 */
 .event-date-badge__day {
 	font-size: var(--font-size-4xl);
 	font-weight: var(--font-weight-bold);
@@ -863,25 +887,25 @@ const handleToggleCompletion = async (event: CalendarEvent, e: Event) => {
 
 .event-date-badge__month {
 	font-size: var(--font-size-xs);
-	font-weight: var(--font-weight-semibold);
+	font-weight: var(--font-weight-bold);
 	text-transform: uppercase;
-	opacity: 0.9;
+	opacity: 0.95;
 	margin-bottom: 2px;
-	letter-spacing: 0.5px;
+	letter-spacing: 0.8px;
 }
 
 .event-date-badge__weekday {
 	font-size: var(--font-size-xs);
 	font-weight: var(--font-weight-medium);
-	opacity: 0.85;
+	opacity: 0.9;
 }
 
-/* Event Details */
+/* Event Details - Requirement 12.3: Whitespace for content separation */
 .event-details {
 	flex: 1;
 	display: flex;
 	flex-direction: column;
-	gap: var(--spacing-sm);
+	gap: var(--spacing-md);
 	min-width: 0;
 }
 
@@ -892,13 +916,15 @@ const handleToggleCompletion = async (event: CalendarEvent, e: Event) => {
 	gap: var(--spacing-md);
 }
 
+/* Primary content - Requirement 12.1: Font hierarchy, 12.4: Visual weight */
 .event-title {
 	margin: 0;
 	font-size: var(--font-size-xl);
-	font-weight: var(--font-weight-semibold);
+	font-weight: var(--font-weight-bold);
 	color: var(--text-primary);
-	line-height: var(--line-height-normal);
+	line-height: var(--line-height-tight);
 	word-break: break-word;
+	letter-spacing: -0.3px;
 }
 
 .event-badges {
@@ -908,25 +934,34 @@ const handleToggleCompletion = async (event: CalendarEvent, e: Event) => {
 	flex-wrap: wrap;
 }
 
+/* Requirement 14.1: Rounded rectangles with soft background */
+/* Requirement 14.2: Text color matches background */
 .badge {
+	display: inline-flex;
+	align-items: center;
 	padding: var(--spacing-xs) var(--spacing-sm);
-	border-radius: var(--radius-md);
+	border-radius: var(--radius-lg);
 	font-size: var(--font-size-xs);
 	font-weight: var(--font-weight-semibold);
 	white-space: nowrap;
 	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+	border: 1px solid transparent;
+	line-height: var(--line-height-tight);
+	transition: all 0.2s ease;
 }
 
 .badge--today {
 	background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-color) 100%);
 	color: white;
 	border: none;
+	box-shadow: 0 2px 6px rgba(102, 126, 234, 0.3);
 }
 
 .badge--upcoming {
 	background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-color) 100%);
 	color: white;
 	border: none;
+	box-shadow: 0 2px 6px rgba(76, 94, 212, 0.3);
 }
 
 .badge--allday {
@@ -935,6 +970,13 @@ const handleToggleCompletion = async (event: CalendarEvent, e: Event) => {
 	border: 1px solid var(--border-color);
 }
 
+/* Requirement 14.4: Hover effect for badges */
+.badge:hover {
+	transform: translateY(-1px);
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+/* Secondary content - Requirement 12.1: Smaller font, 12.2: Secondary color */
 .event-meta {
 	display: flex;
 	flex-wrap: wrap;
@@ -945,20 +987,23 @@ const handleToggleCompletion = async (event: CalendarEvent, e: Event) => {
 	display: flex;
 	align-items: center;
 	gap: var(--spacing-sm);
-	font-size: var(--font-size-base);
+	font-size: var(--font-size-sm);
 	color: var(--text-secondary);
 	font-weight: var(--font-weight-medium);
+	line-height: var(--line-height-normal);
 }
 
 .event-meta-icon {
 	font-size: var(--font-size-lg);
 	line-height: 1;
+	flex-shrink: 0;
 }
 
 .event-meta-text {
 	line-height: var(--line-height-normal);
 }
 
+/* Tertiary content - Requirement 12.1: Smallest font, 12.5: Limited density */
 .event-description {
 	font-size: var(--font-size-sm);
 	color: var(--text-tertiary);
@@ -968,36 +1013,46 @@ const handleToggleCompletion = async (event: CalendarEvent, e: Event) => {
 	display: -webkit-box;
 	-webkit-line-clamp: 2;
 	-webkit-box-orient: vertical;
-	padding: var(--spacing-sm);
+	padding: var(--spacing-md);
 	background: var(--bg-hover);
 	border-radius: var(--radius-md);
 	border-left: 3px solid var(--primary-color);
+	margin-top: var(--spacing-xs);
 }
 
 /* Event Tags */
+/* Requirement 14.1: Rounded rectangles with soft background */
+/* Requirement 14.2: Text color matches background */
+/* Requirement 14.3: Appropriate spacing for multiple tags */
+/* Requirement 14.4: Hover effect */
 .event-tags {
 	display: flex;
 	flex-wrap: wrap;
 	gap: var(--spacing-sm);
 	margin-top: var(--spacing-xs);
+	align-items: center;
 }
 
 .event-tag {
 	display: inline-flex;
 	align-items: center;
-	padding: var(--spacing-xs) var(--spacing-sm);
-	border-radius: var(--radius-md);
+	padding: var(--spacing-xs) var(--spacing-md);
+	border-radius: var(--radius-lg);
 	font-size: var(--font-size-xs);
 	font-weight: var(--font-weight-semibold);
 	color: white;
 	white-space: nowrap;
-	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
 	transition: all 0.2s ease;
+	border: none;
+	line-height: var(--line-height-tight);
 }
 
 .event-tag:hover {
 	transform: translateY(-1px);
-	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+	filter: brightness(1.1);
+	cursor: pointer;
 }
 
 /* Arrow Icon */

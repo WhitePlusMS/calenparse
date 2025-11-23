@@ -24,7 +24,7 @@ const inputText = ref("");
 const isExpanded = ref(false);
 const inputRef = ref<HTMLTextAreaElement | null>(null);
 
-const { parseText, isLoading, error } = useLLM();
+const { parseText, isLoading } = useLLM();
 const { createEvent } = useEvents();
 const { getAllTags, createTag } = useSupabase();
 

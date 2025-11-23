@@ -341,10 +341,11 @@ const handleShareAllEvents = () => {
 	background: var(--bg-color);
 }
 
+/* Content container - Requirement 12.3: Whitespace for breathing room */
 .content-container {
 	width: 100%;
 	max-width: 1200px;
-	padding: var(--spacing-lg);
+	padding: var(--spacing-xl);
 	animation: fadeIn 0.5s ease-out;
 }
 
@@ -359,11 +360,12 @@ const handleShareAllEvents = () => {
 	}
 }
 
+/* View wrapper - Requirement 12.3, 12.5: Adequate spacing, limited density */
 .view-wrapper {
 	background: var(--bg-secondary);
 	border-radius: var(--radius-xl);
 	box-shadow: 0 2px 12px var(--shadow);
-	padding: var(--spacing-lg);
+	padding: var(--spacing-xl);
 	min-height: 600px;
 }
 
@@ -439,10 +441,14 @@ const handleShareAllEvents = () => {
 	}
 }
 
-/* Large screens - add more breathing room */
+/* Large screens - add more breathing room - Requirement 12.3 */
 @media (min-width: 1400px) {
 	.content-container {
-		padding: var(--spacing-2xl) var(--spacing-xl);
+		padding: var(--spacing-2xl) var(--spacing-2xl);
+	}
+
+	.view-wrapper {
+		padding: var(--spacing-2xl);
 	}
 }
 </style>

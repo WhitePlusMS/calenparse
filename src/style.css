@@ -6,6 +6,9 @@
 /* Import animation system styles */
 @import "./utils/animations.css";
 
+/* Import tags and badges system styles */
+@import "./utils/tags-badges.css";
+
 :root {
 	/* Font System */
 	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
@@ -434,6 +437,40 @@ a:hover {
 
 .text-right {
 	text-align: right;
+}
+
+/* Visual Hierarchy Utility Classes */
+/* Requirement 12.4: Visual weight to guide attention */
+.visual-weight-high {
+	font-weight: var(--font-weight-bold);
+	color: var(--text-primary);
+}
+
+.visual-weight-medium {
+	font-weight: var(--font-weight-semibold);
+	color: var(--text-primary);
+}
+
+.visual-weight-low {
+	font-weight: var(--font-weight-normal);
+	color: var(--text-secondary);
+}
+
+/* Information Density Control */
+/* Requirement 12.5: Limit information density */
+.content-dense {
+	line-height: var(--line-height-normal);
+	letter-spacing: normal;
+}
+
+.content-comfortable {
+	line-height: var(--line-height-relaxed);
+	letter-spacing: 0.01em;
+}
+
+.content-spacious {
+	line-height: var(--line-height-loose);
+	letter-spacing: 0.02em;
 }
 
 /* Smooth transitions for interactive elements */
