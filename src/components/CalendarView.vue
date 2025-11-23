@@ -1055,14 +1055,15 @@ defineExpose({
 	background: var(--primary-color);
 	color: white;
 	border-radius: var(--radius-full);
-	width: 32px;
-	height: 32px;
-	display: flex;
+	min-width: 32px;
+	min-height: 32px;
+	display: inline-flex;
 	align-items: center;
 	justify-content: center;
 	font-weight: var(--font-weight-bold);
 	font-size: var(--font-size-base);
 	box-shadow: 0 2px 8px rgba(64, 158, 255, 0.3);
+	margin: 4px;
 }
 
 :deep(.fc-day-today::after) {
