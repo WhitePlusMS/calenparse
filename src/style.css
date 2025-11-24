@@ -481,13 +481,70 @@ select {
 	transition: all 0.3s ease;
 }
 
-/* Focus styles for accessibility */
+/* ========== 焦点样式（可访问性） ========== */
+/* 为所有交互式元素提供清晰的焦点指示 */
+*:focus {
+	outline: none;
+}
+
+*:focus-visible {
+	outline: 2px solid var(--primary-color);
+	outline-offset: 2px;
+	border-radius: 2px;
+}
+
+/* 按钮焦点样式 */
 button:focus-visible,
+.btn:focus-visible {
+	outline: 2px solid var(--primary-color);
+	outline-offset: 2px;
+	box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.2);
+}
+
+/* 输入框焦点样式 */
 input:focus-visible,
 textarea:focus-visible,
 select:focus-visible {
 	outline: 2px solid var(--primary-color);
+	outline-offset: 0;
+	border-color: var(--primary-color);
+	box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* 链接焦点样式 */
+a:focus-visible {
+	outline: 2px solid var(--primary-color);
 	outline-offset: 2px;
+	border-radius: 2px;
+}
+
+/* ========== 动画可访问性（减少动画） ========== */
+/* 为偏好减少动画的用户提供支持 */
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+		scroll-behavior: auto !important;
+	}
+}
+
+/* 自定义交互元素焦点样式 */
+[role="button"]:focus-visible,
+[role="tab"]:focus-visible,
+[role="menuitem"]:focus-visible,
+[tabindex]:not([tabindex="-1"]):focus-visible {
+	outline: 2px solid var(--primary-color);
+	outline-offset: 2px;
+	box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.2);
+}
+
+/* 深色模式焦点样式调整 */
+:root.dark-mode *:focus-visible {
+	outline-color: var(--primary-light);
+	box-shadow: 0 0 0 4px rgba(139, 158, 245, 0.3);
 }
 
 /* Loading animation utility */

@@ -639,6 +639,8 @@ const handleRetry = async () => {
 .select-all-checkbox {
 	width: 18px;
 	height: 18px;
+	/* 增加可点击区域以满足触摸目标要求 */
+	padding: 13px;
 	cursor: pointer;
 	accent-color: var(--primary-color);
 }

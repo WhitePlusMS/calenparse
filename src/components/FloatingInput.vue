@@ -335,8 +335,8 @@ const handleSend = async () => {
 
 /* Send Button */
 .send-button {
-	width: 40px;
-	height: 40px;
+	width: 44px;
+	height: 44px;
 	border-radius: var(--radius-full);
 	border: none;
 	background: var(--primary-color);
@@ -441,8 +441,8 @@ const handleSend = async () => {
 	}
 
 	.send-button {
-		width: 40px;
-		height: 40px;
+		width: 44px;
+		height: 44px;
 	}
 
 	.input-box.expanded .input-field--expanded {

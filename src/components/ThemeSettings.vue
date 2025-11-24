@@ -376,6 +376,8 @@ const handleReset = () => {
 	background: var(--border-color);
 	border-radius: 14px;
 	transition: all 0.3s ease;
+	/* 增加可点击区域以满足触摸目标要求 */
+	padding: 8px 0;
 }
 
 .toggle-switch::after {

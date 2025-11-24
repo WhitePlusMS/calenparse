@@ -27,9 +27,21 @@
 	text-decoration: none;
 }
 
+/* ========== 焦点样式（可访问性） ========== */
 .btn:focus {
 	outline: none;
-	box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+}
+
+.btn:focus-visible {
+	outline: 2px solid var(--primary-color);
+	outline-offset: 2px;
+	box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.25);
+}
+
+/* 深色模式焦点样式 */
+:root.dark-mode .btn:focus-visible {
+	outline-color: var(--primary-light);
+	box-shadow: 0 0 0 4px rgba(139, 158, 245, 0.3);
 }
 
 /* ========== 主要按钮 ========== */
@@ -144,8 +156,8 @@
 }
 
 .btn-icon.btn-small {
-	width: 32px;
-	height: 32px;
+	width: 36px;
+	height: 36px;
 	padding: 6px;
 }
 
