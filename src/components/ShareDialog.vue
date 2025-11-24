@@ -38,6 +38,9 @@ const { events: allEvents } = useEvents();
 // Share format: 'text' or 'image'
 const shareFormat = ref<"text" | "image">("text");
 
+// Image style: theme colors
+const imageStyle = ref<"gradient" | "minimal" | "colorful" | "blue" | "green" | "orange" | "sunset">("gradient");
+
 // Selected events for sharing
 const selectedEventIds = ref<string[]>([]);
 
@@ -46,6 +49,9 @@ const previewRef = ref<HTMLElement | null>(null);
 
 // Flag to control full content display for image generation
 const isGeneratingImage = ref(false);
+
+// Selector collapsed state
+const isSelectorCollapsed = ref(false);
 
 // Available tags
 const availableTags = ref<Tag[]>([]);
@@ -197,18 +203,27 @@ const formatDate = (date: Date, isAllDay: boolean): string => {
 		:before-close="handleClose"
 		class="share-dialog">
 		<div class="share-dialog__content">
-			<!-- Event selector -->
-			<div class="share-dialog__selector">
-				<div class="share-dialog__selector-header">
-					<span class="share-dialog__selector-label"
-						>选择事件 ({{ selectedEventIds.length }}/{{ allEvents.length }})</span
-					>
-					<div class="share-dialog__selector-actions">
+			<!-- Event selector - Collapsible -->
+			<div :class="['share-dialog__selector', { collapsed: isSelectorCollapsed }]">
+				<div
+					class="share-dialog__selector-header"
+					@click="isSelectorCollapsed = !isSelectorCollapsed">
+					<div class="share-dialog__selector-title">
+						<span class="share-dialog__collapse-icon">
+							{{ isSelectorCollapsed ? "▶" : "▼" }}
+						</span>
+						<span class="share-dialog__selector-label"
+							>选择事件 ({{ selectedEventIds.length }}/{{
+								allEvents.length
+							}})</span
+						>
+					</div>
+					<div class="share-dialog__selector-actions" @click.stop>
 						<el-button size="small" text @click="handleSelectAll">全选</el-button>
 						<el-button size="small" text @click="handleDeselectAll">清空</el-button>
 					</div>
 				</div>
-				<div class="share-dialog__event-list">
+				<div v-show="!isSelectorCollapsed" class="share-dialog__event-list">
 					<div
 						v-for="event in allEvents"
 						:key="event.id"
@@ -248,10 +263,29 @@ const formatDate = (date: Date, isAllDay: boolean): string => {
 				</el-radio-group>
 			</div>
 
+			<!-- Image theme color selector (only show when image format is selected) -->
+			<div v-if="shareFormat === 'image'" class="share-dialog__format">
+				<span class="share-dialog__format-label">图片主题色：</span>
+				<el-radio-group v-model="imageStyle" size="default">
+					<el-radio-button value="gradient">紫色</el-radio-button>
+					<el-radio-button value="blue">蓝色</el-radio-button>
+					<el-radio-button value="green">绿色</el-radio-button>
+					<el-radio-button value="colorful">粉色</el-radio-button>
+					<el-radio-button value="orange">橙色</el-radio-button>
+					<el-radio-button value="sunset">日落</el-radio-button>
+					<el-radio-button value="minimal">黑白</el-radio-button>
+				</el-radio-group>
+			</div>
+
 			<!-- Text format preview -->
 			<div v-if="shareFormat === 'text'" class="share-dialog__preview">
 				<div class="share-dialog__preview-label">预览：</div>
-				<div class="share-dialog__text-preview">
+				<!-- Empty state for text -->
+				<div v-if="selectedEvents.length === 0" class="share-dialog__empty-state">
+					<div class="empty-state__icon">📭</div>
+					<div class="empty-state__text">请先选择要分享的事件</div>
+				</div>
+				<div v-else class="share-dialog__text-preview">
 					{{ shareText }}
 				</div>
 			</div>
@@ -259,10 +293,17 @@ const formatDate = (date: Date, isAllDay: boolean): string => {
 			<!-- Image format preview -->
 			<div v-else class="share-dialog__preview">
 				<div class="share-dialog__preview-label">预览：</div>
+				<!-- Empty state for image -->
+				<div v-if="selectedEvents.length === 0" class="share-dialog__empty-state">
+					<div class="empty-state__icon">📭</div>
+					<div class="empty-state__text">请先选择要分享的事件</div>
+				</div>
 				<div
+					v-else
 					ref="previewRef"
 					:class="[
 						'share-dialog__image-preview',
+						`share-dialog__image-preview--${imageStyle}`,
 						{ 'share-dialog__image-preview--full': isGeneratingImage },
 					]">
 					<!-- Header -->
@@ -394,26 +435,61 @@ const formatDate = (date: Date, isAllDay: boolean): string => {
 .share-dialog__content {
 	display: flex;
 	flex-direction: column;
-	gap: 20px;
+	gap: 16px;
+	min-height: 500px;
 }
 
-/* Event selector */
+/* Event selector - Collapsible */
 .share-dialog__selector {
 	display: flex;
 	flex-direction: column;
-	gap: 12px;
+	gap: 8px;
+	border: 1px solid var(--border-light);
+	border-radius: var(--radius-lg);
+	background: var(--bg-color);
+	transition: all 0.3s ease;
+}
+
+.share-dialog__selector.collapsed {
+	background: transparent;
+	border-color: transparent;
 }
 
 .share-dialog__selector-header {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
+	padding: 12px 16px;
+	cursor: pointer;
+	user-select: none;
+	border-radius: var(--radius-lg);
+	transition: background-color 0.2s ease;
+}
+
+.share-dialog__selector-header:hover {
+	background: var(--bg-hover);
+}
+
+.share-dialog__selector.collapsed .share-dialog__selector-header {
+	padding: 8px 12px;
+}
+
+.share-dialog__selector-title {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.share-dialog__collapse-icon {
+	font-size: 12px;
+	color: var(--text-tertiary);
+	transition: transform 0.3s ease;
 }
 
 .share-dialog__selector-label {
 	font-size: 14px;
 	font-weight: 600;
-	color: var(--text-secondary);
+	color: var(--text-primary);
 }
 
 .share-dialog__selector-actions {
@@ -422,11 +498,9 @@ const formatDate = (date: Date, isAllDay: boolean): string => {
 }
 
 .share-dialog__event-list {
-	max-height: 200px;
+	max-height: 180px;
 	overflow-y: auto;
-	border: 1px solid var(--border-light);
-	border-radius: 8px;
-	padding: 8px;
+	padding: 0 16px 12px 16px;
 	display: flex;
 	flex-direction: column;
 	gap: 6px;
@@ -507,48 +581,195 @@ const formatDate = (date: Date, isAllDay: boolean): string => {
 	display: flex;
 	flex-direction: column;
 	gap: 12px;
+	flex: 1;
+	min-height: 0;
 }
 
 .share-dialog__preview-label {
 	font-size: 14px;
 	font-weight: 600;
-	color: var(--text-secondary);
+	color: var(--text-primary);
 }
 
 /* Text preview */
 .share-dialog__text-preview {
-	padding: 16px;
+	flex: 1;
+	padding: 20px;
 	background-color: var(--bg-color);
 	border: 1px solid var(--border-light);
-	border-radius: 8px;
+	border-radius: var(--radius-lg);
 	font-size: 14px;
 	color: var(--text-primary);
 	line-height: 1.8;
 	white-space: pre-wrap;
 	word-break: break-word;
-	max-height: 400px;
 	overflow-y: auto;
+	min-height: 300px;
 	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
-/* Image preview */
+/* Empty state */
+.share-dialog__empty-state {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 16px;
+	min-height: 300px;
+	padding: 40px;
+	background-color: var(--bg-color);
+	border: 2px dashed var(--border-color);
+	border-radius: var(--radius-lg);
+}
+
+.empty-state__icon {
+	font-size: 48px;
+	opacity: 0.5;
+}
+
+.empty-state__text {
+	font-size: 14px;
+	color: var(--text-tertiary);
+}
+
+/* Image preview - Base styles */
 .share-dialog__image-preview {
-	padding: 24px;
-	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-	border-radius: 12px;
+	flex: 1;
+	padding: 32px;
+	border-radius: var(--radius-xl);
 	color: white;
-	max-height: 500px;
 	overflow-y: auto;
+	min-height: 300px;
+	max-height: 600px;
+}
+
+/* Image preview - Gradient style (default) */
+.share-dialog__image-preview--gradient {
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+/* Image preview - Minimal style */
+.share-dialog__image-preview--minimal {
+	background: var(--bg-secondary);
+	color: var(--text-primary);
+	border: 1px solid var(--border-light);
+}
+
+.share-dialog__image-preview--minimal .share-preview__header {
+	border-bottom: 2px solid var(--border-color);
+}
+
+.share-dialog__image-preview--minimal .share-preview__title {
+	color: var(--text-primary);
+}
+
+.share-dialog__image-preview--minimal .share-preview__count {
+	color: var(--text-secondary);
+}
+
+.share-dialog__image-preview--minimal .share-preview__event {
+	background: var(--bg-color);
+	border: 1px solid var(--border-light);
+}
+
+.share-dialog__image-preview--minimal .share-preview__event-title {
+	color: var(--text-primary);
+}
+
+.share-dialog__image-preview--minimal .share-preview__event-info,
+.share-dialog__image-preview--minimal .share-preview__section-text {
+	color: var(--text-secondary);
+}
+
+.share-dialog__image-preview--minimal .share-preview__footer {
+	color: var(--text-tertiary);
+	border-top: 1px solid var(--border-light);
+}
+
+/* Image preview - Blue style */
+.share-dialog__image-preview--blue {
+	background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.share-dialog__image-preview--blue .share-preview__event:nth-child(odd) {
+	background: rgba(255, 255, 255, 0.25);
+}
+
+.share-dialog__image-preview--blue .share-preview__event:nth-child(even) {
+	background: rgba(255, 255, 255, 0.15);
+}
+
+/* Image preview - Green style */
+.share-dialog__image-preview--green {
+	background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+}
+
+.share-dialog__image-preview--green .share-preview__event:nth-child(odd) {
+	background: rgba(255, 255, 255, 0.25);
+}
+
+.share-dialog__image-preview--green .share-preview__event:nth-child(even) {
+	background: rgba(255, 255, 255, 0.15);
+}
+
+/* Image preview - Colorful (Pink) style */
+.share-dialog__image-preview--colorful {
+	background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.share-dialog__image-preview--colorful .share-preview__event:nth-child(odd) {
+	background: rgba(255, 255, 255, 0.25);
+}
+
+.share-dialog__image-preview--colorful .share-preview__event:nth-child(even) {
+	background: rgba(255, 255, 255, 0.15);
+}
+
+/* Image preview - Orange style */
+.share-dialog__image-preview--orange {
+	background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+}
+
+.share-dialog__image-preview--orange .share-preview__event:nth-child(odd) {
+	background: rgba(255, 255, 255, 0.25);
+}
+
+.share-dialog__image-preview--orange .share-preview__event:nth-child(even) {
+	background: rgba(255, 255, 255, 0.15);
+}
+
+/* Image preview - Sunset style */
+.share-dialog__image-preview--sunset {
+	background: linear-gradient(135deg, #ff6a00 0%, #ee0979 100%);
+}
+
+.share-dialog__image-preview--sunset .share-preview__event:nth-child(odd) {
+	background: rgba(255, 255, 255, 0.25);
+}
+
+.share-dialog__image-preview--sunset .share-preview__event:nth-child(even) {
+	background: rgba(255, 255, 255, 0.15);
 }
 
 /* Full content mode for image generation */
 .share-dialog__image-preview--full {
 	max-height: none !important;
 	overflow: visible !important;
+	height: auto !important;
 }
 
 .share-dialog__image-preview--full .share-preview__section-text {
 	max-height: none !important;
+	overflow: visible !important;
+}
+
+.share-dialog__image-preview--full .share-preview__events {
+	max-height: none !important;
+	overflow: visible !important;
+}
+
+.share-dialog__image-preview--full * {
 	overflow: visible !important;
 }
 
@@ -654,8 +875,6 @@ const formatDate = (date: Date, isAllDay: boolean): string => {
 	opacity: 0.9;
 	white-space: pre-wrap;
 	word-break: break-word;
-	max-height: 150px;
-	overflow-y: auto;
 }
 
 .share-preview__event-metadata {
