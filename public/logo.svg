@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <defs>
+    <!-- 主渐变色：蓝紫色系，体现科技感和智能 -->
+    <linearGradient id="mainGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- 辅助渐变：亮色点缀 -->
+    <linearGradient id="accentGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f093fb;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f5576c;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- 发光效果 -->
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- 背景圆形 -->
+  <circle cx="60" cy="60" r="55" fill="url(#mainGradient)" opacity="0.1"/>
+  
+  <!-- 日历主体 -->
+  <rect x="30" y="35" width="60" height="55" rx="6" fill="url(#mainGradient)" />
+  
+  <!-- 日历顶部装订环 -->
+  <rect x="42" y="28" width="8" height="12" rx="4" fill="url(#mainGradient)" opacity="0.8"/>
+  <rect x="70" y="28" width="8" height="12" rx="4" fill="url(#mainGradient)" opacity="0.8"/>
+  
+  <!-- 日历顶部横条 -->
+  <rect x="30" y="35" width="60" height="12" rx="6" fill="url(#accentGradient)" />
+  
+  <!-- 日历网格线（简化） -->
+  <line x1="30" y1="55" x2="90" y2="55" stroke="white" stroke-width="1" opacity="0.3"/>
+  <line x1="30" y1="65" x2="90" y2="65" stroke="white" stroke-width="1" opacity="0.3"/>
+  <line x1="30" y1="75" x2="90" y2="75" stroke="white" stroke-width="1" opacity="0.3"/>
+  
+  <line x1="45" y1="47" x2="45" y2="90" stroke="white" stroke-width="1" opacity="0.3"/>
+  <line x1="60" y1="47" x2="60" y2="90" stroke="white" stroke-width="1" opacity="0.3"/>
+  <line x1="75" y1="47" x2="75" y2="90" stroke="white" stroke-width="1" opacity="0.3"/>
+  
+  <!-- AI 智能标记（闪电符号，代表快速智能解析） -->
+  <path d="M 70 60 L 65 70 L 68 70 L 63 82 L 72 68 L 69 68 Z" 
+        fill="url(#accentGradient)" 
+        filter="url(#glow)"
+        opacity="0.95"/>
+  
+  <!-- 日期数字点缀 -->
+  <circle cx="38" cy="60" r="2" fill="white" opacity="0.6"/>
+  <circle cx="53" cy="60" r="2" fill="white" opacity="0.6"/>
+  <circle cx="38" cy="70" r="2" fill="white" opacity="0.6"/>
+  <circle cx="53" cy="70" r="2" fill="white" opacity="0.6"/>
+  <circle cx="38" cy="80" r="2" fill="white" opacity="0.6"/>
+  
+  <!-- 高亮的今日标记 -->
+  <circle cx="53" cy="80" r="3.5" fill="url(#accentGradient)" opacity="0.9"/>
+</svg>
