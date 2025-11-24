@@ -198,17 +198,17 @@ onMounted(() => {
 			</el-table-column>
 
 			<!-- Actions -->
-			<el-table-column label="操作" width="180" fixed="right">
+			<el-table-column label="操作" width="220" fixed="right">
 				<template #default="{ row }">
 					<div class="actions">
 						<el-button link type="info" size="small" @click="handlePreview(row)">
-							👁️ 预览
+							预览
 						</el-button>
 						<el-button link type="primary" size="small" @click="handleEdit(row)">
-							✏️ 编辑
+							编辑
 						</el-button>
 						<el-button link type="danger" size="small" @click="handleDelete(row)">
-							🗑️ 删除
+							删除
 						</el-button>
 					</div>
 				</template>
@@ -306,71 +306,80 @@ onMounted(() => {
 
 <style scoped>
 .template-manager {
-	padding: 20px;
+	padding: var(--spacing-xl);
 }
 
 .header {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
-	margin-bottom: 20px;
+	margin-bottom: var(--spacing-xl);
+	padding-bottom: var(--spacing-lg);
+	border-bottom: 2px solid var(--border-light);
 }
 
 .header h3 {
 	margin: 0;
-	font-size: 20px;
-	font-weight: 600;
+	font-size: var(--font-size-3xl);
+	font-weight: var(--font-weight-bold);
 	color: var(--text-primary);
+	letter-spacing: -0.5px;
 }
 
 .header-info {
 	display: flex;
 	align-items: center;
-	gap: 12px;
+	gap: var(--spacing-md);
 }
 
 .template-count {
-	font-size: 14px;
+	font-size: var(--font-size-base);
+	font-weight: var(--font-weight-semibold);
 	color: var(--text-secondary);
-	padding: 4px 12px;
-	background-color: var(--bg-color);
-	border-radius: 12px;
-	border: 1px solid var(--border-light);
+	padding: var(--spacing-sm) var(--spacing-lg);
+	background: linear-gradient(135deg, var(--bg-color) 0%, var(--bg-hover) 100%);
+	border-radius: var(--radius-xl);
+	border: 2px solid var(--border-light);
+	box-shadow: 0 2px 4px var(--shadow);
 }
 
 /* Table styles */
 .template-table {
-	border-radius: 8px;
+	border-radius: var(--radius-xl);
 	overflow: hidden;
+	box-shadow: 0 2px 8px var(--shadow);
 }
 
 .template-name {
 	display: flex;
 	align-items: center;
-	gap: 8px;
+	gap: var(--spacing-sm);
 }
 
 .template-icon {
-	font-size: 16px;
+	font-size: var(--font-size-lg);
 }
 
 .template-title {
-	font-weight: 600;
+	font-weight: var(--font-weight-semibold);
+	font-size: var(--font-size-base);
 	color: var(--text-primary);
 }
 
 .event-title {
 	color: var(--text-primary);
+	font-size: var(--font-size-base);
 }
 
 .duration {
 	color: var(--text-secondary);
-	font-size: 13px;
+	font-size: var(--font-size-sm);
+	font-weight: var(--font-weight-medium);
 }
 
 .location {
 	color: var(--text-secondary);
-	font-size: 13px;
+	font-size: var(--font-size-sm);
 }
 
 .tags {
@@ -386,18 +395,26 @@ onMounted(() => {
 
 .created-date {
 	color: var(--text-secondary);
-	font-size: 13px;
+	font-size: var(--font-size-sm);
 }
 
 .no-data {
 	color: var(--text-tertiary);
-	font-size: 13px;
+	font-size: var(--font-size-sm);
 }
 
 .actions {
 	display: flex;
+	align-items: center;
 	gap: 4px;
-	flex-wrap: wrap;
+	flex-wrap: nowrap;
+	white-space: nowrap;
+}
+
+.actions :deep(.el-button) {
+	padding: 4px 8px;
+	font-size: var(--font-size-sm);
+	min-width: auto;
 }
 
 /* Preview Dialog */
@@ -541,16 +558,22 @@ onMounted(() => {
 /* Responsive */
 @media (max-width: 768px) {
 	.template-manager {
-		padding: 12px;
+		padding: var(--spacing-md);
+	}
+
+	.header {
+		flex-direction: column;
+		align-items: flex-start;
+		gap: var(--spacing-md);
 	}
 
 	.header h3 {
-		font-size: 18px;
+		font-size: var(--font-size-2xl);
 	}
 
 	.template-count {
-		font-size: 12px;
-		padding: 3px 10px;
+		font-size: var(--font-size-sm);
+		padding: var(--spacing-xs) var(--spacing-md);
 	}
 
 	:deep(.el-dialog) {
@@ -558,8 +581,13 @@ onMounted(() => {
 	}
 
 	.actions {
-		flex-direction: column;
-		gap: 2px;
+		flex-direction: row;
+		gap: var(--spacing-xs);
+	}
+
+	.actions :deep(.el-button) {
+		font-size: var(--font-size-xs);
+		padding: 4px 8px;
 	}
 }
 </style>

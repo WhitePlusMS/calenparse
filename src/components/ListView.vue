@@ -24,7 +24,13 @@ const props = defineProps<{
 // Emits
 const emit = defineEmits<{
 	eventClick: [event: CalendarEvent];
+	filtered: [events: CalendarEvent[]];
 }>();
+
+// Handle filtered events from SearchBar
+const handleFilteredEvents = (filteredEvents: CalendarEvent[]) => {
+	emit("filtered", filteredEvents);
+};
 
 // Composables
 const {
@@ -65,6 +71,7 @@ import ErrorState from "./ErrorState.vue";
 import CountdownIndicator from "./CountdownIndicator.vue";
 import { useCountdownSettings } from "@/composables/useCountdownSettings";
 import { useCountdown } from "@/composables/useCountdown";
+import SearchBar from "./SearchBar.vue";
 
 const { getAllTags } = useSupabase();
 const availableTags = ref<Tag[]>([]);
@@ -340,6 +347,9 @@ const handleRetry = async () => {
 
 <template>
 	<div class="list-view">
+		<!-- Search Bar - At the top of list view -->
+		<SearchBar @filtered="handleFilteredEvents" />
+
 		<!-- Batch Selection Toolbar -->
 		<!-- Requirement 12.1: Add batch operation mode toggle -->
 		<div v-if="!loading && !isEmpty" class="batch-toolbar">

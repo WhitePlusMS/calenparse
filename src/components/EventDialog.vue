@@ -585,49 +585,6 @@ const cancelSaveAsTemplate = () => {
 
 			<!-- Edit Mode -->
 			<el-form v-else label-width="100px" class="event-dialog__form">
-				<!-- Template Selection (Quick Create Mode Only) -->
-				<div
-					v-if="isQuickCreateMode && templates.length > 0"
-					class="form-section template-section">
-					<div class="form-section__header">
-						<span class="form-section__icon">📋</span>
-						<span class="form-section__title">从模板创建</span>
-					</div>
-					<div class="form-section__divider"></div>
-
-					<el-form-item label="选择模板">
-						<el-select
-							v-model="selectedTemplateId"
-							placeholder="选择一个模板快速填充（可选）"
-							clearable
-							style="width: 100%"
-							@clear="selectedTemplateId = ''">
-							<el-option
-								v-for="template in templates"
-								:key="template.id"
-								:label="template.templateName"
-								:value="template.id">
-								<div
-									style="
-										display: flex;
-										align-items: center;
-										justify-content: space-between;
-									">
-									<span>{{ template.templateName }}</span>
-									<span
-										style="
-											font-size: 12px;
-											color: var(--text-tertiary);
-											margin-left: 12px;
-										">
-										{{ template.title }}
-									</span>
-								</div>
-							</el-option>
-						</el-select>
-					</el-form-item>
-				</div>
-
 				<!-- Basic Information Section -->
 				<div class="form-section">
 					<div class="form-section__header">
@@ -780,6 +737,49 @@ const cancelSaveAsTemplate = () => {
 							placeholder="原始通告文本（可选）"
 							maxlength="2000"
 							show-word-limit />
+					</el-form-item>
+				</div>
+
+				<!-- Template Selection (Quick Create Mode Only) - Moved to bottom -->
+				<div
+					v-if="isQuickCreateMode && templates.length > 0"
+					class="form-section template-section">
+					<div class="form-section__header">
+						<span class="form-section__icon">📋</span>
+						<span class="form-section__title">从模板创建</span>
+					</div>
+					<div class="form-section__divider"></div>
+
+					<el-form-item label="选择模板">
+						<el-select
+							v-model="selectedTemplateId"
+							placeholder="选择一个模板快速填充（可选）"
+							clearable
+							style="width: 100%"
+							@clear="selectedTemplateId = ''">
+							<el-option
+								v-for="template in templates"
+								:key="template.id"
+								:label="template.templateName"
+								:value="template.id">
+								<div
+									style="
+										display: flex;
+										align-items: center;
+										justify-content: space-between;
+									">
+									<span>{{ template.templateName }}</span>
+									<span
+										style="
+											font-size: 12px;
+											color: var(--text-tertiary);
+											margin-left: 12px;
+										">
+										{{ template.title }}
+									</span>
+								</div>
+							</el-option>
+						</el-select>
 					</el-form-item>
 				</div>
 			</el-form>
@@ -1019,20 +1019,32 @@ const cancelSaveAsTemplate = () => {
 	border: 1px solid var(--border-light);
 }
 
-/* Template Selection Section */
+/* Template Selection Section - Moved to bottom */
 .template-section {
 	background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
-	padding: 16px;
-	border-radius: 8px;
-	margin-bottom: 20px;
+	padding: var(--spacing-lg);
+	border-radius: var(--radius-xl);
+	margin-top: var(--spacing-xl);
+	border: 2px dashed var(--primary-color);
 }
 
 .template-section .form-section__header {
-	margin-bottom: 8px;
+	margin-bottom: var(--spacing-sm);
 }
 
 .template-section .form-section__divider {
-	margin-bottom: 12px;
+	margin-bottom: var(--spacing-md);
+}
+
+.template-hint {
+	margin-top: var(--spacing-md);
+	padding: var(--spacing-md);
+	background: var(--bg-color);
+	border-radius: var(--radius-md);
+	font-size: var(--font-size-sm);
+	color: var(--text-secondary);
+	line-height: var(--line-height-relaxed);
+	border-left: 3px solid var(--primary-color);
 }
 
 /* Form Error Styles */

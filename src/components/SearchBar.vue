@@ -350,10 +350,17 @@ loadTags();
 <style scoped>
 .search-bar {
 	background: var(--bg-secondary);
-	border-radius: var(--radius-lg);
+	border-radius: var(--radius-xl);
 	padding: var(--spacing-lg);
 	box-shadow: 0 2px 8px var(--shadow);
-	margin-bottom: var(--spacing-lg);
+	margin-bottom: var(--spacing-xl);
+	border: 2px solid var(--border-light);
+	transition: all 0.3s ease;
+}
+
+.search-bar:hover {
+	border-color: var(--primary-color);
+	box-shadow: 0 4px 12px var(--shadow-md);
 }
 
 /* Main Search Row */

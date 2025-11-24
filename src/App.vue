@@ -12,7 +12,6 @@ import TagManager from "./components/TagManager.vue";
 import TemplateManager from "./components/TemplateManager.vue";
 import FloatingInput from "./components/FloatingInput.vue";
 import PreviewDialog from "./components/PreviewDialog.vue";
-import SearchBar from "./components/SearchBar.vue";
 import { useEvents } from "@/composables/useEvents";
 import { useTheme } from "@/composables/useTheme";
 import { useSupabase } from "@/composables/useSupabase";
@@ -364,23 +363,19 @@ const handleEditTemplate = (template: CalendarEvent) => {
 		<!-- Main Content Area -->
 		<main class="main-content">
 			<div class="content-container">
-				<!-- Search Bar - Requirement 4.1, 4.4, 5.4, 6.4, 7.3 -->
-				<!-- Only show in calendar and list views -->
-				<SearchBar
-					v-if="currentViewMode === 'calendar' || currentViewMode === 'list'"
-					@filtered="handleFilteredEvents" />
-
 				<!-- View Content -->
 				<div class="view-wrapper">
 					<CalendarView
 						v-if="currentViewMode === 'calendar'"
 						:filtered-events="filteredEvents"
 						@event-click="handleEventClick"
-						@quick-create="handleQuickCreate" />
+						@quick-create="handleQuickCreate"
+						@filtered="handleFilteredEvents" />
 					<ListView
 						v-else-if="currentViewMode === 'list'"
 						:filtered-events="filteredEvents"
-						@event-click="handleEventClick" />
+						@event-click="handleEventClick"
+						@filtered="handleFilteredEvents" />
 					<StatisticsView v-else-if="currentViewMode === 'statistics'" />
 				</div>
 			</div>

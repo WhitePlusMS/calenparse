@@ -6,11 +6,13 @@
 src/
 ├── components/       # Vue single-file components (.vue)
 ├── composables/      # Composition API reusable logic
-├── stores/          # Pinia state management stores
 ├── types/           # TypeScript type definitions and interfaces
 │   └── index.ts     # Core type definitions
 ├── utils/           # Utility functions and helpers
+│   ├── *.ts         # Utility functions
+│   └── *.css        # Utility CSS (animations, buttons, tags-badges)
 ├── assets/          # Static assets (images, icons)
+├── test/            # Test setup and configuration
 ├── App.vue          # Root component
 ├── main.ts          # Application entry point
 └── style.css        # Global styles

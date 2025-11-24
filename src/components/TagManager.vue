@@ -272,62 +272,96 @@ onMounted(() => {
 
 <style scoped>
 .tag-manager {
-	padding: 20px;
+	padding: var(--spacing-xl);
 }
 
 .header {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
-	margin-bottom: 20px;
+	margin-bottom: var(--spacing-xl);
+	padding-bottom: var(--spacing-lg);
+	border-bottom: 2px solid var(--border-light);
 }
 
 .header h3 {
 	margin: 0;
-	font-size: 18px;
-	font-weight: 600;
+	font-size: var(--font-size-3xl);
+	font-weight: var(--font-weight-bold);
+	color: var(--text-primary);
+	letter-spacing: -0.5px;
 }
 
 .header-actions {
 	display: flex;
-	gap: 12px;
+	gap: var(--spacing-md);
 	align-items: center;
 }
 
 .color-preview {
-	width: 40px;
-	height: 24px;
-	border-radius: 4px;
-	border: 1px solid var(--border-color);
+	width: 48px;
+	height: 28px;
+	border-radius: var(--radius-md);
+	border: 2px solid var(--border-color);
+	box-shadow: 0 2px 4px var(--shadow);
 }
 
 .color-picker-container {
 	display: flex;
 	flex-direction: column;
-	gap: 12px;
+	gap: var(--spacing-lg);
 }
 
 .color-options {
 	display: flex;
-	gap: 8px;
+	gap: var(--spacing-md);
 	flex-wrap: wrap;
 }
 
 .color-option {
-	width: 32px;
-	height: 32px;
-	border-radius: 4px;
+	width: 40px;
+	height: 40px;
+	border-radius: var(--radius-lg);
 	cursor: pointer;
-	border: 2px solid transparent;
-	transition: all 0.2s;
+	border: 3px solid transparent;
+	transition: all 0.3s ease;
+	box-shadow: 0 2px 6px var(--shadow);
 }
 
 .color-option:hover {
-	transform: scale(1.1);
+	transform: scale(1.15);
+	box-shadow: 0 4px 12px var(--shadow-md);
 }
 
 .color-option.active {
-	border-color: var(--text-primary);
-	box-shadow: 0 0 0 2px var(--shadow);
+	border-color: var(--primary-color);
+	box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3);
+	transform: scale(1.1);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+	.tag-manager {
+		padding: var(--spacing-md);
+	}
+
+	.header {
+		flex-direction: column;
+		align-items: flex-start;
+		gap: var(--spacing-md);
+	}
+
+	.header h3 {
+		font-size: var(--font-size-2xl);
+	}
+
+	.header-actions {
+		width: 100%;
+		flex-direction: column;
+	}
+
+	.header-actions :deep(.el-button) {
+		width: 100%;
+	}
 }
 </style>

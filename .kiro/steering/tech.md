@@ -21,7 +21,9 @@
   "pinia": "^3.0.4",
   "@supabase/supabase-js": "^2.84.0",
   "dayjs": "^1.11.19",
-  "@fullcalendar/vue3": "^6.1.19"
+  "@fullcalendar/vue3": "^6.1.19",
+  "chart.js": "^4.5.1",
+  "vue-chartjs": "^5.3.3"
 }
 ```
 
@@ -39,6 +41,15 @@ npm run build
 
 # Preview production build
 npm run preview
+
+# Run tests (single run)
+npm run test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Run tests with UI
+npm run test:ui
 ```
 
 ## Configuration

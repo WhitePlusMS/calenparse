@@ -9,6 +9,7 @@ import type { CalendarEvent, Tag } from "@/types";
 import { useEvents } from "@/composables/useEvents";
 import { useSupabase } from "@/composables/useSupabase";
 import ErrorState from "./ErrorState.vue";
+import SearchBar from "./SearchBar.vue";
 
 /**
  * CalendarView Component
@@ -28,7 +29,13 @@ const props = defineProps<{
 const emit = defineEmits<{
 	eventClick: [event: CalendarEvent];
 	quickCreate: [data: { startTime: Date; endTime: Date; isAllDay: boolean }];
+	filtered: [events: CalendarEvent[]];
 }>();
+
+// Handle filtered events from SearchBar
+const handleFilteredEvents = (filteredEvents: CalendarEvent[]) => {
+	emit("filtered", filteredEvents);
+};
 
 // Composables
 const { events: allEvents, fetchEvents, loading, error, clearError } = useEvents();
@@ -41,6 +48,7 @@ const events = computed(() => props.filteredEvents ?? allEvents.value);
 const calendarRef = ref<InstanceType<typeof FullCalendar> | null>(null);
 const currentView = ref<ViewType>("dayGridMonth");
 const currentDate = ref<Date>(new Date());
+const isCalendarMounted = ref(false);
 
 // Tag filtering state
 const availableTags = ref<Tag[]>([]);
@@ -81,6 +89,8 @@ onMounted(async () => {
 	await Promise.all([fetchEvents(), loadTags()]);
 	// Load saved view preference
 	loadViewPreference();
+	// Mark calendar as mounted
+	isCalendarMounted.value = true;
 	// Setup double-click listener after calendar is mounted
 	setupDoubleClickListener();
 });
@@ -162,6 +172,7 @@ function loadViewPreference() {
  * Requirement 3.10: Allow quick switch to day view from any view
  */
 function switchView(view: ViewType) {
+	if (!isCalendarMounted.value) return;
 	const calendarApi = calendarRef.value?.getApi();
 	if (calendarApi) {
 		currentView.value = view;
@@ -178,6 +189,7 @@ function switchView(view: ViewType) {
  */
 watch(
 	() => {
+		if (!isCalendarMounted.value) return null;
 		try {
 			return calendarRef.value?.getApi()?.getDate();
 		} catch {
@@ -239,39 +251,58 @@ const calendarEvents = computed(() => {
  * Requirement 3.7: Month view
  * Requirement 3.8: Year view showing schedule density
  */
-const calendarOptions = computed<CalendarOptions>(() => ({
-	plugins: [dayGridPlugin, timeGridPlugin, multiMonthPlugin],
-	initialView: currentView.value,
-	initialDate: currentDate.value,
-	headerToolbar: {
-		left: "prev,next today",
-		center: "title",
-		right: "",
-	},
-	events: calendarEvents.value,
-	eventClick: handleEventClick,
-	height: "auto",
-	locale: "zh-cn",
-	buttonText: {
-		today: "今天",
-	},
-	// Requirement 3.4: Display events in time order
-	eventOrder: "start,-duration,allDay,title",
-	// Event display customization
-	eventContent: renderEventContent,
-	// Time grid settings for day and week views
-	slotMinTime: "06:00:00",
-	slotMaxTime: "24:00:00",
-	slotDuration: "01:00:00",
-	allDaySlot: true,
-	nowIndicator: true,
-	// Multi-month year view settings
-	multiMonthMaxColumns: 3,
-	// Track date changes
-	datesSet: handleDatesSet,
-	// Requirement 3.1, 3.2: Double-click to create events (handled by native dblclick listener)
-	selectable: false,
-}));
+const calendarOptions = computed<CalendarOptions>(() => {
+	// Only return full options after calendar is mounted to avoid watcher issues
+	if (!isCalendarMounted.value) {
+		return {
+			plugins: [dayGridPlugin, timeGridPlugin, multiMonthPlugin],
+			initialView: currentView.value,
+			initialDate: currentDate.value,
+			headerToolbar: {
+				left: "prev,next today",
+				center: "title",
+				right: "",
+			},
+			events: [],
+			height: "auto",
+			locale: "zh-cn",
+		};
+	}
+
+	return {
+		plugins: [dayGridPlugin, timeGridPlugin, multiMonthPlugin],
+		initialView: currentView.value,
+		initialDate: currentDate.value,
+		headerToolbar: {
+			left: "prev,next today",
+			center: "title",
+			right: "",
+		},
+		events: calendarEvents.value,
+		eventClick: handleEventClick,
+		height: "auto",
+		locale: "zh-cn",
+		buttonText: {
+			today: "今天",
+		},
+		// Requirement 3.4: Display events in time order
+		eventOrder: "start,-duration,allDay,title",
+		// Event display customization
+		eventContent: renderEventContent,
+		// Time grid settings for day and week views
+		slotMinTime: "06:00:00",
+		slotMaxTime: "24:00:00",
+		slotDuration: "01:00:00",
+		allDaySlot: true,
+		nowIndicator: true,
+		// Multi-month year view settings
+		multiMonthMaxColumns: 3,
+		// Track date changes
+		datesSet: handleDatesSet,
+		// Requirement 3.1, 3.2: Double-click to create events (handled by native dblclick listener)
+		selectable: false,
+	};
+});
 
 /**
  * Handle event click
@@ -431,6 +462,7 @@ function handleDatesSet(dateInfo: any) {
  * Navigate to today
  */
 function goToToday() {
+	if (!isCalendarMounted.value) return;
 	const calendarApi = calendarRef.value?.getApi();
 	if (calendarApi) {
 		calendarApi.today();
@@ -443,6 +475,7 @@ function goToToday() {
  * Navigate to previous period
  */
 function goPrev() {
+	if (!isCalendarMounted.value) return;
 	const calendarApi = calendarRef.value?.getApi();
 	if (calendarApi) {
 		calendarApi.prev();
@@ -453,6 +486,7 @@ function goPrev() {
  * Navigate to next period
  */
 function goNext() {
+	if (!isCalendarMounted.value) return;
 	const calendarApi = calendarRef.value?.getApi();
 	if (calendarApi) {
 		calendarApi.next();
@@ -513,6 +547,9 @@ defineExpose({
 				<span class="view-label">年</span>
 			</button>
 		</div>
+
+		<!-- Search Bar - Below view switcher -->
+		<SearchBar @filtered="handleFilteredEvents" />
 
 		<!-- Error State -->
 		<!-- Requirement 13.3: Error state with retry button -->
