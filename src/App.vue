@@ -11,6 +11,7 @@ import ShareDialog from "./components/ShareDialog.vue";
 import TagManager from "./components/TagManager.vue";
 import FloatingInput from "./components/FloatingInput.vue";
 import PreviewDialog from "./components/PreviewDialog.vue";
+import SearchBar from "./components/SearchBar.vue";
 import { useEvents } from "@/composables/useEvents";
 import { useTheme } from "@/composables/useTheme";
 import { useSupabase } from "@/composables/useSupabase";
@@ -30,7 +31,7 @@ const { toggleMode, theme } = useTheme();
 
 // Composables
 const { events, updateEvent, deleteEvent, createEvent, fetchEvents } = useEvents();
-const { getAllTags, createTag } = useSupabase();
+const { getAllTags } = useSupabase();
 
 // View mode: 'calendar', 'list', 'statistics'
 const currentViewMode = ref<"calendar" | "list" | "statistics">("calendar");
@@ -38,6 +39,9 @@ const currentViewMode = ref<"calendar" | "list" | "statistics">("calendar");
 // Handle event click from CalendarView or ListView
 const selectedEvent = ref<CalendarEvent | null>(null);
 const eventDialogVisible = ref(false);
+
+// Quick create state
+const quickCreateData = ref<{ startTime: Date; endTime: Date; isAllDay: boolean } | undefined>(undefined);
 
 // Import/Export dialog
 const importExportDialogVisible = ref(false);
@@ -56,27 +60,61 @@ const previewDialogVisible = ref(false);
 const parsedEvents = ref<ParsedEvent[]>([]);
 const originalText = ref("");
 
+// Filtered events state - Requirement 4.1, 4.4, 5.4, 6.4, 7.3
+const filteredEvents = ref<CalendarEvent[]>([]);
+
+// Handle filtered events from SearchBar
+const handleFilteredEvents = (events: CalendarEvent[]) => {
+	filteredEvents.value = events;
+};
+
 const handleEventClick = (event: CalendarEvent) => {
 	selectedEvent.value = event;
+	quickCreateData.value = undefined;
+	eventDialogVisible.value = true;
+};
+
+// Handle quick create from CalendarView double-click
+// Requirement 3.1, 3.2: Open dialog with pre-filled date/time
+const handleQuickCreate = (data: { startTime: Date; endTime: Date; isAllDay: boolean }) => {
+	selectedEvent.value = null;
+	quickCreateData.value = data;
 	eventDialogVisible.value = true;
 };
 
 // Handle event save from EventDialog
 const handleEventSave = async (event: CalendarEvent) => {
 	try {
-		await updateEvent(event.id, {
-			title: event.title,
-			startTime: event.startTime,
-			endTime: event.endTime,
-			isAllDay: event.isAllDay,
-			location: event.location,
-			description: event.description,
-			tagIds: event.tagIds,
-		});
+		if (event.id) {
+			// Update existing event
+			await updateEvent(event.id, {
+				title: event.title,
+				startTime: event.startTime,
+				endTime: event.endTime,
+				isAllDay: event.isAllDay,
+				location: event.location,
+				description: event.description,
+				tagIds: event.tagIds,
+			});
+			ElMessage.success("事件已更新");
+		} else {
+			// Create new event (quick create mode)
+			await createEvent({
+				title: event.title,
+				startTime: event.startTime,
+				endTime: event.endTime,
+				isAllDay: event.isAllDay,
+				location: event.location,
+				description: event.description,
+				tagIds: event.tagIds,
+			});
+			ElMessage.success("事件已创建");
+		}
 		eventDialogVisible.value = false;
-		ElMessage.success("事件已更新");
+		quickCreateData.value = undefined;
 	} catch (error) {
-		console.error("Failed to update event:", error);
+		console.error("Failed to save event:", error);
+		ElMessage.error("保存事件失败");
 	}
 };
 
@@ -86,6 +124,7 @@ const handleEventDelete = async (id: string) => {
 		await deleteEvent(id);
 		eventDialogVisible.value = false;
 		selectedEvent.value = null;
+		quickCreateData.value = undefined;
 		ElMessage.success("事件已删除");
 	} catch (error) {
 		console.error("Failed to delete event:", error);
@@ -306,13 +345,22 @@ const handleTagsChanged = async () => {
 		<!-- Main Content Area -->
 		<main class="main-content">
 			<div class="content-container">
+				<!-- Search Bar - Requirement 4.1, 4.4, 5.4, 6.4, 7.3 -->
+				<!-- Only show in calendar and list views -->
+				<SearchBar
+					v-if="currentViewMode === 'calendar' || currentViewMode === 'list'"
+					@filtered="handleFilteredEvents" />
+
 				<!-- View Content -->
 				<div class="view-wrapper">
 					<CalendarView
 						v-if="currentViewMode === 'calendar'"
-						@event-click="handleEventClick" />
+						:filtered-events="filteredEvents"
+						@event-click="handleEventClick"
+						@quick-create="handleQuickCreate" />
 					<ListView
 						v-else-if="currentViewMode === 'list'"
+						:filtered-events="filteredEvents"
 						@event-click="handleEventClick" />
 					<StatisticsView v-else-if="currentViewMode === 'statistics'" />
 				</div>
@@ -323,6 +371,7 @@ const handleTagsChanged = async () => {
 		<EventDialog
 			v-model:visible="eventDialogVisible"
 			:event="selectedEvent"
+			:quick-create-data="quickCreateData"
 			@save="handleEventSave"
 			@delete="handleEventDelete" />
 

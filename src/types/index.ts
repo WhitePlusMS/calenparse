@@ -16,6 +16,9 @@ export interface CalendarEvent {
 	originalText?: string;
 	tagIds?: string[];
 	isCompleted?: boolean;
+	// 模板字段
+	isTemplate?: boolean;
+	templateName?: string;
 	createdAt: Date;
 	updatedAt: Date;
 }
@@ -68,4 +71,12 @@ export type CountdownInfo =
 export interface CountdownSettings {
 	enabled: boolean; // 是否显示倒计时
 	unit: TimeUnit; // 默认显示单位
+}
+
+// 搜索过滤器
+export interface SearchFilters {
+	keyword?: string; // 关键词搜索
+	dateRange?: [Date, Date]; // 日期范围
+	locations?: string[]; // 地点筛选
+	tagIds?: string[]; // 标签筛选
 }

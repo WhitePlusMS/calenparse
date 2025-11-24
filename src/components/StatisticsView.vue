@@ -92,7 +92,7 @@ const timeChartOptions = computed(() => ({
 			labels: {
 				font: {
 					size: 13,
-					weight: "600" as const,
+					weight: 600,
 				},
 				padding: 16,
 				usePointStyle: true,
@@ -104,7 +104,7 @@ const timeChartOptions = computed(() => ({
 			text: "时间段分布统计",
 			font: {
 				size: 18,
-				weight: "700" as const,
+				weight: 700,
 			},
 			padding: {
 				top: 0,
@@ -115,7 +115,7 @@ const timeChartOptions = computed(() => ({
 			backgroundColor: "rgba(0, 0, 0, 0.8)",
 			titleFont: {
 				size: 14,
-				weight: "600" as const,
+				weight: 600,
 			},
 			bodyFont: {
 				size: 13,
@@ -200,7 +200,7 @@ const locationChartOptions = computed(() => ({
 			labels: {
 				font: {
 					size: 13,
-					weight: "600" as const,
+					weight: 600,
 				},
 				padding: 12,
 				usePointStyle: true,
@@ -209,7 +209,6 @@ const locationChartOptions = computed(() => ({
 					const data = chart.data;
 					if (data.labels.length && data.datasets.length) {
 						return data.labels.map((label: string, i: number) => {
-							const value = data.datasets[0].data[i];
 							const percentage =
 								locationDistribution.value[i]?.percentage || 0;
 							return {
@@ -229,7 +228,7 @@ const locationChartOptions = computed(() => ({
 			text: "地点分布统计",
 			font: {
 				size: 18,
-				weight: "700" as const,
+				weight: 700,
 			},
 			padding: {
 				top: 0,
@@ -240,7 +239,7 @@ const locationChartOptions = computed(() => ({
 			backgroundColor: "rgba(0, 0, 0, 0.8)",
 			titleFont: {
 				size: 14,
-				weight: "600" as const,
+				weight: 600,
 			},
 			bodyFont: {
 				size: 13,

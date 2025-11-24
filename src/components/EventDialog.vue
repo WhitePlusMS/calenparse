@@ -36,9 +36,16 @@ import ShareDialog from "./ShareDialog.vue";
 interface Props {
 	visible: boolean;
 	event: CalendarEvent | null;
+	quickCreateData?: { startTime: Date; endTime: Date; isAllDay: boolean };
 }
 
 const props = defineProps<Props>();
+
+// Quick create mode detection
+const isQuickCreateMode = computed(() => !props.event && !!props.quickCreateData);
+
+// Title input ref for auto-focus
+const titleInputRef = ref<InstanceType<typeof ElInput> | null>(null);
 
 const emit = defineEmits<{
 	"update:visible": [value: boolean];
@@ -52,11 +59,19 @@ const { getAllTags, createTag } = useSupabase();
 import { useEvents } from "@/composables/useEvents";
 const { toggleEventCompletion } = useEvents();
 
+// Import useTemplates for template functionality
+import { useTemplates } from "@/composables/useTemplates";
+const { createTemplateFromEvent } = useTemplates();
+
 // Share dialog state
 const shareDialogVisible = ref(false);
 const eventsToShare = computed(() => {
 	return props.event ? [props.event] : [];
 });
+
+// Template dialog state
+const templateDialogVisible = ref(false);
+const templateName = ref("");
 
 // Edit mode state
 const isEditMode = ref(false);
@@ -162,8 +177,8 @@ const handleCreateTag = async (tagName: string) => {
 
 // Initialize editable event when props change
 watch(
-	() => props.event,
-	(newEvent) => {
+	() => [props.event, props.quickCreateData] as const,
+	([newEvent, quickData]) => {
 		if (newEvent) {
 			// Deep clone to avoid mutating props
 			editableEvent.value = {
@@ -181,9 +196,38 @@ watch(
 				updatedAt: newEvent.updatedAt,
 			};
 			isEditMode.value = false;
+		} else if (quickData) {
+			// Quick create mode - initialize with pre-filled data
+			editableEvent.value = {
+				title: "",
+				startTime: new Date(quickData.startTime),
+				endTime: new Date(quickData.endTime),
+				isAllDay: quickData.isAllDay,
+				location: "",
+				description: "",
+				tagIds: [],
+				isCompleted: false,
+			};
+			isEditMode.value = true; // Always in edit mode for quick create
 		}
 	},
 	{ immediate: true }
+);
+
+// Watch for dialog visibility to auto-focus title input in quick create mode
+// Requirement 3.3: Auto-focus title input box
+watch(
+	() => props.visible,
+	(visible) => {
+		if (visible && isQuickCreateMode.value) {
+			// Use nextTick to ensure DOM is updated
+			import("vue").then(({ nextTick }) => {
+				nextTick(() => {
+					titleInputRef.value?.focus();
+				});
+			});
+		}
+	}
 );
 
 onMounted(() => {
@@ -295,6 +339,15 @@ const saveChanges = () => {
 	isEditMode.value = false;
 };
 
+// Handle Enter key press in quick create mode
+// Requirement 3.4: Support Enter key for quick save
+const handleTitleKeyPress = (event: KeyboardEvent) => {
+	if (event.key === "Enter" && !event.shiftKey && isQuickCreateMode.value) {
+		event.preventDefault();
+		saveChanges();
+	}
+};
+
 // Delete event with confirmation
 const handleDelete = async () => {
 	try {
@@ -336,6 +389,43 @@ const handleToggleCompletion = async () => {
 		ElMessage.error("更新完成状态失败");
 	}
 };
+
+// Open template dialog
+// Requirement 9.1: Provide "save as template" option
+const handleSaveAsTemplate = () => {
+	templateName.value = editableEvent.value.title || "";
+	templateDialogVisible.value = true;
+};
+
+// Save event as template
+// Requirement 9.2: Prompt for template name and save configuration
+const confirmSaveAsTemplate = async () => {
+	if (!templateName.value.trim()) {
+		ElMessage.warning("请输入模板名称");
+		return;
+	}
+
+	if (!editableEvent.value.id) {
+		ElMessage.error("无法保存模板：事件ID不存在");
+		return;
+	}
+
+	try {
+		await createTemplateFromEvent(editableEvent.value as CalendarEvent, templateName.value.trim());
+		ElMessage.success(`模板"${templateName.value}"创建成功`);
+		templateDialogVisible.value = false;
+		templateName.value = "";
+	} catch (error) {
+		console.error("Failed to create template:", error);
+		ElMessage.error(error instanceof Error ? error.message : "创建模板失败");
+	}
+};
+
+// Cancel template creation
+const cancelSaveAsTemplate = () => {
+	templateDialogVisible.value = false;
+	templateName.value = "";
+};
 </script>
 
 <template>
@@ -367,6 +457,20 @@ const handleToggleCompletion = async () => {
 						<div v-else>
 							<div>开始：{{ formatDate(editableEvent.startTime) }}</div>
 							<div>结束：{{ formatDate(editableEvent.endTime) }}</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Template Information (View Mode) -->
+				<div v-if="editableEvent.isTemplate" class="event-dialog__section">
+					<div class="event-dialog__label">模板信息</div>
+					<div class="event-dialog__value event-dialog__value--template">
+						<div class="template-badge">
+							<span class="template-icon">📋</span>
+							<span class="template-text">这是一个事件模板</span>
+						</div>
+						<div v-if="editableEvent.templateName" class="template-name">
+							模板名称：{{ editableEvent.templateName }}
 						</div>
 					</div>
 				</div>
@@ -452,13 +556,15 @@ const handleToggleCompletion = async () => {
 					<!-- Title -->
 					<el-form-item label="标题" required :error="formErrors.title">
 						<el-input
+							ref="titleInputRef"
 							v-model="editableEvent.title"
 							placeholder="请输入事件标题"
 							maxlength="200"
 							show-word-limit
 							@input="
 								() => formErrors.title && (formErrors.title = undefined)
-							" />
+							"
+							@keypress="handleTitleKeyPress" />
 					</el-form-item>
 
 					<!-- Date and Time Range -->
@@ -587,6 +693,13 @@ const handleToggleCompletion = async () => {
 					<div class="event-dialog__footer-left">
 						<el-button type="danger" plain @click="handleDelete">删除</el-button>
 						<el-button type="success" plain @click="handleShare">分享</el-button>
+						<el-button
+							v-if="!editableEvent.isTemplate"
+							type="warning"
+							plain
+							@click="handleSaveAsTemplate">
+							保存为模板
+						</el-button>
 					</div>
 					<div class="event-dialog__footer-right">
 						<el-button @click="handleClose">关闭</el-button>
@@ -605,6 +718,34 @@ const handleToggleCompletion = async () => {
 
 	<!-- Share Dialog -->
 	<share-dialog v-model:visible="shareDialogVisible" :events="eventsToShare" />
+
+	<!-- Template Name Dialog -->
+	<el-dialog
+		v-model="templateDialogVisible"
+		title="保存为模板"
+		width="400px"
+		:close-on-click-modal="false"
+		class="template-dialog">
+		<div class="template-dialog__content">
+			<p class="template-dialog__description">请为模板输入一个名称，以便日后快速创建相似的事件。</p>
+			<el-form label-width="80px">
+				<el-form-item label="模板名称" required>
+					<el-input
+						v-model="templateName"
+						placeholder="例如：每周例会、项目汇报"
+						maxlength="100"
+						show-word-limit
+						@keyup.enter="confirmSaveAsTemplate" />
+				</el-form-item>
+			</el-form>
+		</div>
+		<template #footer>
+			<div class="template-dialog__footer">
+				<el-button @click="cancelSaveAsTemplate">取消</el-button>
+				<el-button type="primary" @click="confirmSaveAsTemplate">保存</el-button>
+			</div>
+		</template>
+	</el-dialog>
 </template>
 
 <style scoped>
@@ -675,6 +816,15 @@ const handleToggleCompletion = async () => {
 .event-dialog__value--description {
 	white-space: pre-wrap;
 	word-break: break-word;
+}
+
+.event-dialog__value--template {
+	padding: 8px 12px;
+	background-color: var(--bg-color);
+	border-radius: 4px;
+	border: 1px solid var(--border-light);
+	color: var(--text-primary);
+	font-weight: 500;
 }
 
 .event-dialog__tags {
@@ -758,6 +908,15 @@ const handleToggleCompletion = async () => {
 .form-label-icon {
 	font-size: 14px;
 	line-height: 1;
+}
+
+/* Template Editor Wrapper */
+.template-editor-wrapper {
+	margin-top: 8px;
+	padding: 12px;
+	background-color: var(--bg-color);
+	border-radius: 4px;
+	border: 1px solid var(--border-light);
 }
 
 /* Form Error Styles */
@@ -885,6 +1044,58 @@ const handleToggleCompletion = async () => {
 
 .event-dialog__value :deep(.el-button:active) {
 	transform: translateY(0);
+}
+
+/* Template Information Styles */
+.event-dialog__value--template {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.template-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 12px;
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	border-radius: 6px;
+	color: white;
+	font-weight: 500;
+	width: fit-content;
+}
+
+.template-icon {
+	font-size: 16px;
+	line-height: 1;
+}
+
+.template-text {
+	font-size: 14px;
+}
+
+.template-name {
+	font-size: 14px;
+	color: var(--text-secondary);
+	padding: 4px 0;
+}
+
+/* Template Dialog Styles */
+.template-dialog__content {
+	padding: 8px 0;
+}
+
+.template-dialog__description {
+	font-size: 14px;
+	color: var(--text-secondary);
+	line-height: 1.6;
+	margin-bottom: 20px;
+}
+
+.template-dialog__footer {
+	display: flex;
+	justify-content: flex-end;
+	gap: 12px;
 }
 
 @media (max-width: 480px) {

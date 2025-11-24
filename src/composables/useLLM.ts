@@ -7,6 +7,10 @@ const MAX_TEXT_LENGTH = 10000;
 const API_RETRY_COUNT = 2;
 const API_RETRY_DELAY_MS = 1000;
 const DEFAULT_EVENT_DURATION_MS = 60 * 60 * 1000; // 1 hour
+const END_OF_DAY_HOURS = 23;
+const END_OF_DAY_MINUTES = 59;
+const END_OF_DAY_SECONDS = 59;
+const END_OF_DAY_MS = 999;
 const LLM_TEMPERATURE = 0.3;
 const DEFAULT_MODEL = "gpt-3.5-turbo";
 
@@ -244,9 +248,8 @@ export function useLLM() {
 2. 如果某个字段无法识别或不存在，请不要包含该字段（不要生成虚假信息）
 3. 对于相对日期（如"明天"、"下周三"），请基于今天的日期 ${currentDate} 转换为绝对日期
 4. 如果只有日期没有具体时间，设置 isAllDay 为 true
-5. 如果文本包含重复规则（如"每周二"），请在 description 中说明
-6. 年份推断规则：如果文本中没有明确年份，使用今天的年份 ${today.getFullYear()}
-7. 标签建议：根据事件类型、主题、重要性等因素，建议1-3个合适的标签
+5. 年份推断规则：如果文本中没有明确年份，使用今天的年份 ${today.getFullYear()}
+6. 标签建议：根据事件类型、主题、重要性等因素，建议1-3个合适的标签
 
 请以 JSON 数组格式返回，每个事件是一个对象。
 
@@ -336,7 +339,12 @@ ${text}
 						if (event.isAllDay) {
 							// For all-day events, set end time to end of day
 							const endOfDay = new Date(event.startTime);
-							endOfDay.setHours(23, 59, 59, 999);
+							endOfDay.setHours(
+								END_OF_DAY_HOURS,
+								END_OF_DAY_MINUTES,
+								END_OF_DAY_SECONDS,
+								END_OF_DAY_MS
+							);
 							event.endTime = endOfDay;
 						} else {
 							// For regular events, add 1 hour
@@ -397,7 +405,9 @@ ${text}
 					events.push(event);
 				}
 			} catch (err) {
-				console.warn("跳过无效事件:", err);
+				if (import.meta.env.DEV) {
+					console.warn("跳过无效事件:", rawEvent, err);
+				}
 				// Continue processing other events
 			}
 		}

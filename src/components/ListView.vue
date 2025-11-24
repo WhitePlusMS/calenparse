@@ -16,14 +16,30 @@ import dayjs from "dayjs";
  * Implements requirements 23.4, 23.6, 23.7 (completion status)
  */
 
+// Props - Accept filtered events from parent
+const props = defineProps<{
+	filteredEvents?: CalendarEvent[];
+}>();
+
 // Emits
 const emit = defineEmits<{
 	eventClick: [event: CalendarEvent];
 }>();
 
 // Composables
-const { events, loading, error, clearError, fetchEvents, batchDeleteEvents, batchUpdateEvents, toggleEventCompletion } =
-	useEvents();
+const {
+	events: allEvents,
+	loading,
+	error,
+	clearError,
+	fetchEvents,
+	batchDeleteEvents,
+	batchUpdateEvents,
+	toggleEventCompletion,
+} = useEvents();
+
+// Use filtered events if provided, otherwise use all events
+const events = computed(() => props.filteredEvents ?? allEvents.value);
 const {
 	isSelectionMode,
 	selectedCount,

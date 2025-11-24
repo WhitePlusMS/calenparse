@@ -2,7 +2,6 @@
 import { ref, computed } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { useLLM } from "@/composables/useLLM";
-import { useEvents } from "@/composables/useEvents";
 import { useSupabase } from "@/composables/useSupabase";
 import type { ParsedEvent } from "@/types";
 

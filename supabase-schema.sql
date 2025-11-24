@@ -23,6 +23,14 @@ CREATE TABLE IF NOT EXISTS events (
   description TEXT,
   original_text TEXT,  -- 存储原始通告文本
   tag_ids TEXT[],  -- 标签 ID 数组
+  is_completed BOOLEAN DEFAULT false,  -- 事件完成状态
+  -- 重复事件字段
+  recurrence_rule JSONB,  -- 重复规则的 JSON 配置
+  recurrence_id UUID,  -- 重复事件组 ID
+  is_recurring BOOLEAN DEFAULT false,  -- 是否为重复事件
+  -- 事件模板字段
+  is_template BOOLEAN DEFAULT false,  -- 是否为模板
+  template_name TEXT,  -- 模板名称
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -32,6 +40,22 @@ CREATE INDEX IF NOT EXISTS idx_events_start_time ON events(start_time);
 
 -- 在 end_time 上创建索引以实现范围查询
 CREATE INDEX IF NOT EXISTS idx_events_end_time ON events(end_time);
+
+-- 为重复事件组创建索引以优化查询性能
+CREATE INDEX IF NOT EXISTS idx_events_recurrence_id ON events(recurrence_id) 
+WHERE recurrence_id IS NOT NULL;
+
+-- 为模板查询创建部分索引（只索引模板记录）
+CREATE INDEX IF NOT EXISTS idx_events_is_template ON events(is_template) 
+WHERE is_template = true;
+
+-- 为模板名称创建部分索引
+CREATE INDEX IF NOT EXISTS idx_events_template_name ON events(template_name) 
+WHERE template_name IS NOT NULL;
+
+-- 为重复事件标记创建索引
+CREATE INDEX IF NOT EXISTS idx_events_is_recurring ON events(is_recurring) 
+WHERE is_recurring = true;
 
 -- 创建函数以自动更新 updated_at 时间戳
 CREATE OR REPLACE FUNCTION update_updated_at_column()

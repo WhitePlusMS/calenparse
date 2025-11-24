@@ -19,14 +19,23 @@ import ErrorState from "./ErrorState.vue";
 // View type definition
 type ViewType = "dayGridMonth" | "timeGridWeek" | "timeGridDay" | "multiMonthYear";
 
+// Props - Accept filtered events from parent
+const props = defineProps<{
+	filteredEvents?: CalendarEvent[];
+}>();
+
 // Emits
 const emit = defineEmits<{
 	eventClick: [event: CalendarEvent];
+	quickCreate: [data: { startTime: Date; endTime: Date; isAllDay: boolean }];
 }>();
 
 // Composables
-const { events, fetchEvents, loading, error, clearError } = useEvents();
+const { events: allEvents, fetchEvents, loading, error, clearError } = useEvents();
 const { getAllTags } = useSupabase();
+
+// Use filtered events if provided, otherwise use all events
+const events = computed(() => props.filteredEvents ?? allEvents.value);
 
 // State
 const calendarRef = ref<InstanceType<typeof FullCalendar> | null>(null);
@@ -132,7 +141,13 @@ function switchView(view: ViewType) {
  * Requirement 3.9: Save current date for view switching
  */
 watch(
-	() => calendarRef.value?.getApi()?.getDate(),
+	() => {
+		try {
+			return calendarRef.value?.getApi()?.getDate();
+		} catch {
+			return null;
+		}
+	},
 	(newDate) => {
 		if (newDate) {
 			currentDate.value = newDate;
@@ -220,6 +235,9 @@ const calendarOptions = computed<CalendarOptions>(() => ({
 	dateClick: handleDateClick,
 	// Track date changes
 	datesSet: handleDatesSet,
+	// Requirement 3.1, 3.2: Double-click to create events
+	// Enable selection for double-click detection
+	selectable: false,
 }));
 
 /**
@@ -285,10 +303,80 @@ function renderEventContent(eventInfo: any) {
  * Requirement 3.10: Quick switch to day view when clicking a date
  */
 function handleDateClick(dateClickInfo: any) {
+	// Check if this is a double-click
+	const now = Date.now();
+	const lastClickTime = (dateClickInfo.jsEvent.target as any)._lastClickTime || 0;
+	const timeDiff = now - lastClickTime;
+
+	// Store click time for double-click detection
+	(dateClickInfo.jsEvent.target as any)._lastClickTime = now;
+
+	// If double-click (within 300ms)
+	if (timeDiff < 300 && timeDiff > 0) {
+		handleDateDblClick(dateClickInfo);
+		return;
+	}
+
+	// Single click - switch to day view
 	if (currentView.value !== "timeGridDay") {
 		currentDate.value = dateClickInfo.date;
 		switchView("timeGridDay");
 	}
+}
+
+/**
+ * Handle date double-click
+ * Requirement 3.1: Double-click date to create event with pre-filled date
+ * Requirement 3.2: Double-click time slot to create event with pre-filled date and time
+ */
+function handleDateDblClick(dateClickInfo: any) {
+	const clickedDate = dateClickInfo.date;
+
+	// Determine if this is a time slot click (day/week view) or date cell click (month view)
+	const isTimeSlot = dateClickInfo.view.type === "timeGridDay" || dateClickInfo.view.type === "timeGridWeek";
+
+	if (isTimeSlot) {
+		// Time slot double-click - create timed event
+		handleTimeSlotDblClick(clickedDate);
+	} else {
+		// Date cell double-click - create all-day event
+		handleDateCellDblClick(clickedDate);
+	}
+}
+
+/**
+ * Handle date cell double-click (month view)
+ * Requirement 3.1: Open event dialog with pre-filled date for all-day event
+ */
+function handleDateCellDblClick(date: Date) {
+	const startTime = new Date(date);
+	startTime.setHours(0, 0, 0, 0);
+
+	const endTime = new Date(date);
+	endTime.setHours(23, 59, 59, 999);
+
+	emit("quickCreate", {
+		startTime,
+		endTime,
+		isAllDay: true,
+	});
+}
+
+/**
+ * Handle time slot double-click (day/week view)
+ * Requirement 3.2: Open event dialog with pre-filled date and time
+ */
+function handleTimeSlotDblClick(dateTime: Date) {
+	const startTime = new Date(dateTime);
+
+	// Default duration: 1 hour
+	const endTime = new Date(dateTime.getTime() + 60 * 60 * 1000);
+
+	emit("quickCreate", {
+		startTime,
+		endTime,
+		isAllDay: false,
+	});
 }
 
 /**

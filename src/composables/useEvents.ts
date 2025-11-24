@@ -74,6 +74,7 @@ export function useEvents() {
 	/**
 	 * Create a new event and add it to state
 	 * Requirement 6.1: Provide editing options for calendar events
+	 * Requirements 1.2, 1.3, 1.4, 1.5: Handle recurring events
 	 * Performance: Creates new array reference for shallowRef reactivity
 	 */
 	const createEvent = async (
@@ -84,7 +85,6 @@ export function useEvents() {
 
 		try {
 			const newEvent = await createEventDb(event);
-			// Performance: Create new array for shallowRef
 			const newEvents = [...events.value, newEvent];
 			newEvents.sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
 			events.value = newEvents;
@@ -102,6 +102,7 @@ export function useEvents() {
 	/**
 	 * Update an existing event and reflect changes in state
 	 * Requirement 6.2: Update event information and reflect changes in calendar view
+	 * Requirement 2.2, 2.3: Handle recurring event updates
 	 * Performance: Creates new array reference for shallowRef reactivity
 	 */
 	const updateEvent = async (id: string, updates: Partial<CalendarEvent>): Promise<CalendarEvent> => {
@@ -110,7 +111,6 @@ export function useEvents() {
 
 		try {
 			const updatedEvent = await updateEventDb(id, updates);
-			// Performance: Create new array for shallowRef
 			let newEvents = events.value.map((e) => (e.id === id ? updatedEvent : e));
 			// Re-sort if start time was updated
 			if (updates.startTime) {
@@ -199,6 +199,7 @@ export function useEvents() {
 	 * Batch delete events
 	 * Requirement 12.3: Implement batch delete
 	 * Requirement 12.5: Ensure atomicity (all succeed or all fail)
+	 * Supports recurring events - expands to include all instances in recurrence groups
 	 */
 	const batchDeleteEvents = async (ids: string[]): Promise<void> => {
 		if (ids.length === 0) return;

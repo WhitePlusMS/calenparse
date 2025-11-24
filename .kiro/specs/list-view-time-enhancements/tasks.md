@@ -1,11 +1,20 @@
 # 实现计划
 
-- [ ] 1. 创建倒计时核心功能
-- [ ] 1.1 创建 CountdownInfo 和 CountdownSettings 类型定义
+- [x] 1. 创建倒计时核心功能
+
+
+
+
+
+
+- [x] 1.1 创建 CountdownInfo 和 CountdownSettings 类型定义
+
   - 在 src/types/index.ts 中添加倒计时相关的 TypeScript 接口
   - _需求: 所有_
 
-- [ ] 1.2 实现 useCountdown composable 的核心计算逻辑
+- [x] 1.2 实现 useCountdown composable 的核心计算逻辑
+
+
   - 创建 src/composables/useCountdown.ts
   - 实现 getCountdown 函数，计算日程的倒计时信息
   - 实现不同单位（天、小时、分钟）的时间差计算
@@ -33,24 +42,34 @@
   - **属性 10: 已完成日程不显示倒计时**
   - **验证需求: 4.1, 4.2**
 
-- [ ] 2. 实现自动更新机制
-- [ ] 2.1 在 useCountdown 中实现定时器管理
+- [x] 2. 实现自动更新机制
+
+
+
+- [x] 2.1 在 useCountdown 中实现定时器管理
+
   - 实现 startAutoUpdate 函数，设置每分钟更新的定时器
   - 实现 stopAutoUpdate 函数，清理定时器
   - 实现 forceUpdate 函数，强制刷新倒计时
   - _需求: 5.4_
 
-- [ ] 2.2 实现页面可见性监听
+
+- [x] 2.2 实现页面可见性监听
+
   - 监听 visibilitychange 事件
   - 页面隐藏时暂停更新，显示时恢复更新
   - _需求: 5.7_
 
-- [ ] 2.3 实现页面焦点监听
+
+- [x] 2.3 实现页面焦点监听
+
   - 监听 window focus 事件
   - 页面获得焦点时重新计算倒计时
   - _需求: 5.6_
 
-- [ ] 2.4 实现午夜自动刷新
+- [x] 2.4 实现午夜自动刷新
+
+
   - 实现 scheduleMidnightRefresh 函数
   - 计算到午夜的时间并设置定时器
   - 午夜时刻触发强制刷新
@@ -65,9 +84,14 @@
   - **属性 12: 状态转换更新倒计时类型**
   - **属性 13: 过期时移除倒计时**
   - **验证需求: 5.2, 5.3**
+-
 
 - [ ] 3. 创建倒计时设置管理
-- [ ] 3.1 实现 useCountdownSettings composable
+
+- [x] 3.1 实现 useCountdownSettings composable
+
+
+
   - 创建 src/composables/useCountdownSettings.ts
   - 实现 loadSettings 函数，从本地存储加载设置
   - 实现 saveSettings 函数，保存设置到本地存储
@@ -80,7 +104,11 @@
   - **验证需求: 6.4, 6.5**
 
 - [ ] 4. 创建倒计时指示器组件
-- [ ] 4.1 创建 CountdownIndicator.vue 组件
+
+- [x] 4.1 创建 CountdownIndicator.vue 组件
+
+
+
   - 创建 src/components/CountdownIndicator.vue
   - 定义 props 接口（event, unit）
   - 使用 useCountdown 获取倒计时信息
@@ -92,8 +120,15 @@
   - **属性 8: 开始和结束倒计时视觉区分**
   - **验证需求: 3.5**
 
-- [ ] 5. 集成到 ListView 组件
-- [ ] 5.1 修改 ListView 的排序逻辑
+- [x] 5. 集成到 ListView 组件
+
+
+
+
+
+- [x] 5.1 修改 ListView 的排序逻辑
+
+
   - 更新 sortedEvents computed 属性
   - 首先按完成状态排序（未完成在前）
   - 然后按开始时间排序（早的在前）
@@ -108,14 +143,18 @@
   - **属性 3: 状态变化触发重排序**
   - **验证需求: 1.4**
 
-- [ ] 5.4 在 ListView 中集成 CountdownIndicator 组件
+- [x] 5.4 在 ListView 中集成 CountdownIndicator 组件
+
+
   - 导入 CountdownIndicator 组件
   - 导入 useCountdownSettings composable
   - 在事件项中添加 CountdownIndicator
   - 根据设置控制倒计时显示
   - _需求: 2.1, 2.2, 2.3, 2.4, 3.1, 3.2, 3.3, 3.4, 4.1, 4.2, 6.2_
 
-- [ ] 5.5 在 ListView 中初始化自动更新
+- [x] 5.5 在 ListView 中初始化自动更新
+
+
   - 在 onMounted 中调用 startAutoUpdate
   - 在 onUnmounted 中调用 stopAutoUpdate
   - _需求: 5.4, 5.5, 5.6, 5.7_
@@ -124,8 +163,12 @@
   - **属性 18: 关闭开关隐藏所有倒计时**
   - **验证需求: 6.2**
 
-- [ ] 6. 添加设置界面
-- [ ] 6.1 在 ThemeSettings 或创建新的设置组件中添加倒计时设置
+- [x] 6. 添加设置界面
+
+
+
+- [x] 6.1 在 ThemeSettings 或创建新的设置组件中添加倒计时设置
+
   - 添加倒计时显示开关（enabled）
   - 添加倒计时单位选择器（day/hour/minute）
   - 使用 useCountdownSettings 管理设置
@@ -136,18 +179,31 @@
   - 测试设置变更后的保存
   - _需求: 6.1, 6.3_
 
-- [ ] 7. 检查点 - 确保所有测试通过
+- [x] 7. 检查点 - 确保所有测试通过
   - 确保所有测试通过，如有问题请询问用户
 
-- [ ] 8. 样式和可访问性优化
-- [ ] 8.1 为 CountdownIndicator 添加样式
+- [x] 8. 样式和可访问性优化
+
+
+
+
+
+
+
+- [x] 8.1 为 CountdownIndicator 添加样式
+
+
+
+
   - 实现开始倒计时的视觉样式（如蓝色、图标）
   - 实现结束倒计时的视觉样式（如橙色、图标）
   - 确保在暗色模式下的可读性
   - 添加适当的间距和对齐
   - _需求: 2.5, 3.5_
 
-- [ ] 8.2 添加 ARIA 标签和可访问性支持
+- [x] 8.2 添加 ARIA 标签和可访问性支持
+
+
   - 为倒计时添加 aria-label
   - 确保屏幕阅读器能正确读取
   - 确保键盘导航支持
@@ -158,5 +214,5 @@
   - 测试 ARIA 标签的存在
   - _需求: 2.5, 3.5_
 
-- [ ] 9. 最终检查点 - 确保所有测试通过
+- [x] 9. 最终检查点 - 确保所有测试通过
   - 确保所有测试通过，如有问题请询问用户
