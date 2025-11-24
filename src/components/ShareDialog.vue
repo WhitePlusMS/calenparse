@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { ElDialog, ElButton, ElRadioGroup, ElRadioButton, ElMessage, ElLoading } from "element-plus";
 import type { CalendarEvent, Tag } from "@/types";
 import { generateShareText, copyToClipboard, generateShareImage, downloadBlob } from "@/utils/share";
 import { useSupabase } from "@/composables/useSupabase";
+import { useEvents } from "@/composables/useEvents";
 import dayjs from "dayjs";
 
 /**
@@ -32,9 +33,13 @@ const emit = defineEmits<{
 }>();
 
 const { getAllTags } = useSupabase();
+const { events: allEvents } = useEvents();
 
 // Share format: 'text' or 'image'
 const shareFormat = ref<"text" | "image">("text");
+
+// Selected events for sharing
+const selectedEventIds = ref<string[]>([]);
 
 // Reference to the preview element for image generation
 const previewRef = ref<HTMLElement | null>(null);
@@ -65,10 +70,39 @@ const getEventTags = (event: CalendarEvent): Tag[] => {
 	return event.tagIds.map((tagId) => getTagById(tagId)).filter((tag): tag is Tag => tag !== undefined);
 };
 
+// Get selected events
+const selectedEvents = computed(() => {
+	if (selectedEventIds.value.length === 0) {
+		return [];
+	}
+	return allEvents.value.filter((event) => selectedEventIds.value.includes(event.id));
+});
+
 // Computed share text
 const shareText = computed(() => {
-	return generateShareText(props.events, availableTags.value);
+	return generateShareText(selectedEvents.value, availableTags.value);
 });
+
+// Initialize selected events when dialog opens
+const initializeSelection = () => {
+	// If events prop is provided and not empty, use it as initial selection
+	if (props.events && props.events.length > 0) {
+		selectedEventIds.value = props.events.map((e) => e.id);
+	} else {
+		// Otherwise, select all events by default
+		selectedEventIds.value = allEvents.value.map((e) => e.id);
+	}
+};
+
+// Watch for dialog visibility changes
+watch(
+	() => props.visible,
+	(newVal) => {
+		if (newVal) {
+			initializeSelection();
+		}
+	}
+);
 
 // Load tags on mount
 onMounted(() => {
@@ -79,10 +113,25 @@ onMounted(() => {
 const handleClose = () => {
 	emit("update:visible", false);
 	shareFormat.value = "text"; // Reset to default
+	selectedEventIds.value = [];
+};
+
+// Handle select all
+const handleSelectAll = () => {
+	selectedEventIds.value = allEvents.value.map((e) => e.id);
+};
+
+// Handle deselect all
+const handleDeselectAll = () => {
+	selectedEventIds.value = [];
 };
 
 // Copy text to clipboard (Requirement 19.3)
 const handleCopyText = async () => {
+	if (selectedEvents.value.length === 0) {
+		ElMessage.warning("请至少选择一个事件");
+		return;
+	}
 	try {
 		await copyToClipboard(shareText.value);
 		ElMessage.success("已复制到剪贴板");
@@ -93,6 +142,11 @@ const handleCopyText = async () => {
 
 // Generate and download image (Requirement 19.6)
 const handleDownloadImage = async () => {
+	if (selectedEvents.value.length === 0) {
+		ElMessage.warning("请至少选择一个事件");
+		return;
+	}
+
 	if (!previewRef.value) {
 		ElMessage.error("预览元素未找到");
 		return;
@@ -139,10 +193,52 @@ const formatDate = (date: Date, isAllDay: boolean): string => {
 	<el-dialog
 		:model-value="visible"
 		title="分享事件"
-		width="600px"
+		width="700px"
 		:before-close="handleClose"
 		class="share-dialog">
 		<div class="share-dialog__content">
+			<!-- Event selector -->
+			<div class="share-dialog__selector">
+				<div class="share-dialog__selector-header">
+					<span class="share-dialog__selector-label"
+						>选择事件 ({{ selectedEventIds.length }}/{{ allEvents.length }})</span
+					>
+					<div class="share-dialog__selector-actions">
+						<el-button size="small" text @click="handleSelectAll">全选</el-button>
+						<el-button size="small" text @click="handleDeselectAll">清空</el-button>
+					</div>
+				</div>
+				<div class="share-dialog__event-list">
+					<div
+						v-for="event in allEvents"
+						:key="event.id"
+						:class="[
+							'share-dialog__event-item',
+							{ selected: selectedEventIds.includes(event.id) },
+						]"
+						@click="
+							() => {
+								const index = selectedEventIds.indexOf(event.id);
+								if (index > -1) {
+									selectedEventIds.splice(index, 1);
+								} else {
+									selectedEventIds.push(event.id);
+								}
+							}
+						">
+						<div class="share-dialog__event-checkbox">
+							<span v-if="selectedEventIds.includes(event.id)">✓</span>
+						</div>
+						<div class="share-dialog__event-info">
+							<div class="share-dialog__event-title">{{ event.title }}</div>
+							<div class="share-dialog__event-time">
+								{{ formatDate(event.startTime, event.isAllDay) }}
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
 			<!-- Format selector -->
 			<div class="share-dialog__format">
 				<span class="share-dialog__format-label">分享格式：</span>
@@ -174,9 +270,9 @@ const formatDate = (date: Date, isAllDay: boolean): string => {
 						<div class="share-preview__title">📅 日程分享</div>
 						<div class="share-preview__count">
 							{{
-								events.length === 1
+								selectedEvents.length === 1
 									? "1 个事件"
-									: `${events.length} 个事件`
+									: `${selectedEvents.length} 个事件`
 							}}
 						</div>
 					</div>
@@ -184,12 +280,12 @@ const formatDate = (date: Date, isAllDay: boolean): string => {
 					<!-- Events list -->
 					<div class="share-preview__events">
 						<div
-							v-for="(event, index) in events"
+							v-for="(event, index) in selectedEvents"
 							:key="event.id"
 							class="share-preview__event">
 							<!-- Event number for multiple events -->
 							<div
-								v-if="events.length > 1"
+								v-if="selectedEvents.length > 1"
 								class="share-preview__event-number">
 								事件 {{ index + 1 }}
 							</div>
@@ -299,6 +395,100 @@ const formatDate = (date: Date, isAllDay: boolean): string => {
 	display: flex;
 	flex-direction: column;
 	gap: 20px;
+}
+
+/* Event selector */
+.share-dialog__selector {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.share-dialog__selector-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.share-dialog__selector-label {
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--text-secondary);
+}
+
+.share-dialog__selector-actions {
+	display: flex;
+	gap: 8px;
+}
+
+.share-dialog__event-list {
+	max-height: 200px;
+	overflow-y: auto;
+	border: 1px solid var(--border-light);
+	border-radius: 8px;
+	padding: 8px;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.share-dialog__event-item {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 10px 12px;
+	border-radius: 6px;
+	cursor: pointer;
+	transition: all 0.2s ease;
+	border: 1px solid transparent;
+}
+
+.share-dialog__event-item:hover {
+	background-color: var(--bg-hover);
+}
+
+.share-dialog__event-item.selected {
+	background-color: var(--primary-color-light, rgba(64, 158, 255, 0.1));
+	border-color: var(--primary-color);
+}
+
+.share-dialog__event-checkbox {
+	width: 18px;
+	height: 18px;
+	border: 2px solid var(--border-color);
+	border-radius: 4px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	transition: all 0.2s ease;
+	font-size: 12px;
+	color: white;
+}
+
+.share-dialog__event-item.selected .share-dialog__event-checkbox {
+	background-color: var(--primary-color);
+	border-color: var(--primary-color);
+}
+
+.share-dialog__event-info {
+	flex: 1;
+	min-width: 0;
+}
+
+.share-dialog__event-title {
+	font-size: 14px;
+	font-weight: 500;
+	color: var(--text-primary);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.share-dialog__event-time {
+	font-size: 12px;
+	color: var(--text-secondary);
+	margin-top: 2px;
 }
 
 .share-dialog__format {

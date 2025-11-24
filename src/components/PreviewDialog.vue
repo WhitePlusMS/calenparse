@@ -173,6 +173,23 @@ const goToNext = () => {
 	}
 };
 
+// Delete current event
+const handleDeleteEvent = () => {
+	if (editableEvents.value.length === 1) {
+		ElMessage.warning("至少需要保留一个事件");
+		return;
+	}
+
+	editableEvents.value.splice(currentEventIndex.value, 1);
+
+	// Adjust current index if needed
+	if (currentEventIndex.value >= editableEvents.value.length) {
+		currentEventIndex.value = editableEvents.value.length - 1;
+	}
+
+	ElMessage.success("事件已删除");
+};
+
 // Handle dialog close
 const handleClose = () => {
 	emit("update:visible", false);
@@ -213,7 +230,32 @@ const handleConfirm = () => {
 	emit("update:visible", false);
 };
 
-// Date range for picker (combined start and end time)
+// Single date for all-day events
+const singleDate = computed({
+	get: () => {
+		const event = currentEvent.value;
+		if (event.startTime) {
+			return event.startTime instanceof Date ? event.startTime : new Date(event.startTime);
+		}
+		return null;
+	},
+	set: (value: Date | null) => {
+		if (value) {
+			// Set start time to beginning of day
+			const startTime = new Date(value);
+			startTime.setHours(0, 0, 0, 0);
+
+			// Set end time to end of day
+			const endTime = new Date(value);
+			endTime.setHours(23, 59, 59, 999);
+
+			currentEvent.value.startTime = startTime;
+			currentEvent.value.endTime = endTime;
+		}
+	},
+});
+
+// Date range for regular events (combined start and end time)
 const dateRange = computed({
 	get: () => {
 		const event = currentEvent.value;
@@ -230,8 +272,33 @@ const dateRange = computed({
 			// Convert to Date objects if they're strings
 			currentEvent.value.startTime = value[0] instanceof Date ? value[0] : new Date(value[0]);
 			currentEvent.value.endTime = value[1] instanceof Date ? value[1] : new Date(value[1]);
+
+			// 如果选择了跨天时间，自动取消全天事件
+			if (!isSameDay(currentEvent.value.startTime, currentEvent.value.endTime)) {
+				currentEvent.value.isAllDay = false;
+			}
 		}
 	},
+});
+
+// Check if two dates are on the same day
+const isSameDay = (date1: Date, date2: Date): boolean => {
+	return (
+		date1.getFullYear() === date2.getFullYear() &&
+		date1.getMonth() === date2.getMonth() &&
+		date1.getDate() === date2.getDate()
+	);
+};
+
+// Check if event spans multiple days
+const isMultiDay = computed(() => {
+	const event = currentEvent.value;
+	if (!event.startTime || !event.endTime) {
+		return false;
+	}
+	const start = event.startTime instanceof Date ? event.startTime : new Date(event.startTime);
+	const end = event.endTime instanceof Date ? event.endTime : new Date(event.endTime);
+	return !isSameDay(start, end);
 });
 </script>
 
@@ -251,13 +318,28 @@ const dateRange = computed({
 					</span>
 				</div>
 
-				<!-- Navigation buttons -->
-				<div v-if="editableEvents.length > 1" class="preview-dialog__navigation">
-					<el-button size="small" :disabled="!canGoPrevious" @click="goToPrevious">
-						上一个
-					</el-button>
-					<el-button size="small" :disabled="!canGoNext" @click="goToNext">
-						下一个
+				<div class="preview-dialog__actions">
+					<!-- Navigation buttons -->
+					<div v-if="editableEvents.length > 1" class="preview-dialog__navigation">
+						<el-button
+							size="small"
+							:disabled="!canGoPrevious"
+							@click="goToPrevious">
+							上一个
+						</el-button>
+						<el-button size="small" :disabled="!canGoNext" @click="goToNext">
+							下一个
+						</el-button>
+					</div>
+
+					<!-- Delete button -->
+					<el-button
+						v-if="editableEvents.length > 1"
+						size="small"
+						type="danger"
+						plain
+						@click="handleDeleteEvent">
+						删除此事件
 					</el-button>
 				</div>
 			</div>
@@ -281,7 +363,17 @@ const dateRange = computed({
 				<!-- Date and Time Range -->
 				<el-form-item label="时间">
 					<div class="preview-dialog__field">
+						<!-- All-day event: single date picker -->
 						<el-date-picker
+							v-if="currentEvent.isAllDay"
+							v-model="singleDate"
+							type="date"
+							placeholder="选择日期"
+							format="YYYY-MM-DD"
+							style="width: 100%" />
+						<!-- Regular event: datetime range picker -->
+						<el-date-picker
+							v-else
 							v-model="dateRange"
 							type="datetimerange"
 							range-separator="至"
@@ -301,7 +393,16 @@ const dateRange = computed({
 
 				<!-- All-day event -->
 				<el-form-item label="全天事件">
-					<el-switch v-model="currentEvent.isAllDay" />
+					<div class="all-day-control">
+						<el-switch v-model="currentEvent.isAllDay" :disabled="isMultiDay" />
+						<span class="all-day-hint">
+							{{
+								isMultiDay
+									? "跨天事件不支持全天模式"
+									: "适用于生日、节假日等不需要具体时间的事件"
+							}}
+						</span>
+					</div>
 				</el-form-item>
 
 				<!-- Location -->
@@ -429,6 +530,12 @@ const dateRange = computed({
 	color: var(--text-primary);
 }
 
+.preview-dialog__actions {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
 .preview-dialog__navigation {
 	display: flex;
 	gap: 8px;
@@ -523,12 +630,22 @@ const dateRange = computed({
 		gap: 12px;
 	}
 
+	.preview-dialog__actions {
+		width: 100%;
+		flex-direction: column;
+		gap: 8px;
+	}
+
 	.preview-dialog__navigation {
 		width: 100%;
 	}
 
 	.preview-dialog__navigation .el-button {
 		flex: 1;
+	}
+
+	.preview-dialog__actions > .el-button {
+		width: 100%;
 	}
 
 	.preview-dialog__counter-text {
@@ -596,5 +713,29 @@ const dateRange = computed({
 		font-size: 11px;
 		max-height: 80px;
 	}
+}
+
+/* All-day control styles */
+.all-day-control {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	width: 100%;
+}
+
+.all-day-hint {
+	font-size: 12px;
+	color: var(--text-tertiary);
+	line-height: 1.4;
+	flex: 1;
+}
+
+.all-day-control :deep(.el-switch.is-disabled) {
+	opacity: 0.5;
+}
+
+.all-day-control :deep(.el-switch.is-disabled) + .all-day-hint {
+	color: var(--warning-color);
+	font-weight: 500;
 }
 </style>

@@ -449,12 +449,34 @@ function renderEventContent(eventInfo: any) {
 	const tagIds = event.extendedProps.tagIds || [];
 
 	// Create custom HTML for event display
-	const timeText = event.allDay
-		? "全天"
-		: `${event.start.toLocaleTimeString("zh-CN", {
+	let timeText = "全天";
+
+	if (!event.allDay) {
+		const startDate = event.start;
+		const endDate = event.end || event.start;
+
+		// Check if event spans multiple days
+		const startDay = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+		const endDay = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+		const isSameDay = startDay.getTime() === endDay.getTime();
+
+		if (isSameDay) {
+			// Same day: show only start time
+			timeText = startDate.toLocaleTimeString("zh-CN", {
 				hour: "2-digit",
 				minute: "2-digit",
-		  })}`;
+			});
+		} else {
+			// Different days: show start date + time
+			timeText = `${startDate.toLocaleDateString("zh-CN", {
+				month: "2-digit",
+				day: "2-digit",
+			})} ${startDate.toLocaleTimeString("zh-CN", {
+				hour: "2-digit",
+				minute: "2-digit",
+			})}`;
+		}
+	}
 
 	// Generate tags HTML
 	const tagsHtml =

@@ -450,9 +450,24 @@ const formatTime = (startTime: Date, endTime: Date, isAllDay: boolean): string =
 	if (isAllDay) {
 		return "全天";
 	}
-	const start = dayjs(startTime).format("HH:mm");
-	const end = dayjs(endTime).format("HH:mm");
-	return `${start} - ${end}`;
+
+	const startDay = dayjs(startTime);
+	const endDay = dayjs(endTime);
+
+	// Check if event spans multiple days
+	const isSameDay = startDay.format("YYYY-MM-DD") === endDay.format("YYYY-MM-DD");
+
+	if (isSameDay) {
+		// Same day: show only time
+		const start = startDay.format("HH:mm");
+		const end = endDay.format("HH:mm");
+		return `${start} - ${end}`;
+	} else {
+		// Different days: show date + time
+		const start = startDay.format("MM-DD HH:mm");
+		const end = endDay.format("MM-DD HH:mm");
+		return `${start} - ${end}`;
+	}
 };
 
 /**

@@ -54,6 +54,7 @@ const themeSettingsDialogVisible = ref(false);
 
 // Share dialog
 const shareDialogVisible = ref(false);
+const eventsToShare = ref<CalendarEvent[]>([]);
 
 // Tag manager dialog
 const tagManagerDialogVisible = ref(false);
@@ -144,12 +145,14 @@ const switchViewMode = (mode: "calendar" | "list" | "statistics") => {
 	currentViewMode.value = mode;
 };
 
-// Open share dialog with all events
+// Open share dialog (from toolbar - let user select events)
 const handleShareAllEvents = () => {
 	if (events.value.length === 0) {
 		ElMessage.warning("暂无事件可分享");
 		return;
 	}
+	// Don't pre-select any events, let user choose in the dialog
+	eventsToShare.value = [];
 	shareDialogVisible.value = true;
 };
 
@@ -418,7 +421,7 @@ const handleEditTemplate = (template: CalendarEvent) => {
 		</el-dialog>
 
 		<!-- Share Dialog -->
-		<ShareDialog v-model:visible="shareDialogVisible" :events="events" />
+		<ShareDialog v-model:visible="shareDialogVisible" :events="eventsToShare" />
 
 		<!-- Tag Manager Dialog -->
 		<el-dialog v-model="tagManagerDialogVisible" title="标签管理" width="800px">

@@ -160,56 +160,52 @@ const handleSend = async () => {
 <template>
 	<div ref="containerRef" class="floating-input-container">
 		<div :class="['input-box', { expanded: isExpanded, focused: isExpanded, loading: isLoading }]">
-			<!-- Collapsed state - single line -->
+			<!-- Single textarea for both states -->
 			<textarea
-				v-if="!isExpanded"
 				ref="inputRef"
 				v-model="inputText"
-				class="input-field input-field--collapsed"
-				placeholder="粘贴或输入官方通告文本..."
-				rows="1"
+				:class="[
+					'input-field',
+					isExpanded ? 'input-field--expanded' : 'input-field--collapsed',
+				]"
+				:placeholder="
+					isExpanded
+						? '粘贴或输入官方通告文本...\n\n例如：\n关于举办学术讲座的通知\n时间：2024年3月15日 下午2:00-4:00\n地点：图书馆报告厅'
+						: '粘贴或输入官方通告文本...'
+				"
+				:rows="isExpanded ? undefined : 1"
 				@focus="handleFocus"
+				@blur="handleBlur"
+				@input="handleInput"
 				@keydown="handleKeydown"></textarea>
 
-			<!-- Expanded state - multi-line -->
-			<template v-else>
-				<textarea
-					ref="inputRef"
-					v-model="inputText"
-					class="input-field input-field--expanded"
-					placeholder="粘贴或输入官方通告文本...&#10;&#10;例如：&#10;关于举办学术讲座的通知&#10;时间：2024年3月15日 下午2:00-4:00&#10;地点：图书馆报告厅"
-					@blur="handleBlur"
-					@input="handleInput"
-					@keydown="handleKeydown"></textarea>
-
-				<!-- Footer with meta info and send button -->
-				<div class="input-footer">
-					<div class="input-meta">
-						<span :class="['char-count', { warning: hasWarning }]">
-							{{ charCount }} 字符
-						</span>
-						<span class="shortcut-hint">Ctrl+Enter 快速解析</span>
-					</div>
-					<button
-						class="send-button"
-						:disabled="!inputText.trim() || isLoading"
-						@click="handleSend"
-						title="解析日程">
-						<span v-if="isLoading" class="loading-icon">⏳</span>
-						<span v-else class="send-icon">🚀</span>
-					</button>
+			<!-- Footer with meta info and send button (expanded state) -->
+			<div v-if="isExpanded" class="input-footer">
+				<div class="input-meta">
+					<span :class="['char-count', { warning: hasWarning }]">
+						{{ charCount }} 字符
+					</span>
+					<span class="shortcut-hint">Ctrl+Enter 快速解析</span>
 				</div>
+				<button
+					class="send-button"
+					:disabled="!inputText.trim() || isLoading"
+					@click="handleSend"
+					title="解析日程">
+					<span v-if="isLoading" class="loading-icon">⏳</span>
+					<span v-else class="send-icon">🚀</span>
+				</button>
+			</div>
 
-				<!-- Loading indicator -->
-				<div v-if="isLoading" class="loading-indicator">
-					<div class="loading-dots">
-						<span class="loading-dot"></span>
-						<span class="loading-dot"></span>
-						<span class="loading-dot"></span>
-					</div>
-					<span class="loading-text">正在解析中...</span>
+			<!-- Loading indicator (expanded state) -->
+			<div v-if="isExpanded && isLoading" class="loading-indicator">
+				<div class="loading-dots">
+					<span class="loading-dot"></span>
+					<span class="loading-dot"></span>
+					<span class="loading-dot"></span>
 				</div>
-			</template>
+				<span class="loading-text">正在解析中...</span>
+			</div>
 
 			<!-- Send button for collapsed state -->
 			<button
