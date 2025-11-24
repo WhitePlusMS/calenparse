@@ -615,3 +615,152 @@ a:focus-visible {
 		transition-duration: 0.01ms !important;
 	}
 }
+
+/* ========== Element Plus 弹出组件统一圆角样式 ========== */
+/* 为所有弹出子窗口添加统一的圆角，保持设计风格一致 */
+
+/* 对话框 - 大圆角 */
+.el-dialog {
+	border-radius: var(--radius-xl) !important;
+	overflow: hidden !important;
+}
+
+.el-dialog__header {
+	border-top-left-radius: var(--radius-xl) !important;
+	border-top-right-radius: var(--radius-xl) !important;
+}
+
+.el-dialog__footer {
+	border-bottom-left-radius: var(--radius-xl) !important;
+	border-bottom-right-radius: var(--radius-xl) !important;
+}
+
+/* 抽屉 - 根据位置设置圆角 */
+.el-drawer {
+	overflow: hidden !important;
+}
+
+.el-drawer.rtl {
+	border-top-left-radius: var(--radius-xl) !important;
+	border-bottom-left-radius: var(--radius-xl) !important;
+}
+
+.el-drawer.ltr {
+	border-top-right-radius: var(--radius-xl) !important;
+	border-bottom-right-radius: var(--radius-xl) !important;
+}
+
+.el-drawer.ttb {
+	border-bottom-left-radius: var(--radius-xl) !important;
+	border-bottom-right-radius: var(--radius-xl) !important;
+}
+
+.el-drawer.btt {
+	border-top-left-radius: var(--radius-xl) !important;
+	border-top-right-radius: var(--radius-xl) !important;
+}
+
+/* 弹出框 - 中等圆角 */
+.el-popover.el-popper {
+	border-radius: var(--radius-lg) !important;
+	overflow: hidden !important;
+}
+
+/* 下拉菜单 - 中等圆角 */
+.el-dropdown-menu {
+	border-radius: var(--radius-lg) !important;
+	overflow: hidden !important;
+}
+
+.el-dropdown-menu__item:first-child {
+	border-top-left-radius: var(--radius-lg) !important;
+	border-top-right-radius: var(--radius-lg) !important;
+}
+
+.el-dropdown-menu__item:last-child {
+	border-bottom-left-radius: var(--radius-lg) !important;
+	border-bottom-right-radius: var(--radius-lg) !important;
+}
+
+/* 选择器下拉面板 - 中等圆角 */
+.el-select-dropdown {
+	border-radius: var(--radius-lg) !important;
+	overflow: hidden !important;
+}
+
+.el-select-dropdown .el-scrollbar {
+	border-radius: var(--radius-lg) !important;
+}
+
+/* 日期选择器面板 - 中等圆角 */
+.el-picker-panel,
+.el-date-picker,
+.el-date-range-picker,
+.el-time-picker,
+.el-datetime-picker {
+	border-radius: var(--radius-lg) !important;
+	overflow: hidden !important;
+}
+
+/* 消息提示 - 中等圆角 */
+.el-message {
+	border-radius: var(--radius-lg) !important;
+	overflow: hidden !important;
+}
+
+/* 通知 - 大圆角 */
+.el-notification {
+	border-radius: var(--radius-xl) !important;
+	overflow: hidden !important;
+}
+
+/* 确认框 - 大圆角 */
+.el-message-box {
+	border-radius: var(--radius-xl) !important;
+	overflow: hidden !important;
+}
+
+.el-message-box__header {
+	border-top-left-radius: var(--radius-xl) !important;
+	border-top-right-radius: var(--radius-xl) !important;
+}
+
+/* Tooltip - 小圆角 */
+.el-tooltip__popper,
+.el-popper {
+	border-radius: var(--radius-md) !important;
+}
+
+/* 气泡确认框 - 中等圆角 */
+.el-popconfirm {
+	border-radius: var(--radius-lg) !important;
+}
+
+/* 加载遮罩 */
+.el-loading-mask {
+	border-radius: inherit !important;
+}
+
+/* 菜单 - 中等圆角 */
+.el-menu--popup {
+	border-radius: var(--radius-lg) !important;
+	overflow: hidden !important;
+}
+
+/* 级联选择器面板 - 中等圆角 */
+.el-cascader-panel,
+.el-cascader-menu {
+	border-radius: var(--radius-lg) !important;
+}
+
+/* 颜色选择器下拉 - 中等圆角 */
+.el-color-picker__panel {
+	border-radius: var(--radius-lg) !important;
+	overflow: hidden !important;
+}
+
+/* 穿梭框 - 中等圆角 */
+.el-transfer-panel {
+	border-radius: var(--radius-lg) !important;
+	overflow: hidden !important;
+}

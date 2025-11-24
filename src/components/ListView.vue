@@ -1,11 +1,18 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, watch, onMounted, onUnmounted } from "vue";
 import { ElMessageBox, ElMessage } from "element-plus";
-import type { CalendarEvent } from "@/types";
+import { Search } from "@element-plus/icons-vue";
+import type { CalendarEvent, Tag } from "@/types";
 import { useEvents } from "@/composables/useEvents";
 import { useBatchSelection } from "@/composables/useBatchSelection";
+import { useSupabase } from "@/composables/useSupabase";
+import { useSearch } from "@/composables/useSearch";
+import { useCountdownSettings } from "@/composables/useCountdownSettings";
+import { useCountdown } from "@/composables/useCountdown";
 import BatchOperationBar from "./BatchOperationBar.vue";
 import BatchEditDialog from "./BatchEditDialog.vue";
+import ErrorState from "./ErrorState.vue";
+import CountdownIndicator from "./CountdownIndicator.vue";
 import dayjs from "dayjs";
 
 /**
@@ -27,11 +34,6 @@ const emit = defineEmits<{
 	filtered: [events: CalendarEvent[]];
 }>();
 
-// Handle filtered events from SearchBar
-const handleFilteredEvents = (filteredEvents: CalendarEvent[]) => {
-	emit("filtered", filteredEvents);
-};
-
 // Composables
 const {
 	events: allEvents,
@@ -44,8 +46,156 @@ const {
 	toggleEventCompletion,
 } = useEvents();
 
-// Use filtered events if provided, otherwise use all events
-const events = computed(() => props.filteredEvents ?? allEvents.value);
+// Integrated filter panel state
+const showFilterPanel = ref(false);
+const searchKeyword = ref("");
+const dateRange = ref<[Date, Date] | null>(null);
+const selectedLocations = ref<string[]>([]);
+const selectedTagIds = ref<string[]>([]);
+
+// Composables for filtering
+const { getUniqueLocations } = useSearch();
+const { getAllTags } = useSupabase();
+const availableTags = ref<Tag[]>([]);
+
+// Computed - Available locations from all events
+const availableLocations = computed(() => {
+	return getUniqueLocations(allEvents.value);
+});
+
+// Apply all filters to get filtered events
+const filteredEvents = computed(() => {
+	let result = allEvents.value;
+
+	// Apply keyword search
+	if (searchKeyword.value) {
+		const keyword = searchKeyword.value.toLowerCase();
+		result = result.filter(
+			(event) =>
+				event.title.toLowerCase().includes(keyword) ||
+				event.description?.toLowerCase().includes(keyword) ||
+				event.location?.toLowerCase().includes(keyword)
+		);
+	}
+
+	// Apply date range filter
+	if (dateRange.value) {
+		const [start, end] = dateRange.value;
+		result = result.filter((event) => {
+			const eventStart = new Date(event.startTime);
+			return eventStart >= start && eventStart <= end;
+		});
+	}
+
+	// Apply location filter
+	if (selectedLocations.value.length > 0) {
+		result = result.filter((event) => event.location && selectedLocations.value.includes(event.location));
+	}
+
+	// Apply tag filter
+	if (selectedTagIds.value.length > 0) {
+		result = result.filter(
+			(event) => event.tagIds && event.tagIds.some((tagId) => selectedTagIds.value.includes(tagId))
+		);
+	}
+
+	return result;
+});
+
+// Use filtered events if provided from props, otherwise use local filtered events
+const events = computed(() => props.filteredEvents ?? filteredEvents.value);
+
+// Filter statistics
+const totalEventsCount = computed(() => allEvents.value.length);
+const filteredEventsCount = computed(() => filteredEvents.value.length);
+const hasActiveFilters = computed(() => {
+	return (
+		searchKeyword.value !== "" ||
+		dateRange.value !== null ||
+		selectedLocations.value.length > 0 ||
+		selectedTagIds.value.length > 0
+	);
+});
+const activeFilterCount = computed(() => {
+	let count = 0;
+	if (searchKeyword.value) count++;
+	if (dateRange.value) count++;
+	if (selectedLocations.value.length > 0) count += selectedLocations.value.length;
+	if (selectedTagIds.value.length > 0) count += selectedTagIds.value.length;
+	return count;
+});
+
+// Filter handlers
+const handleSearchChange = () => {
+	emit("filtered", filteredEvents.value);
+};
+
+const handleDateRangeChange = () => {
+	emit("filtered", filteredEvents.value);
+};
+
+const handleLocationChange = () => {
+	emit("filtered", filteredEvents.value);
+};
+
+const toggleTagFilter = (tagId: string) => {
+	const index = selectedTagIds.value.indexOf(tagId);
+	if (index > -1) {
+		selectedTagIds.value.splice(index, 1);
+	} else {
+		selectedTagIds.value.push(tagId);
+	}
+	emit("filtered", filteredEvents.value);
+};
+
+const removeLocation = (location: string) => {
+	selectedLocations.value = selectedLocations.value.filter((l) => l !== location);
+	emit("filtered", filteredEvents.value);
+};
+
+const removeTag = (tagId: string) => {
+	selectedTagIds.value = selectedTagIds.value.filter((id) => id !== tagId);
+	emit("filtered", filteredEvents.value);
+};
+
+const clearAllFilters = () => {
+	searchKeyword.value = "";
+	dateRange.value = null;
+	selectedLocations.value = [];
+	selectedTagIds.value = [];
+	emit("filtered", filteredEvents.value);
+};
+
+const applyDatePreset = (preset: "today" | "thisWeek" | "thisMonth") => {
+	const today = dayjs();
+	switch (preset) {
+		case "today":
+			dateRange.value = [today.startOf("day").toDate(), today.endOf("day").toDate()];
+			break;
+		case "thisWeek":
+			dateRange.value = [today.startOf("week").toDate(), today.endOf("week").toDate()];
+			break;
+		case "thisMonth":
+			dateRange.value = [today.startOf("month").toDate(), today.endOf("month").toDate()];
+			break;
+	}
+	handleDateRangeChange();
+};
+
+const formatDateRange = (range: [Date, Date]) => {
+	return `${dayjs(range[0]).format("YYYY-MM-DD")} ~ ${dayjs(range[1]).format("YYYY-MM-DD")}`;
+};
+
+// Watch for filtered events changes
+watch(
+	filteredEvents,
+	(newFiltered) => {
+		emit("filtered", newFiltered);
+	},
+	{ immediate: true }
+);
+
+// Batch selection composable
 const {
 	isSelectionMode,
 	selectedCount,
@@ -60,21 +210,6 @@ const {
 	getSelectedIds,
 	getSelectedEvents,
 } = useBatchSelection();
-
-// Import useSupabase for tags
-import { useSupabase } from "@/composables/useSupabase";
-import { onMounted, onUnmounted } from "vue";
-import type { Tag } from "@/types";
-import ErrorState from "./ErrorState.vue";
-
-// Import countdown functionality
-import CountdownIndicator from "./CountdownIndicator.vue";
-import { useCountdownSettings } from "@/composables/useCountdownSettings";
-import { useCountdown } from "@/composables/useCountdown";
-import SearchBar from "./SearchBar.vue";
-
-const { getAllTags } = useSupabase();
-const availableTags = ref<Tag[]>([]);
 
 // Countdown settings and auto-update
 const { settings: countdownSettings } = useCountdownSettings();
@@ -114,7 +249,7 @@ const showBatchEditDialog = ref(false);
  * Requirement 1.3: Within completed events, sort by start time ascending
  */
 const sortedEvents = computed(() => {
-	return [...events.value].sort((a, b) => {
+	return [...filteredEvents.value].sort((a, b) => {
 		// First sort by completion status: uncompleted before completed
 		if (a.isCompleted !== b.isCompleted) {
 			return a.isCompleted ? 1 : -1;
@@ -125,11 +260,57 @@ const sortedEvents = computed(() => {
 });
 
 /**
+ * Group events by month
+ * 按月份分组事件
+ */
+interface MonthGroup {
+	month: string; // YYYY-MM format
+	displayMonth: string; // 显示格式：2024年11月
+	events: CalendarEvent[];
+	isExpanded: boolean;
+}
+
+const collapsedMonths = ref<Set<string>>(new Set());
+
+const groupedEvents = computed(() => {
+	const groups = new Map<string, MonthGroup>();
+
+	sortedEvents.value.forEach((event) => {
+		const monthKey = dayjs(event.startTime).format("YYYY-MM");
+
+		if (!groups.has(monthKey)) {
+			const date = dayjs(event.startTime);
+			groups.set(monthKey, {
+				month: monthKey,
+				displayMonth: date.format("YYYY年MM月"),
+				events: [],
+				isExpanded: !collapsedMonths.value.has(monthKey),
+			});
+		}
+
+		groups.get(monthKey)!.events.push(event);
+	});
+
+	// 转换为数组并按月份排序
+	return Array.from(groups.values()).sort((a, b) => {
+		return dayjs(a.month).valueOf() - dayjs(b.month).valueOf();
+	});
+});
+
+const toggleMonthGroup = (monthKey: string) => {
+	if (collapsedMonths.value.has(monthKey)) {
+		collapsedMonths.value.delete(monthKey);
+	} else {
+		collapsedMonths.value.add(monthKey);
+	}
+};
+
+/**
  * Check if there are no events
  * Requirement 8.6: Display empty state prompt when no events exist
  */
 const isEmpty = computed(() => {
-	return !loading.value && events.value.length === 0;
+	return !loading.value && filteredEvents.value.length === 0;
 });
 
 /**
@@ -347,39 +528,227 @@ const handleRetry = async () => {
 
 <template>
 	<div class="list-view">
-		<!-- Search Bar - At the top of list view -->
-		<SearchBar @filtered="handleFilteredEvents" />
+		<!-- 顶部工具栏：搜索筛选 + 批量操作 合并到一行 -->
+		<div class="top-toolbar">
+			<!-- 搜索筛选按钮 -->
+			<button class="filter-toggle-btn" @click="showFilterPanel = !showFilterPanel">
+				<span class="filter-icon">🔍</span>
+				<span class="filter-label">搜索与筛选</span>
+				<span v-if="activeFilterCount > 0" class="filter-count">{{ activeFilterCount }}</span>
+				<span class="filter-arrow" :class="{ expanded: showFilterPanel }">▼</span>
+			</button>
 
-		<!-- Batch Selection Toolbar -->
-		<!-- Requirement 12.1: Add batch operation mode toggle -->
-		<div v-if="!loading && !isEmpty" class="batch-toolbar">
-			<div class="batch-toolbar-left">
-				<button
-					class="batch-toggle-btn"
-					:class="{ active: isSelectionMode }"
-					@click="toggleSelectionMode">
-					<span class="batch-icon">{{ isSelectionMode ? "✓" : "☐" }}</span>
-					<span class="batch-text">{{ isSelectionMode ? "取消选择" : "批量操作" }}</span>
-				</button>
+			<!-- 批量操作按钮 -->
+			<button
+				v-if="!loading && !isEmpty"
+				class="batch-toggle-btn"
+				:class="{ active: isSelectionMode }"
+				@click="toggleSelectionMode">
+				<span class="batch-icon">{{ isSelectionMode ? "✓" : "☐" }}</span>
+				<span class="batch-text">{{ isSelectionMode ? "取消选择" : "批量操作" }}</span>
+			</button>
+		</div>
 
-				<!-- Select All Checkbox (only visible in selection mode) -->
-				<!-- Requirement 12.1: Implement select all/deselect all functionality -->
-				<div v-if="isSelectionMode" class="select-all-container">
-					<label class="select-all-label">
-						<input
-							type="checkbox"
-							class="select-all-checkbox"
-							:checked="selectAllCheckboxState === true"
-							:indeterminate="selectAllCheckboxState === 'indeterminate'"
-							@change="handleSelectAll" />
-						<span class="select-all-text">全选</span>
-					</label>
+		<!-- Expandable Filter Panel -->
+		<div class="search-filter-panel">
+			<div v-show="showFilterPanel" class="filter-panel-content">
+				<!-- Search Input -->
+				<div class="filter-section">
+					<div class="section-header">
+						<span class="section-icon">🔍</span>
+						<span class="section-title">关键词搜索</span>
+					</div>
+					<el-input
+						v-model="searchKeyword"
+						placeholder="搜索标题、描述或地点..."
+						clearable
+						@input="handleSearchChange"
+						class="search-input">
+						<template #prefix>
+							<el-icon><Search /></el-icon>
+						</template>
+					</el-input>
+				</div>
+
+				<!-- Date Range Filter -->
+				<div class="filter-section">
+					<div class="section-header">
+						<span class="section-icon">📅</span>
+						<span class="section-title">日期范围</span>
+					</div>
+					<div class="date-filter-content">
+						<el-date-picker
+							v-model="dateRange"
+							type="daterange"
+							range-separator="至"
+							start-placeholder="开始日期"
+							end-placeholder="结束日期"
+							clearable
+							@change="handleDateRangeChange"
+							class="date-range-picker" />
+						<div class="date-presets">
+							<el-button size="small" text @click="applyDatePreset('today')"
+								>今天</el-button
+							>
+							<el-button
+								size="small"
+								text
+								@click="applyDatePreset('thisWeek')"
+								>本周</el-button
+							>
+							<el-button
+								size="small"
+								text
+								@click="applyDatePreset('thisMonth')"
+								>本月</el-button
+							>
+						</div>
+					</div>
+				</div>
+
+				<!-- Location Filter -->
+				<div class="filter-section" v-if="availableLocations.length > 0">
+					<div class="section-header">
+						<span class="section-icon">📍</span>
+						<span class="section-title">地点筛选</span>
+						<span v-if="selectedLocations.length > 0" class="selected-count"
+							>({{ selectedLocations.length }})</span
+						>
+					</div>
+					<el-select
+						v-model="selectedLocations"
+						multiple
+						collapse-tags
+						collapse-tags-tooltip
+						placeholder="选择地点"
+						clearable
+						filterable
+						@change="handleLocationChange"
+						class="location-select">
+						<el-option
+							v-for="location in availableLocations"
+							:key="location"
+							:label="location"
+							:value="location" />
+					</el-select>
+				</div>
+
+				<!-- Tag Filter -->
+				<div class="filter-section" v-if="availableTags.length > 0">
+					<div class="section-header">
+						<span class="section-icon">🏷️</span>
+						<span class="section-title">标签筛选</span>
+						<span v-if="selectedTagIds.length > 0" class="selected-count"
+							>({{ selectedTagIds.length }})</span
+						>
+					</div>
+					<div class="tag-filter-list">
+						<button
+							v-for="tag in availableTags"
+							:key="tag.id"
+							:class="[
+								'tag-filter-item',
+								{ active: selectedTagIds.includes(tag.id) },
+							]"
+							:style="{
+								backgroundColor: selectedTagIds.includes(tag.id)
+									? tag.color
+									: 'white',
+								color: selectedTagIds.includes(tag.id)
+									? 'white'
+									: '#606266',
+								borderColor: tag.color,
+							}"
+							@click="toggleTagFilter(tag.id)">
+							<span
+								class="tag-color-dot"
+								:style="{ backgroundColor: tag.color }"></span>
+							<span class="tag-name">{{ tag.name }}</span>
+							<span v-if="selectedTagIds.includes(tag.id)" class="tag-check"
+								>✓</span
+							>
+						</button>
+					</div>
+				</div>
+
+				<!-- Active Filters Summary -->
+				<div v-if="hasActiveFilters" class="active-filters-section">
+					<div class="section-header">
+						<span class="section-icon">✨</span>
+						<span class="section-title">当前筛选</span>
+						<el-button size="small" text type="danger" @click="clearAllFilters"
+							>清除全部</el-button
+						>
+					</div>
+					<div class="active-filters-list">
+						<el-tag
+							v-if="searchKeyword"
+							closable
+							@close="
+								searchKeyword = '';
+								handleSearchChange();
+							"
+							size="small">
+							关键词: {{ searchKeyword }}
+						</el-tag>
+						<el-tag
+							v-if="dateRange"
+							closable
+							@close="
+								dateRange = null;
+								handleDateRangeChange();
+							"
+							size="small">
+							日期: {{ formatDateRange(dateRange) }}
+						</el-tag>
+						<el-tag
+							v-for="location in selectedLocations"
+							:key="location"
+							closable
+							@close="removeLocation(location)"
+							size="small">
+							📍 {{ location }}
+						</el-tag>
+						<el-tag
+							v-for="tagId in selectedTagIds"
+							:key="tagId"
+							:color="getTagById(tagId)?.color"
+							closable
+							@close="removeTag(tagId)"
+							size="small"
+							style="color: white; border: none">
+							{{ getTagById(tagId)?.name }}
+						</el-tag>
+					</div>
+				</div>
+
+				<!-- Results Count -->
+				<div class="results-summary">
+					<span v-if="hasActiveFilters" class="results-text">
+						显示 <strong>{{ filteredEventsCount }}</strong> /
+						{{ totalEventsCount }} 个事件
+					</span>
+					<span v-else class="results-text">
+						共 <strong>{{ totalEventsCount }}</strong> 个事件
+					</span>
 				</div>
 			</div>
+		</div>
+
+		<!-- Select All Checkbox (only visible in selection mode) -->
+		<div v-if="isSelectionMode && !loading && !isEmpty" class="select-all-toolbar">
+			<label class="select-all-label">
+				<input
+					type="checkbox"
+					class="select-all-checkbox"
+					:checked="selectAllCheckboxState === true"
+					:indeterminate="selectAllCheckboxState === 'indeterminate'"
+					@change="handleSelectAll" />
+				<span class="select-all-text">全选</span>
+			</label>
 
 			<!-- Selection Count -->
-			<!-- Requirement 12.2: Display number of selected events -->
-			<div v-if="isSelectionMode && selectedCount > 0" class="selection-count">
+			<div v-if="selectedCount > 0" class="selection-count">
 				已选择 <strong>{{ selectedCount }}</strong> 个事件
 			</div>
 		</div>
@@ -408,129 +777,174 @@ const handleRetry = async () => {
 			<p class="empty-hint">使用上方输入框解析通告文本来创建日程</p>
 		</div>
 
-		<!-- Event List -->
-		<!-- Requirement 8.1: Display all events in a flat list -->
+		<!-- Event List with Date Grouping -->
+		<!-- Requirement 8.1: Display all events grouped by date -->
 		<!-- Requirement 8.2: Display events in time order (from nearest to farthest) -->
 		<div v-else class="event-list">
-			<div
-				v-for="event in sortedEvents"
-				:key="event.id"
-				class="event-item"
-				:class="{
-					'event-item--today': isToday(event.startTime),
-					'event-item--past': isPast(event),
-					'event-item--upcoming': isUpcoming(event.startTime),
-					'event-item--selected': isSelectionMode && isSelected(event.id),
-					'event-item--selectable': isSelectionMode,
-					'event-item--completed': event.isCompleted,
-				}"
-				@click="handleEventClick(event)">
-				<!-- Checkbox (only visible in selection mode) -->
-				<!-- Requirement 12.1: Add checkboxes in list view -->
-				<div v-if="isSelectionMode" class="event-checkbox-container">
-					<input
-						type="checkbox"
-						class="event-checkbox"
-						:checked="isSelected(event.id)"
-						@click="handleCheckboxClick(event, $event)" />
+			<!-- Month Group -->
+			<div v-for="group in groupedEvents" :key="group.month" class="month-group">
+				<!-- Month Group Header -->
+				<div class="month-group-header" @click="toggleMonthGroup(group.month)">
+					<div class="month-group-info">
+						<span class="month-group-icon">📅</span>
+						<span class="month-group-title">{{ group.displayMonth }}</span>
+						<span class="month-group-count">{{ group.events.length }}</span>
+					</div>
+					<span class="month-group-arrow" :class="{ collapsed: !group.isExpanded }"
+						>▼</span
+					>
 				</div>
 
-				<!-- Date Badge -->
-				<div class="event-date-badge">
-					<!-- Completion Toggle Button -->
-					<button
-						class="completion-toggle-btn"
-						:class="{ 'completion-toggle-btn--completed': event.isCompleted }"
-						:title="event.isCompleted ? '标记为未完成' : '标记为完成'"
-						@click.stop="handleToggleCompletion(event, $event)">
-						<span v-if="event.isCompleted" class="completion-icon">✓</span>
-						<span v-else class="completion-icon">○</span>
-					</button>
-
-					<div class="event-date-badge__day">
-						{{ dayjs(event.startTime).format("DD") }}
-					</div>
-					<div class="event-date-badge__month">
-						{{ dayjs(event.startTime).format("MMM") }}
-					</div>
-					<div class="event-date-badge__weekday">
-						{{ formatDayOfWeek(event.startTime) }}
-					</div>
-				</div>
-
-				<!-- Event Details -->
-				<!-- Requirement 8.3: Display date, time, title, and location for each event -->
-				<div class="event-details">
-					<div class="event-header">
-						<h3 class="event-title">{{ event.title }}</h3>
-						<div class="event-badges">
-							<!-- Countdown Indicator -->
-							<!-- Requirement 2.1, 2.2, 2.3, 2.4, 3.1, 3.2, 3.3, 3.4, 6.2 -->
-							<CountdownIndicator
-								v-if="countdownSettings.enabled"
-								:event="event"
-								:unit="countdownSettings.unit" />
-							<span v-if="event.isCompleted" class="badge badge--completed"
-								>已完成</span
-							>
-							<span
-								v-if="isToday(event.startTime) && !event.isCompleted"
-								class="badge badge--today"
-								>今天</span
-							>
-							<span
-								v-if="isUpcoming(event.startTime) && !event.isCompleted"
-								class="badge badge--upcoming"
-								>即将到来</span
-							>
-							<span v-if="event.isAllDay" class="badge badge--allday"
-								>全天</span
-							>
-						</div>
-					</div>
-
-					<div class="event-meta">
-						<div class="event-meta-item">
-							<span class="event-meta-icon">🕐</span>
-							<span class="event-meta-text">
-								{{
-									formatTime(
-										event.startTime,
-										event.endTime,
-										event.isAllDay
-									)
-								}}
-							</span>
+				<!-- Events in this month group -->
+				<div v-show="group.isExpanded" class="month-group-events">
+					<div
+						v-for="event in group.events"
+						:key="event.id"
+						class="event-item"
+						:class="{
+							'event-item--today': isToday(event.startTime),
+							'event-item--past': isPast(event),
+							'event-item--upcoming': isUpcoming(event.startTime),
+							'event-item--selected': isSelectionMode && isSelected(event.id),
+							'event-item--selectable': isSelectionMode,
+							'event-item--completed': event.isCompleted,
+						}"
+						@click="handleEventClick(event)">
+						<!-- Checkbox (only visible in selection mode) -->
+						<!-- Requirement 12.1: Add checkboxes in list view -->
+						<div v-if="isSelectionMode" class="event-checkbox-container">
+							<input
+								type="checkbox"
+								class="event-checkbox"
+								:checked="isSelected(event.id)"
+								@click="handleCheckboxClick(event, $event)" />
 						</div>
 
-						<div v-if="event.location" class="event-meta-item">
-							<span class="event-meta-icon">📍</span>
-							<span class="event-meta-text">{{ event.location }}</span>
+						<!-- Date Badge -->
+						<div class="event-date-badge">
+							<!-- Completion Toggle Button -->
+							<button
+								class="completion-toggle-btn"
+								:class="{
+									'completion-toggle-btn--completed':
+										event.isCompleted,
+								}"
+								:title="
+									event.isCompleted
+										? '标记为未完成'
+										: '标记为完成'
+								"
+								@click.stop="handleToggleCompletion(event, $event)">
+								<span v-if="event.isCompleted" class="completion-icon"
+									>✓</span
+								>
+								<span v-else class="completion-icon">○</span>
+							</button>
+
+							<div class="event-date-badge__day">
+								{{ dayjs(event.startTime).format("DD") }}
+							</div>
+							<div class="event-date-badge__month">
+								{{ dayjs(event.startTime).format("MMM") }}
+							</div>
+							<div class="event-date-badge__weekday">
+								{{ formatDayOfWeek(event.startTime) }}
+							</div>
+						</div>
+
+						<!-- Event Details -->
+						<!-- Requirement 8.3: Display date, time, title, and location for each event -->
+						<div class="event-details">
+							<!-- 标题行：标题 + 标签 + 徽章 -->
+							<div class="event-header">
+								<h3 class="event-title">{{ event.title }}</h3>
+
+								<!-- Event Tags - 移到标题后面 -->
+								<div
+									v-if="event.tagIds && event.tagIds.length > 0"
+									class="event-tags-inline">
+									<span
+										v-for="tagId in event.tagIds"
+										:key="tagId"
+										v-show="getTagById(tagId)"
+										class="event-tag"
+										:style="{
+											backgroundColor:
+												getTagById(tagId)
+													?.color ||
+												'#409EFF',
+										}">
+										{{ getTagById(tagId)?.name }}
+									</span>
+								</div>
+
+								<div class="event-badges">
+									<!-- Countdown Indicator -->
+									<CountdownIndicator
+										v-if="countdownSettings.enabled"
+										:event="event"
+										:unit="countdownSettings.unit" />
+									<span
+										v-if="event.isCompleted"
+										class="badge badge--completed"
+										>已完成</span
+									>
+									<span
+										v-if="
+											isToday(event.startTime) &&
+											!event.isCompleted
+										"
+										class="badge badge--today"
+										>今天</span
+									>
+									<span
+										v-if="
+											isUpcoming(event.startTime) &&
+											!event.isCompleted
+										"
+										class="badge badge--upcoming"
+										>即将到来</span
+									>
+									<span
+										v-if="event.isAllDay"
+										class="badge badge--allday"
+										>全天</span
+									>
+								</div>
+							</div>
+
+							<div class="event-meta">
+								<div class="event-meta-item">
+									<span class="event-meta-icon">🕐</span>
+									<span class="event-meta-text">
+										{{
+											formatTime(
+												event.startTime,
+												event.endTime,
+												event.isAllDay
+											)
+										}}
+									</span>
+								</div>
+
+								<div v-if="event.location" class="event-meta-item">
+									<span class="event-meta-icon">📍</span>
+									<span class="event-meta-text">{{
+										event.location
+									}}</span>
+								</div>
+							</div>
+
+							<div v-if="event.description" class="event-description">
+								{{ event.description }}
+							</div>
+						</div>
+
+						<!-- Arrow Icon -->
+						<div class="event-arrow">
+							<span class="arrow-icon">›</span>
 						</div>
 					</div>
-
-					<div v-if="event.description" class="event-description">
-						{{ event.description }}
-					</div>
-
-					<!-- Event Tags -->
-					<div v-if="event.tagIds && event.tagIds.length > 0" class="event-tags">
-						<span
-							v-for="tagId in event.tagIds"
-							:key="tagId"
-							v-show="getTagById(tagId)"
-							class="event-tag"
-							:style="{
-								backgroundColor: getTagById(tagId)?.color || '#409EFF',
-							}">
-							{{ getTagById(tagId)?.name }}
-						</span>
-					</div>
-				</div>
-
-				<!-- Arrow Icon -->
-				<div class="event-arrow">
-					<span class="arrow-icon">›</span>
 				</div>
 			</div>
 		</div>
@@ -557,116 +971,11 @@ const handleRetry = async () => {
 .list-view {
 	position: relative;
 	width: 100%;
-	max-width: 1200px;
 	margin: 0 auto;
 	padding: 20px;
 }
 
-/* Batch Selection Toolbar */
-.batch-toolbar {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	padding: var(--spacing-md) var(--spacing-lg);
-	margin-bottom: var(--spacing-lg);
-	background: var(--bg-secondary);
-	border: 1px solid var(--border-light);
-	border-radius: var(--radius-xl);
-	gap: var(--spacing-lg);
-	box-shadow: 0 2px 8px var(--shadow);
-}
-
-.batch-toolbar-left {
-	display: flex;
-	align-items: center;
-	gap: 16px;
-}
-
-.batch-toggle-btn {
-	display: flex;
-	align-items: center;
-	gap: var(--spacing-sm);
-	padding: var(--spacing-sm) var(--spacing-lg);
-	background: var(--bg-secondary);
-	border: 2px solid var(--primary-color);
-	border-radius: var(--radius-lg);
-	color: var(--primary-color);
-	font-size: var(--font-size-base);
-	font-weight: var(--font-weight-medium);
-	cursor: pointer;
-	transition: all 0.3s ease;
-	box-shadow: 0 2px 4px var(--shadow);
-}
-
-.batch-toggle-btn:hover {
-	background: var(--bg-hover);
-	transform: translateY(-2px);
-	box-shadow: 0 4px 8px var(--shadow);
-}
-
-.batch-toggle-btn.active {
-	background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
-	color: white;
-	border-color: var(--primary-dark);
-}
-
-.batch-toggle-btn.active:hover {
-	background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-color) 100%);
-}
-
-.batch-icon {
-	font-size: 16px;
-	line-height: 1;
-}
-
-.batch-text {
-	line-height: 1;
-}
-
-.select-all-container {
-	display: flex;
-	align-items: center;
-}
-
-.select-all-label {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	cursor: pointer;
-	user-select: none;
-}
-
-.select-all-checkbox {
-	width: 18px;
-	height: 18px;
-	/* 增加可点击区域以满足触摸目标要求 */
-	padding: 13px;
-	cursor: pointer;
-	accent-color: var(--primary-color);
-}
-
-.select-all-text {
-	font-size: 14px;
-	color: var(--text-secondary);
-	font-weight: 500;
-}
-
-.selection-count {
-	font-size: var(--font-size-base);
-	color: var(--text-secondary);
-	padding: var(--spacing-sm) var(--spacing-lg);
-	background: linear-gradient(135deg, var(--bg-hover) 0%, var(--bg-color) 100%);
-	border-radius: var(--radius-lg);
-	border: 1px solid var(--border-light);
-	font-weight: var(--font-weight-medium);
-	box-shadow: 0 2px 4px var(--shadow);
-}
-
-.selection-count strong {
-	color: var(--primary-color);
-	font-weight: var(--font-weight-bold);
-	font-size: var(--font-size-lg);
-}
+/* 旧的batch-toolbar样式已移除，使用新的top-toolbar */
 
 /* Loading State */
 .loading-overlay {
@@ -773,19 +1082,110 @@ const handleRetry = async () => {
 .event-list {
 	display: flex;
 	flex-direction: column;
-	gap: 12px;
+	gap: 16px;
 	animation: fadeIn 0.5s ease-out;
 }
 
-/* Event Item */
+/* Month Group Styles */
+.month-group {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+.month-group-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 14px 20px;
+	background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+	border: 2px solid var(--primary-color);
+	border-radius: var(--radius-xl);
+	cursor: pointer;
+	transition: all 0.3s ease;
+	user-select: none;
+	box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.month-group-header:hover {
+	background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-color) 100%);
+	transform: translateY(-2px);
+	box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+}
+
+.month-group-info {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.month-group-icon {
+	font-size: 24px;
+	line-height: 1;
+	filter: brightness(0) invert(1);
+}
+
+.month-group-title {
+	font-size: 18px;
+	font-weight: var(--font-weight-bold);
+	color: white;
+	letter-spacing: -0.3px;
+}
+
+.month-group-count {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 28px;
+	height: 28px;
+	padding: 0 10px;
+	background: rgba(255, 255, 255, 0.25);
+	color: white;
+	border-radius: var(--radius-full);
+	font-size: 13px;
+	font-weight: var(--font-weight-bold);
+	border: 2px solid rgba(255, 255, 255, 0.4);
+}
+
+.month-group-arrow {
+	font-size: 16px;
+	color: white;
+	transition: transform 0.3s ease;
+	font-weight: bold;
+}
+
+.month-group-arrow.collapsed {
+	transform: rotate(-90deg);
+}
+
+.month-group-events {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	padding-left: 12px;
+	animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+	from {
+		opacity: 0;
+		max-height: 0;
+	}
+	to {
+		opacity: 1;
+		max-height: 2000px;
+	}
+}
+
+/* Event Item - 方案A优化：减小内边距和间距 */
 .event-item {
 	display: flex;
 	align-items: stretch;
-	gap: var(--spacing-lg);
-	padding: var(--spacing-lg);
+	gap: var(--spacing-md);
+	padding: 16px;
 	background: var(--bg-secondary);
 	border: 1px solid var(--border-light);
-	border-radius: var(--radius-xl);
+	border-radius: var(--radius-lg);
 	cursor: pointer;
 	transition: all 0.3s ease;
 	animation: slideInUp 0.4s ease-out;
@@ -960,17 +1360,17 @@ const handleRetry = async () => {
 	box-shadow: 0 4px 12px var(--shadow);
 }
 
-/* Date Badge - Requirement 12.2: Color contrast, 12.4: Visual weight */
+/* Date Badge - 方案A优化：从90px缩小到70px */
 .event-date-badge {
 	flex-shrink: 0;
 	display: flex;
 	flex-direction: column;
 	align-items: center;
 	justify-content: center;
-	width: 90px;
-	height: 90px;
+	width: 70px;
+	height: 70px;
 	background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
-	border-radius: var(--radius-xl);
+	border-radius: var(--radius-lg);
 	color: white;
 	text-align: center;
 	box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
@@ -1008,54 +1408,64 @@ const handleRetry = async () => {
 	background: linear-gradient(135deg, var(--text-tertiary) 0%, var(--text-secondary) 100%);
 }
 
-/* Typography hierarchy within badge - Requirement 12.1 */
+/* Typography hierarchy within badge - 方案A优化：字体缩小 */
 .event-date-badge__day {
-	font-size: var(--font-size-4xl);
+	font-size: 28px;
 	font-weight: var(--font-weight-bold);
 	line-height: var(--line-height-tight);
-	margin-bottom: var(--spacing-xs);
+	margin-bottom: 2px;
 }
 
 .event-date-badge__month {
-	font-size: var(--font-size-xs);
+	font-size: 11px;
 	font-weight: var(--font-weight-bold);
 	text-transform: uppercase;
 	opacity: 0.95;
-	margin-bottom: 2px;
+	margin-bottom: 1px;
 	letter-spacing: 0.8px;
 }
 
 .event-date-badge__weekday {
-	font-size: var(--font-size-xs);
+	font-size: 10px;
 	font-weight: var(--font-weight-medium);
 	opacity: 0.9;
 }
 
-/* Event Details - Requirement 12.3: Whitespace for content separation */
+/* Event Details - 方案A优化：减小间距 */
 .event-details {
 	flex: 1;
 	display: flex;
 	flex-direction: column;
-	gap: var(--spacing-md);
+	gap: 12px;
 	min-width: 0;
 }
 
+/* 标题行：标题 + 标签 + 徽章 一行显示 */
 .event-header {
 	display: flex;
-	align-items: flex-start;
-	justify-content: space-between;
-	gap: var(--spacing-md);
+	align-items: center;
+	gap: 10px;
+	flex-wrap: wrap;
 }
 
-/* Primary content - Requirement 12.1: Font hierarchy, 12.4: Visual weight */
+/* Primary content - 方案A优化：字体从20px缩小到18px */
 .event-title {
 	margin: 0;
-	font-size: var(--font-size-xl);
+	font-size: 18px;
 	font-weight: var(--font-weight-bold);
 	color: var(--text-primary);
 	line-height: var(--line-height-tight);
 	word-break: break-word;
 	letter-spacing: -0.3px;
+	flex-shrink: 0;
+}
+
+/* 标签放在标题后面 */
+.event-tags-inline {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	align-items: center;
 }
 
 .event-badges {
@@ -1063,16 +1473,16 @@ const handleRetry = async () => {
 	gap: var(--spacing-sm);
 	flex-shrink: 0;
 	flex-wrap: wrap;
+	margin-left: auto;
 }
 
-/* Requirement 14.1: Rounded rectangles with soft background */
-/* Requirement 14.2: Text color matches background */
+/* 方案A优化：徽章尺寸缩小 */
 .badge {
 	display: inline-flex;
 	align-items: center;
-	padding: var(--spacing-xs) var(--spacing-sm);
-	border-radius: var(--radius-lg);
-	font-size: var(--font-size-xs);
+	padding: 4px 10px;
+	border-radius: var(--radius-md);
+	font-size: 11px;
 	font-weight: var(--font-weight-semibold);
 	white-space: nowrap;
 	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -1114,25 +1524,25 @@ const handleRetry = async () => {
 	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
-/* Secondary content - Requirement 12.1: Smaller font, 12.2: Secondary color */
+/* 方案A优化：元信息字体和间距缩小 */
 .event-meta {
 	display: flex;
 	flex-wrap: wrap;
-	gap: var(--spacing-lg);
+	gap: 12px;
 }
 
 .event-meta-item {
 	display: flex;
 	align-items: center;
-	gap: var(--spacing-sm);
-	font-size: var(--font-size-sm);
+	gap: 6px;
+	font-size: 13px;
 	color: var(--text-secondary);
 	font-weight: var(--font-weight-medium);
 	line-height: var(--line-height-normal);
 }
 
 .event-meta-icon {
-	font-size: var(--font-size-lg);
+	font-size: 16px;
 	line-height: 1;
 	flex-shrink: 0;
 }
@@ -1141,42 +1551,38 @@ const handleRetry = async () => {
 	line-height: var(--line-height-normal);
 }
 
-/* Tertiary content - Requirement 12.1: Smallest font, 12.5: Limited density */
+/* 方案A优化：描述字体缩小 */
 .event-description {
-	font-size: var(--font-size-sm);
+	font-size: 13px;
 	color: var(--text-tertiary);
-	line-height: var(--line-height-relaxed);
+	line-height: 1.5;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	display: -webkit-box;
 	-webkit-line-clamp: 2;
 	-webkit-box-orient: vertical;
-	padding: var(--spacing-md);
+	padding: 10px 12px;
 	background: var(--bg-hover);
 	border-radius: var(--radius-md);
 	border-left: 3px solid var(--primary-color);
-	margin-top: var(--spacing-xs);
+	margin-top: 4px;
 }
 
-/* Event Tags */
-/* Requirement 14.1: Rounded rectangles with soft background */
-/* Requirement 14.2: Text color matches background */
-/* Requirement 14.3: Appropriate spacing for multiple tags */
-/* Requirement 14.4: Hover effect */
+/* 方案A优化：标签尺寸和间距缩小 */
 .event-tags {
 	display: flex;
 	flex-wrap: wrap;
-	gap: var(--spacing-sm);
-	margin-top: var(--spacing-xs);
+	gap: 6px;
+	margin-top: 4px;
 	align-items: center;
 }
 
 .event-tag {
 	display: inline-flex;
 	align-items: center;
-	padding: var(--spacing-xs) var(--spacing-md);
-	border-radius: var(--radius-lg);
-	font-size: var(--font-size-xs);
+	padding: 4px 10px;
+	border-radius: var(--radius-md);
+	font-size: 11px;
 	font-weight: var(--font-weight-semibold);
 	color: white;
 	white-space: nowrap;
@@ -1213,6 +1619,333 @@ const handleRetry = async () => {
 .event-item:hover .event-arrow {
 	color: var(--primary-color);
 	transform: translateX(4px);
+}
+
+/* 顶部工具栏：搜索筛选 + 批量操作 一行显示 */
+.top-toolbar {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin-bottom: var(--spacing-lg);
+}
+
+/* 搜索筛选面板 */
+.search-filter-panel {
+	margin-bottom: var(--spacing-lg);
+}
+
+/* 全选工具栏 */
+.select-all-toolbar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 12px 16px;
+	margin-bottom: var(--spacing-lg);
+	background: var(--bg-secondary);
+	border: 1px solid var(--border-light);
+	border-radius: var(--radius-lg);
+	box-shadow: 0 2px 8px var(--shadow);
+}
+
+.select-all-label {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	cursor: pointer;
+	user-select: none;
+}
+
+.select-all-checkbox {
+	width: 18px;
+	height: 18px;
+	padding: 13px;
+	cursor: pointer;
+	accent-color: var(--primary-color);
+}
+
+.select-all-text {
+	font-size: 14px;
+	color: var(--text-secondary);
+	font-weight: 500;
+}
+
+.selection-count {
+	font-size: var(--font-size-base);
+	color: var(--text-secondary);
+	padding: var(--spacing-sm) var(--spacing-lg);
+	background: linear-gradient(135deg, var(--bg-hover) 0%, var(--bg-color) 100%);
+	border-radius: var(--radius-lg);
+	border: 1px solid var(--border-light);
+	font-weight: var(--font-weight-medium);
+	box-shadow: 0 2px 4px var(--shadow);
+}
+
+.selection-count strong {
+	color: var(--primary-color);
+	font-weight: var(--font-weight-bold);
+	font-size: var(--font-size-lg);
+}
+
+.filter-toggle-btn {
+	display: flex;
+	align-items: center;
+	gap: var(--spacing-md);
+	padding: var(--spacing-md) var(--spacing-lg);
+	background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-hover) 100%);
+	border: 2px solid var(--border-color);
+	border-radius: var(--radius-lg);
+	cursor: pointer;
+	transition: all 0.3s ease;
+	font-size: var(--font-size-base);
+	font-weight: var(--font-weight-semibold);
+	color: var(--text-primary);
+	flex: 1;
+	justify-content: space-between;
+	box-shadow: 0 2px 8px var(--shadow);
+}
+
+.batch-toggle-btn {
+	display: flex;
+	align-items: center;
+	gap: var(--spacing-sm);
+	padding: var(--spacing-md) var(--spacing-lg);
+	background: var(--bg-secondary);
+	border: 2px solid var(--primary-color);
+	border-radius: var(--radius-lg);
+	color: var(--primary-color);
+	font-size: var(--font-size-base);
+	font-weight: var(--font-weight-semibold);
+	cursor: pointer;
+	transition: all 0.3s ease;
+	box-shadow: 0 2px 4px var(--shadow);
+	white-space: nowrap;
+}
+
+.batch-toggle-btn:hover {
+	background: var(--bg-hover);
+	transform: translateY(-2px);
+	box-shadow: 0 4px 8px var(--shadow);
+}
+
+.batch-toggle-btn.active {
+	background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+	color: white;
+	border-color: var(--primary-dark);
+}
+
+.batch-toggle-btn.active:hover {
+	background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-color) 100%);
+}
+
+.batch-icon {
+	font-size: 16px;
+	line-height: 1;
+}
+
+.batch-text {
+	line-height: 1;
+}
+
+.filter-toggle-btn:hover {
+	border-color: var(--primary-color);
+	background: linear-gradient(135deg, var(--bg-hover) 0%, var(--primary-light) 10%);
+	transform: translateY(-2px);
+	box-shadow: 0 4px 12px var(--shadow-md);
+}
+
+.filter-icon {
+	font-size: 20px;
+}
+
+.filter-label {
+	flex: 1;
+	text-align: left;
+	font-size: var(--font-size-base);
+}
+
+.filter-count {
+	background: var(--primary-color);
+	color: white;
+	padding: 4px 10px;
+	border-radius: var(--radius-full);
+	font-size: var(--font-size-xs);
+	font-weight: var(--font-weight-bold);
+	min-width: 24px;
+	text-align: center;
+}
+
+.filter-arrow {
+	font-size: 14px;
+	transition: transform 0.3s ease;
+	color: var(--text-secondary);
+}
+
+.filter-arrow.expanded {
+	transform: rotate(180deg);
+}
+
+.filter-panel-content {
+	margin-top: var(--spacing-md);
+	padding: var(--spacing-xl);
+	background: var(--bg-secondary);
+	border: 2px solid var(--border-light);
+	border-radius: var(--radius-xl);
+	animation: slideDown 0.3s ease-out;
+	box-shadow: 0 4px 16px var(--shadow);
+}
+
+@keyframes slideDown {
+	from {
+		opacity: 0;
+		transform: translateY(-10px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+.filter-section {
+	margin-bottom: var(--spacing-xl);
+}
+
+.filter-section:last-child {
+	margin-bottom: 0;
+}
+
+.section-header {
+	display: flex;
+	align-items: center;
+	gap: var(--spacing-sm);
+	margin-bottom: var(--spacing-md);
+	padding-bottom: var(--spacing-sm);
+	border-bottom: 2px solid var(--border-light);
+}
+
+.section-icon {
+	font-size: 18px;
+}
+
+.section-title {
+	font-size: var(--font-size-base);
+	font-weight: var(--font-weight-semibold);
+	color: var(--text-primary);
+	flex: 1;
+}
+
+.selected-count {
+	font-size: var(--font-size-sm);
+	color: var(--primary-color);
+	font-weight: var(--font-weight-bold);
+}
+
+.search-input {
+	width: 100%;
+}
+
+.date-filter-content {
+	display: flex;
+	flex-direction: column;
+	gap: var(--spacing-md);
+}
+
+.date-range-picker {
+	width: 100%;
+}
+
+.date-presets {
+	display: flex;
+	gap: var(--spacing-sm);
+	flex-wrap: wrap;
+}
+
+.location-select {
+	width: 100%;
+}
+
+.tag-filter-list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--spacing-md);
+}
+
+.tag-filter-item {
+	display: flex;
+	align-items: center;
+	gap: var(--spacing-sm);
+	padding: var(--spacing-sm) var(--spacing-md);
+	border: 2px solid;
+	border-radius: var(--radius-lg);
+	cursor: pointer;
+	transition: all 0.2s ease;
+	font-size: var(--font-size-sm);
+	font-weight: var(--font-weight-semibold);
+	background-color: white;
+}
+
+.tag-filter-item:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+	filter: brightness(1.05);
+}
+
+.tag-filter-item.active {
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+	transform: translateY(-1px);
+}
+
+.tag-color-dot {
+	width: 12px;
+	height: 12px;
+	border-radius: var(--radius-full);
+	flex-shrink: 0;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+	transition: all 0.2s ease;
+}
+
+.tag-filter-item.active .tag-color-dot {
+	background-color: white !important;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.tag-name {
+	flex: 1;
+	line-height: var(--line-height-tight);
+}
+
+.tag-check {
+	font-size: var(--font-size-base);
+	font-weight: var(--font-weight-bold);
+	line-height: 1;
+}
+
+.active-filters-section {
+	padding-top: var(--spacing-lg);
+	border-top: 2px solid var(--border-light);
+}
+
+.active-filters-list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--spacing-sm);
+}
+
+.results-summary {
+	margin-top: var(--spacing-lg);
+	padding-top: var(--spacing-lg);
+	border-top: 2px solid var(--border-light);
+	text-align: center;
+}
+
+.results-text {
+	font-size: var(--font-size-base);
+	color: var(--text-secondary);
+}
+
+.results-text strong {
+	color: var(--primary-color);
+	font-weight: var(--font-weight-bold);
+	font-size: var(--font-size-lg);
 }
 
 /* Mobile Responsiveness */

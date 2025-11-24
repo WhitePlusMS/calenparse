@@ -36,6 +36,9 @@ const { getAllTags } = useSupabase();
 // View mode: 'calendar', 'list', 'statistics'
 const currentViewMode = ref<"calendar" | "list" | "statistics">("calendar");
 
+// Tools section collapsed state
+const toolsCollapsed = ref(false);
+
 // Handle event click from CalendarView or ListView
 const selectedEvent = ref<CalendarEvent | null>(null);
 const eventDialogVisible = ref(false);
@@ -305,25 +308,52 @@ const handleEditTemplate = (template: CalendarEvent) => {
 
 				<div class="sidebar-divider"></div>
 
-				<!-- Tools -->
-				<div class="sidebar-item" @click="templateManagerDialogVisible = true" title="模板管理">
-					<span class="sidebar-item-icon">📋</span>
-					<span class="sidebar-item-label">模板</span>
-				</div>
+				<!-- Tools Section -->
+				<div class="sidebar-section">
+					<div
+						class="sidebar-item sidebar-section-header"
+						@click="toolsCollapsed = !toolsCollapsed"
+						title="工具">
+						<span class="sidebar-item-icon">🔧</span>
+						<span class="sidebar-item-label">工具</span>
+						<span class="sidebar-collapse-icon">{{
+							toolsCollapsed ? "▶" : "▼"
+						}}</span>
+					</div>
 
-				<div class="sidebar-item" @click="tagManagerDialogVisible = true" title="标签管理">
-					<span class="sidebar-item-icon">🏷️</span>
-					<span class="sidebar-item-label">标签</span>
-				</div>
+					<div v-show="!toolsCollapsed" class="sidebar-section-content">
+						<div
+							class="sidebar-item sidebar-sub-item"
+							@click="templateManagerDialogVisible = true"
+							title="模板管理">
+							<span class="sidebar-item-icon">📋</span>
+							<span class="sidebar-item-label">模板</span>
+						</div>
 
-				<div class="sidebar-item" @click="handleShareAllEvents" title="分享">
-					<span class="sidebar-item-icon">📤</span>
-					<span class="sidebar-item-label">分享</span>
-				</div>
+						<div
+							class="sidebar-item sidebar-sub-item"
+							@click="tagManagerDialogVisible = true"
+							title="标签管理">
+							<span class="sidebar-item-icon">🏷️</span>
+							<span class="sidebar-item-label">标签</span>
+						</div>
 
-				<div class="sidebar-item" @click="importExportDialogVisible = true" title="导入/导出">
-					<span class="sidebar-item-icon">📦</span>
-					<span class="sidebar-item-label">导入导出</span>
+						<div
+							class="sidebar-item sidebar-sub-item"
+							@click="handleShareAllEvents"
+							title="分享">
+							<span class="sidebar-item-icon">📤</span>
+							<span class="sidebar-item-label">分享</span>
+						</div>
+
+						<div
+							class="sidebar-item sidebar-sub-item"
+							@click="importExportDialogVisible = true"
+							title="导入/导出">
+							<span class="sidebar-item-icon">📦</span>
+							<span class="sidebar-item-label">导入导出</span>
+						</div>
+					</div>
 				</div>
 			</nav>
 
@@ -497,6 +527,47 @@ const handleEditTemplate = (template: CalendarEvent) => {
 	max-width: 100%;
 }
 
+/* Sidebar Section (Collapsible) */
+.sidebar-section {
+	width: 100%;
+}
+
+.sidebar-section-header {
+	position: relative;
+}
+
+.sidebar-collapse-icon {
+	position: absolute;
+	top: 4px;
+	right: 4px;
+	font-size: 8px;
+	color: var(--text-secondary);
+	transition: transform 0.2s ease;
+}
+
+.sidebar-section-content {
+	animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+	from {
+		opacity: 0;
+		transform: translateY(-8px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+.sidebar-sub-item {
+	opacity: 0.85;
+}
+
+.sidebar-sub-item:hover {
+	opacity: 1;
+}
+
 /* Divider */
 .sidebar-divider {
 	width: 32px;
@@ -516,10 +587,10 @@ const handleEditTemplate = (template: CalendarEvent) => {
 	background: var(--bg-color);
 }
 
-/* Content container - Requirement 12.3: Whitespace for breathing room */
+/* Content container - 增加最大宽度以减少留白 */
 .content-container {
 	width: 100%;
-	max-width: 1200px;
+	max-width: 2000px;
 	padding: var(--spacing-xl);
 	animation: fadeIn 0.5s ease-out;
 }
