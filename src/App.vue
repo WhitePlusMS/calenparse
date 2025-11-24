@@ -94,6 +94,7 @@ const handleEventSave = async (event: CalendarEvent) => {
 				isAllDay: event.isAllDay,
 				location: event.location,
 				description: event.description,
+				originalText: event.originalText,
 				tagIds: event.tagIds,
 			});
 			ElMessage.success("事件已更新");
@@ -106,6 +107,7 @@ const handleEventSave = async (event: CalendarEvent) => {
 				isAllDay: event.isAllDay,
 				location: event.location,
 				description: event.description,
+				originalText: event.originalText,
 				tagIds: event.tagIds,
 			});
 			ElMessage.success("事件已创建");

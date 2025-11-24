@@ -85,6 +85,19 @@ onMounted(async () => {
 	setupDoubleClickListener();
 });
 
+// Re-setup listener when events change (calendar re-renders)
+watch(
+	events,
+	() => {
+		// Re-attach listener after calendar updates
+		setupDoubleClickListener();
+	},
+	{ flush: "post" }
+);
+
+// Track if listener is already attached
+let isListenerAttached = false;
+
 /**
  * Setup native double-click listener on calendar
  * This is more reliable than FullCalendar's dateClick for double-click detection
@@ -93,13 +106,16 @@ function setupDoubleClickListener() {
 	// Wait for calendar to be fully rendered
 	setTimeout(() => {
 		const calendarEl = calendarRef.value?.$el as HTMLElement;
-		if (!calendarEl) {
-			console.warn("Calendar element not found");
-			return;
+		if (!calendarEl) return;
+
+		// Remove old listener if exists to avoid duplicates
+		if (isListenerAttached) {
+			calendarEl.removeEventListener("dblclick", handleNativeDoubleClick);
 		}
 
 		// Add double-click listener to calendar
 		calendarEl.addEventListener("dblclick", handleNativeDoubleClick);
+		isListenerAttached = true;
 	}, 500);
 }
 

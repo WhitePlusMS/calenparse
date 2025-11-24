@@ -681,6 +681,23 @@ const cancelSaveAsTemplate = () => {
 							maxlength="1000"
 							show-word-limit />
 					</el-form-item>
+
+					<!-- Original Text -->
+					<el-form-item label="原始通告">
+						<template #label>
+							<span class="form-label-with-icon">
+								<span class="form-label-icon">📄</span>
+								<span>原始通告</span>
+							</span>
+						</template>
+						<el-input
+							v-model="editableEvent.originalText"
+							type="textarea"
+							:rows="3"
+							placeholder="原始通告文本（可选）"
+							maxlength="2000"
+							show-word-limit />
+					</el-form-item>
 				</div>
 			</el-form>
 		</div>
