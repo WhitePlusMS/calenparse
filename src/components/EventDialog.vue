@@ -1117,7 +1117,7 @@ const cancelSaveAsTemplate = () => {
 
 /* Template Selection Section - Moved to bottom */
 .template-section {
-	background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+	background: linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(118, 75, 162, 0.08) 100%);
 	padding: var(--spacing-lg);
 	border-radius: var(--radius-xl);
 	margin-top: var(--spacing-xl);

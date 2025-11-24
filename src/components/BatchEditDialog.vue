@@ -219,14 +219,14 @@ const handleCancel = () => {
 	align-items: center;
 	justify-content: space-between;
 	padding: 20px 24px;
-	border-bottom: 2px solid #e4e7ed;
+	border-bottom: 2px solid var(--border-light);
 }
 
 .dialog-title {
 	margin: 0;
 	font-size: 20px;
 	font-weight: 600;
-	color: #303133;
+	color: var(--text-primary);
 }
 
 .dialog-close-btn {
@@ -239,14 +239,14 @@ const handleCancel = () => {
 	border: none;
 	border-radius: 6px;
 	font-size: 20px;
-	color: #909399;
+	color: var(--text-tertiary);
 	cursor: pointer;
 	transition: all 0.3s ease;
 }
 
 .dialog-close-btn:hover {
-	background: #f5f7fa;
-	color: #606266;
+	background: var(--bg-hover);
+	color: var(--text-secondary);
 }
 
 /* Content */
@@ -261,12 +261,12 @@ const handleCancel = () => {
 	align-items: center;
 	gap: 10px;
 	padding: 12px 16px;
-	background: #ecf5ff;
-	border: 1px solid #b3d8ff;
+	background: rgba(64, 158, 255, 0.1);
+	border: 1px solid rgba(64, 158, 255, 0.3);
 	border-radius: 8px;
 	margin-bottom: 24px;
 	font-size: 14px;
-	color: #606266;
+	color: var(--text-secondary);
 }
 
 .info-icon {
@@ -279,7 +279,7 @@ const handleCancel = () => {
 }
 
 .info-text strong {
-	color: #409eff;
+	color: var(--primary-color);
 	font-weight: 600;
 }
 
@@ -320,17 +320,18 @@ const handleCancel = () => {
 .field-label {
 	font-size: 14px;
 	font-weight: 500;
-	color: #303133;
+	color: var(--text-primary);
 }
 
 .field-input,
 .field-textarea {
 	width: 100%;
 	padding: 10px 14px;
-	border: 2px solid #dcdfe6;
+	border: 2px solid var(--border-light);
 	border-radius: 6px;
 	font-size: 14px;
-	color: #606266;
+	color: var(--text-primary);
+	background: var(--bg-secondary);
 	transition: all 0.3s ease;
 	font-family: inherit;
 }
@@ -338,14 +339,14 @@ const handleCancel = () => {
 .field-input:focus,
 .field-textarea:focus {
 	outline: none;
-	border-color: #409eff;
-	background: #ecf5ff;
+	border-color: var(--primary-color);
+	background: var(--bg-color);
 }
 
 .field-input:disabled,
 .field-textarea:disabled {
-	background: #f5f7fa;
-	color: #c0c4cc;
+	background: var(--bg-hover);
+	color: var(--text-disabled);
 	cursor: not-allowed;
 }
 
@@ -360,11 +361,11 @@ const handleCancel = () => {
 	gap: 8px;
 	margin-top: 20px;
 	padding: 10px 14px;
-	background: #fdf6ec;
-	border: 1px solid #f5dab1;
+	background: rgba(230, 162, 60, 0.1);
+	border: 1px solid rgba(230, 162, 60, 0.3);
 	border-radius: 6px;
 	font-size: 13px;
-	color: #e6a23c;
+	color: var(--warning-color);
 }
 
 .hint-icon {
@@ -383,7 +384,7 @@ const handleCancel = () => {
 	justify-content: flex-end;
 	gap: 12px;
 	padding: 16px 24px;
-	border-top: 2px solid #e4e7ed;
+	border-top: 2px solid var(--border-light);
 }
 
 .dialog-btn {
@@ -407,19 +408,19 @@ const handleCancel = () => {
 }
 
 .dialog-btn--cancel:hover {
-	background: #f5f7fa;
-	border-color: #c0c4cc;
+	background: var(--bg-hover);
+	border-color: var(--text-disabled);
 }
 
 .dialog-btn--save {
-	background: #409eff;
+	background: var(--primary-color);
 	color: white;
-	border-color: #409eff;
+	border-color: var(--primary-color);
 }
 
 .dialog-btn--save:hover:not(:disabled) {
-	background: #66b1ff;
-	border-color: #66b1ff;
+	background: var(--primary-light);
+	border-color: var(--primary-light);
 	box-shadow: 0 4px 12px rgba(64, 158, 255, 0.3);
 }
 

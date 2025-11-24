@@ -1241,8 +1241,8 @@ const handleRetry = async () => {
 	right: -12px;
 	width: 32px;
 	height: 32px;
-	background: linear-gradient(135deg, #ffffff 0%, #f5f7fa 100%);
-	border: 2.5px solid #e4e7ed;
+	background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-hover) 100%);
+	border: 2.5px solid var(--border-light);
 	border-radius: var(--radius-full);
 	display: flex;
 	align-items: center;
@@ -1256,8 +1256,8 @@ const handleRetry = async () => {
 
 .completion-toggle-btn:hover {
 	transform: scale(1.15) rotate(5deg);
-	border-color: #67c23a;
-	background: linear-gradient(135deg, #f0f9ff 0%, #e6f4ff 100%);
+	border-color: var(--success-color);
+	background: linear-gradient(135deg, var(--bg-hover) 0%, var(--bg-color) 100%);
 	box-shadow: 0 6px 16px rgba(103, 194, 58, 0.2), 0 3px 6px rgba(103, 194, 58, 0.1);
 }
 
@@ -1266,14 +1266,14 @@ const handleRetry = async () => {
 }
 
 .completion-toggle-btn--completed {
-	background: linear-gradient(135deg, #67c23a 0%, #85ce61 100%);
-	border-color: #67c23a;
+	background: linear-gradient(135deg, var(--success-color) 0%, #85ce61 100%);
+	border-color: var(--success-color);
 	box-shadow: 0 4px 12px rgba(103, 194, 58, 0.3), 0 2px 4px rgba(103, 194, 58, 0.2);
 }
 
 .completion-toggle-btn--completed:hover {
 	background: linear-gradient(135deg, #85ce61 0%, #95d475 100%);
-	border-color: #85ce61;
+	border-color: var(--success-color);
 	transform: scale(1.15) rotate(-5deg);
 	box-shadow: 0 6px 20px rgba(103, 194, 58, 0.4), 0 3px 8px rgba(103, 194, 58, 0.3);
 }
@@ -1282,12 +1282,12 @@ const handleRetry = async () => {
 	font-size: 18px;
 	font-weight: var(--font-weight-bold);
 	line-height: 1;
-	color: #c0c4cc;
+	color: var(--text-disabled);
 	transition: all 0.3s ease;
 }
 
 .completion-toggle-btn:hover .completion-icon {
-	color: #67c23a;
+	color: var(--success-color);
 	transform: scale(1.1);
 }
 
@@ -1305,7 +1305,7 @@ const handleRetry = async () => {
 /* Requirement 23.7: Use visual cues (strikethrough, semi-transparent) for completed events */
 .event-item--completed {
 	opacity: 0.6;
-	background: #f5f7fa;
+	background: var(--bg-hover);
 }
 
 .event-item--completed:hover {
@@ -1314,21 +1314,21 @@ const handleRetry = async () => {
 
 .event-item--completed .event-title {
 	text-decoration: line-through;
-	color: #909399;
+	color: var(--text-tertiary);
 }
 
 .event-item--completed .event-meta-text {
 	text-decoration: line-through;
-	color: #c0c4cc;
+	color: var(--text-disabled);
 }
 
 .event-item--completed .event-description {
 	text-decoration: line-through;
-	color: #c0c4cc;
+	color: var(--text-disabled);
 }
 
 .event-item--completed .event-date-badge {
-	background: linear-gradient(135deg, #909399 0%, #c0c4cc 100%);
+	background: linear-gradient(135deg, var(--text-tertiary) 0%, var(--text-disabled) 100%);
 }
 
 @keyframes slideInUp {
@@ -1507,7 +1507,7 @@ const handleRetry = async () => {
 }
 
 .badge--completed {
-	background: linear-gradient(135deg, #67c23a 0%, #85ce61 100%);
+	background: linear-gradient(135deg, var(--success-color) 0%, #85ce61 100%);
 	color: white;
 	border: none;
 	box-shadow: 0 2px 6px rgba(103, 194, 58, 0.3);

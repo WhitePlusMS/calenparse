@@ -343,8 +343,8 @@ const importEvents = async (parsedEvents: Partial<CalendarEvent>[]) => {
 /* Tabs */
 .tabs {
 	display: flex;
-	border-bottom: 2px solid #e4e7ed;
-	background: #f5f7fa;
+	border-bottom: 2px solid var(--border-light);
+	background: var(--bg-hover);
 }
 
 .tab-button {
@@ -354,15 +354,15 @@ const importEvents = async (parsedEvents: Partial<CalendarEvent>[]) => {
 	background: transparent;
 	font-size: 16px;
 	font-weight: 500;
-	color: #606266;
+	color: var(--text-secondary);
 	cursor: pointer;
 	transition: all 0.3s ease;
 	border-bottom: 3px solid transparent;
 }
 
 .tab-button:hover {
-	background: #ecf5ff;
-	color: #409eff;
+	background: var(--bg-color);
+	color: var(--primary-color);
 }
 
 .tab-button.active {
@@ -380,14 +380,14 @@ const importEvents = async (parsedEvents: Partial<CalendarEvent>[]) => {
 	margin: 0 0 24px 0;
 	font-size: 20px;
 	font-weight: 600;
-	color: #303133;
+	color: var(--text-primary);
 }
 
 .subsection-title {
 	margin: 0 0 12px 0;
 	font-size: 16px;
 	font-weight: 600;
-	color: #303133;
+	color: var(--text-primary);
 }
 
 /* Form */
@@ -400,7 +400,7 @@ const importEvents = async (parsedEvents: Partial<CalendarEvent>[]) => {
 	margin-bottom: 12px;
 	font-size: 14px;
 	font-weight: 600;
-	color: #606266;
+	color: var(--text-secondary);
 }
 
 .form-label-row {
@@ -413,11 +413,11 @@ const importEvents = async (parsedEvents: Partial<CalendarEvent>[]) => {
 .form-hint {
 	margin: 8px 0 0 0;
 	font-size: 13px;
-	color: #909399;
+	color: var(--text-tertiary);
 }
 
 .form-hint.warning {
-	color: #e6a23c;
+	color: var(--warning-color);
 	font-weight: 500;
 }
 
@@ -432,7 +432,7 @@ const importEvents = async (parsedEvents: Partial<CalendarEvent>[]) => {
 	align-items: center;
 	gap: 8px;
 	font-size: 14px;
-	color: #606266;
+	color: var(--text-secondary);
 	cursor: pointer;
 }
 
@@ -444,7 +444,7 @@ const importEvents = async (parsedEvents: Partial<CalendarEvent>[]) => {
 .event-list {
 	max-height: 300px;
 	overflow-y: auto;
-	border: 1px solid #dcdfe6;
+	border: 1px solid var(--border-light);
 	border-radius: 4px;
 	padding: 8px;
 }
@@ -460,7 +460,7 @@ const importEvents = async (parsedEvents: Partial<CalendarEvent>[]) => {
 }
 
 .event-item:hover {
-	background: #f5f7fa;
+	background: var(--bg-hover);
 }
 
 .event-item input[type="checkbox"] {
@@ -474,26 +474,26 @@ const importEvents = async (parsedEvents: Partial<CalendarEvent>[]) => {
 .event-title {
 	font-size: 14px;
 	font-weight: 500;
-	color: #303133;
+	color: var(--text-primary);
 	margin-bottom: 4px;
 }
 
 .event-time {
 	font-size: 12px;
-	color: #909399;
+	color: var(--text-tertiary);
 }
 
 .selection-info {
 	margin-top: 12px;
 	font-size: 13px;
-	color: #409eff;
+	color: var(--primary-color);
 	font-weight: 500;
 }
 
 .empty-state {
 	padding: 40px;
 	text-align: center;
-	color: #909399;
+	color: var(--text-tertiary);
 	font-size: 14px;
 }
 
@@ -515,40 +515,40 @@ const importEvents = async (parsedEvents: Partial<CalendarEvent>[]) => {
 }
 
 .btn-primary {
-	background: #409eff;
+	background: var(--primary-color);
 	color: white;
 }
 
 .btn-primary:hover:not(:disabled) {
-	background: #66b1ff;
+	background: var(--primary-light);
 }
 
 .btn-primary:disabled {
-	background: #a0cfff;
+	background: var(--border-color);
 	cursor: not-allowed;
 }
 
 .btn-secondary {
-	background: #909399;
+	background: var(--text-tertiary);
 	color: white;
 }
 
 .btn-secondary:hover {
-	background: #a6a9ad;
+	background: var(--text-secondary);
 }
 
 .link-button {
 	padding: 4px 8px;
 	border: none;
 	background: transparent;
-	color: #409eff;
+	color: var(--primary-color);
 	font-size: 13px;
 	cursor: pointer;
 	transition: color 0.3s ease;
 }
 
 .link-button:hover {
-	color: #66b1ff;
+	color: var(--primary-light);
 	text-decoration: underline;
 }
 

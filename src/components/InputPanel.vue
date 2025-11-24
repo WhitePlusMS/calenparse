@@ -332,20 +332,20 @@ const handleKeydown = (event: Event | KeyboardEvent) => {
 	justify-content: space-between;
 	align-items: center;
 	font-size: 12px;
-	color: #909399;
+	color: var(--text-tertiary);
 }
 
 .input-panel__count {
-	color: #606266;
+	color: var(--text-secondary);
 }
 
 .input-panel__count--warning {
-	color: #e6a23c;
+	color: var(--warning-color);
 	font-weight: 500;
 }
 
 .input-panel__shortcut {
-	color: #909399;
+	color: var(--text-tertiary);
 }
 
 .input-panel__actions {

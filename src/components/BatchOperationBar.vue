@@ -174,9 +174,9 @@ const handleCancel = () => {
 }
 
 .batch-action-btn--delete {
-	background: #f56c6c;
+	background: var(--error-color);
 	color: white;
-	border-color: #f56c6c;
+	border-color: var(--error-color);
 }
 
 .batch-action-btn--delete:hover {

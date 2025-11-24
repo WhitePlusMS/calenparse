@@ -1113,7 +1113,7 @@ defineExpose({
 	transition: all 0.2s ease;
 	font-size: var(--font-size-sm);
 	font-weight: var(--font-weight-semibold);
-	background-color: white;
+	background-color: var(--bg-secondary);
 }
 
 .tag-filter-item:hover {
@@ -1187,7 +1187,7 @@ defineExpose({
 	gap: 8px;
 	margin-bottom: 16px;
 	padding: 8px;
-	background: #f5f7fa;
+	background: var(--bg-hover);
 	border-radius: 8px;
 	justify-content: center;
 	flex-wrap: wrap;
@@ -1352,7 +1352,7 @@ defineExpose({
 .empty-state {
 	text-align: center;
 	padding: 60px 20px;
-	color: #909399;
+	color: var(--text-tertiary);
 	animation: fadeIn 0.5s ease-out;
 }
 
@@ -1365,14 +1365,14 @@ defineExpose({
 .empty-title {
 	font-size: 18px;
 	font-weight: 500;
-	color: #606266;
+	color: var(--text-secondary);
 	margin-bottom: 8px;
 }
 
 .empty-hint {
 	font-size: 14px;
 	margin-top: 10px;
-	color: #909399;
+	color: var(--text-tertiary);
 }
 
 /* FullCalendar custom styles */
@@ -1381,6 +1381,61 @@ defineExpose({
 	background: var(--bg-secondary);
 	border-radius: var(--radius-xl);
 	padding: var(--spacing-md);
+}
+
+/* FullCalendar dark mode support */
+:deep(.fc .fc-scrollgrid) {
+	border-color: var(--border-light);
+}
+
+:deep(.fc .fc-scrollgrid td),
+:deep(.fc .fc-scrollgrid th) {
+	border-color: var(--border-light);
+}
+
+:deep(.fc .fc-col-header-cell) {
+	background: var(--bg-hover);
+	color: var(--text-primary);
+	font-weight: var(--font-weight-semibold);
+}
+
+:deep(.fc .fc-daygrid-day) {
+	background: var(--bg-secondary);
+}
+
+:deep(.fc .fc-daygrid-day.fc-day-other) {
+	background: var(--bg-color);
+	opacity: 0.4;
+}
+
+:deep(.fc .fc-daygrid-day.fc-day-other .fc-daygrid-day-number) {
+	color: var(--text-disabled);
+}
+
+:deep(.fc .fc-timegrid-slot) {
+	border-color: var(--border-light);
+}
+
+:deep(.fc .fc-timegrid-axis) {
+	background: var(--bg-hover);
+}
+
+:deep(.fc .fc-timegrid-slot-label) {
+	color: var(--text-secondary);
+}
+
+:deep(.fc .fc-timegrid-divider) {
+	border-color: var(--border-light);
+}
+
+/* Improve contrast for day numbers */
+:deep(.fc .fc-daygrid-day-top) {
+	justify-content: center;
+}
+
+:deep(.fc .fc-daygrid-day-number) {
+	color: var(--text-primary);
+	font-weight: var(--font-weight-medium);
 }
 
 /* Typography Hierarchy - Requirement 12.1 */
@@ -1423,8 +1478,9 @@ defineExpose({
 	padding: var(--spacing-xs) var(--spacing-sm);
 	margin-bottom: var(--spacing-xs);
 	border: none;
-	background: linear-gradient(135deg, #ecf5ff 0%, #d9ecff 100%);
-	box-shadow: 0 2px 4px rgba(64, 158, 255, 0.1);
+	background: var(--bg-hover);
+	border: 1px solid var(--border-light);
+	box-shadow: 0 2px 4px var(--shadow);
 	transition: all 0.2s ease;
 	position: relative;
 	overflow: hidden;
@@ -1442,8 +1498,9 @@ defineExpose({
 }
 
 :deep(.fc-event:hover) {
-	background: linear-gradient(135deg, #d9ecff 0%, #c6e2ff 100%);
-	box-shadow: 0 4px 12px rgba(64, 158, 255, 0.2);
+	background: var(--bg-secondary);
+	border-color: var(--primary-color);
+	box-shadow: 0 4px 12px var(--shadow-md);
 	transform: translateY(-2px);
 }
 
@@ -1452,26 +1509,26 @@ defineExpose({
 /* Requirement 23.7: Use visual cues (strikethrough, semi-transparent, special color) for completed events */
 :deep(.fc-event.event-completed) {
 	opacity: 0.6;
-	background-color: #f0f0f0;
-	border-color: #909399;
+	background-color: var(--bg-hover);
+	border-color: var(--text-tertiary);
 }
 
 :deep(.fc-event.event-completed:hover) {
 	opacity: 0.8;
-	background-color: #e0e0e0;
+	background-color: var(--bg-color);
 }
 
 :deep(.fc-event.event-completed .fc-event-title) {
 	text-decoration: line-through;
-	color: #909399;
+	color: var(--text-tertiary);
 }
 
 :deep(.fc-event.event-completed .fc-event-time) {
-	color: #909399;
+	color: var(--text-tertiary);
 }
 
 :deep(.fc-event.event-completed .fc-event-location) {
-	color: #c0c4cc;
+	color: var(--text-disabled);
 	text-decoration: line-through;
 }
 
@@ -1562,7 +1619,7 @@ defineExpose({
 
 /* Enhanced today's date styling - Requirement 12.2: Color contrast for important info */
 :deep(.fc-day-today) {
-	background: linear-gradient(135deg, #f0f9ff 0%, #e6f4ff 100%) !important;
+	background: rgba(102, 126, 234, 0.08) !important;
 	position: relative;
 }
 
@@ -1609,7 +1666,7 @@ defineExpose({
 
 :deep(.fc-timegrid-slot-label) {
 	font-size: 12px;
-	color: #606266;
+	color: var(--text-secondary);
 }
 
 :deep(.fc-timegrid-event) {
@@ -1622,25 +1679,25 @@ defineExpose({
 }
 
 :deep(.fc-timegrid-now-indicator-line) {
-	border-color: #f56c6c;
+	border-color: var(--error-color);
 	border-width: 2px;
 }
 
 :deep(.fc-timegrid-now-indicator-arrow) {
-	border-color: #f56c6c;
+	border-color: var(--error-color);
 }
 
 /* Multi-month Year View Styles */
 :deep(.fc-multimonth) {
-	border: 1px solid #dcdfe6;
+	border: 1px solid var(--border-light);
 	border-radius: 4px;
 }
 
 :deep(.fc-multimonth-title) {
-	background: #f5f7fa;
+	background: var(--bg-hover);
 	font-weight: 600;
 	padding: 8px;
-	border-bottom: 1px solid #dcdfe6;
+	border-bottom: 1px solid var(--border-light);
 }
 
 :deep(.fc-multimonth-daygrid) {
@@ -1657,7 +1714,7 @@ defineExpose({
 }
 
 :deep(.fc-multimonth .fc-daygrid-event-dot) {
-	border-color: #409eff;
+	border-color: var(--primary-color);
 }
 
 /* Mobile responsiveness */

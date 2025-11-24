@@ -623,6 +623,46 @@ a:focus-visible {
 .el-dialog {
 	border-radius: var(--radius-xl) !important;
 	overflow: hidden !important;
+	background-color: var(--bg-secondary) !important;
+	color: var(--text-primary) !important;
+	box-shadow: 0 12px 48px var(--shadow-lg) !important;
+}
+
+.el-dialog__header {
+	background-color: var(--bg-secondary) !important;
+	color: var(--text-primary) !important;
+	border-bottom: 1px solid var(--border-light) !important;
+}
+
+.el-dialog__title {
+	color: var(--text-primary) !important;
+}
+
+.el-dialog__headerbtn .el-dialog__close {
+	color: var(--text-secondary) !important;
+}
+
+.el-dialog__headerbtn:hover .el-dialog__close {
+	color: var(--text-primary) !important;
+}
+
+.el-dialog__body {
+	background-color: var(--bg-secondary) !important;
+	color: var(--text-primary) !important;
+}
+
+.el-dialog__footer {
+	background-color: var(--bg-secondary) !important;
+	border-top: 1px solid var(--border-light) !important;
+}
+
+/* 对话框遮罩层 */
+.el-overlay {
+	background-color: rgba(0, 0, 0, 0.5) !important;
+}
+
+:root.dark-mode .el-overlay {
+	background-color: rgba(0, 0, 0, 0.7) !important;
 }
 
 .el-dialog__header {
@@ -763,4 +803,363 @@ a:focus-visible {
 .el-transfer-panel {
 	border-radius: var(--radius-lg) !important;
 	overflow: hidden !important;
+}
+
+/* ========== Element Plus Dark Mode Support ========== */
+/* 为Element Plus组件添加dark模式支持 */
+
+/* 输入框 */
+.el-input__wrapper {
+	background-color: var(--bg-secondary) !important;
+	box-shadow: 0 0 0 1px var(--border-color) inset !important;
+}
+
+.el-input__inner {
+	color: var(--text-primary) !important;
+}
+
+.el-input__inner::placeholder {
+	color: var(--text-tertiary) !important;
+}
+
+.el-textarea__inner {
+	background-color: var(--bg-secondary) !important;
+	color: var(--text-primary) !important;
+	border-color: var(--border-color) !important;
+}
+
+.el-textarea__inner::placeholder {
+	color: var(--text-tertiary) !important;
+}
+
+/* 选择器 */
+.el-select__wrapper {
+	background-color: var(--bg-secondary) !important;
+	box-shadow: 0 0 0 1px var(--border-color) inset !important;
+}
+
+.el-select__placeholder {
+	color: var(--text-tertiary) !important;
+}
+
+.el-select-dropdown {
+	background-color: var(--bg-secondary) !important;
+	border-color: var(--border-light) !important;
+}
+
+.el-select-dropdown__item {
+	color: var(--text-primary) !important;
+}
+
+.el-select-dropdown__item:hover {
+	background-color: var(--bg-hover) !important;
+}
+
+.el-select-dropdown__item.is-selected {
+	color: var(--primary-color) !important;
+	font-weight: 600;
+}
+
+/* 日期选择器 */
+.el-picker-panel {
+	background-color: var(--bg-secondary) !important;
+	border-color: var(--border-light) !important;
+	color: var(--text-primary) !important;
+}
+
+.el-date-picker__header {
+	color: var(--text-primary) !important;
+}
+
+.el-date-table th {
+	color: var(--text-secondary) !important;
+}
+
+.el-date-table td {
+	color: var(--text-primary) !important;
+}
+
+.el-date-table td.available:hover {
+	background-color: var(--bg-hover) !important;
+}
+
+.el-date-table td.today span {
+	color: var(--primary-color) !important;
+	font-weight: 700;
+}
+
+.el-date-table td.current:not(.disabled) span {
+	background-color: var(--primary-color) !important;
+	color: white !important;
+}
+
+.el-date-table td.in-range div,
+.el-date-table td.in-range div:hover {
+	background-color: var(--bg-hover) !important;
+}
+
+.el-date-range-picker__content {
+	background-color: var(--bg-secondary) !important;
+}
+
+.el-picker-panel__icon-btn {
+	color: var(--text-secondary) !important;
+}
+
+.el-picker-panel__icon-btn:hover {
+	color: var(--primary-color) !important;
+}
+
+/* 时间选择器 */
+.el-time-panel {
+	background-color: var(--bg-secondary) !important;
+	border-color: var(--border-light) !important;
+}
+
+.el-time-spinner__item {
+	color: var(--text-primary) !important;
+}
+
+.el-time-spinner__item:hover:not(.is-disabled):not(.is-active) {
+	background-color: var(--bg-hover) !important;
+}
+
+.el-time-spinner__item.is-active:not(.is-disabled) {
+	color: var(--primary-color) !important;
+	font-weight: 700;
+}
+
+/* 标签 */
+.el-tag {
+	border-color: var(--border-color) !important;
+}
+
+.el-tag.el-tag--info {
+	background-color: var(--bg-hover) !important;
+	color: var(--text-primary) !important;
+	border-color: var(--border-color) !important;
+}
+
+.el-tag.el-tag--warning {
+	background-color: rgba(250, 173, 20, 0.1) !important;
+	color: var(--warning-color) !important;
+	border-color: var(--warning-color) !important;
+}
+
+.el-tag .el-tag__close {
+	color: var(--text-secondary) !important;
+}
+
+.el-tag .el-tag__close:hover {
+	background-color: var(--bg-hover) !important;
+	color: var(--text-primary) !important;
+}
+
+/* 开关 */
+.el-switch__core {
+	background-color: var(--border-color) !important;
+	border-color: var(--border-color) !important;
+}
+
+.el-switch.is-checked .el-switch__core {
+	background-color: var(--primary-color) !important;
+	border-color: var(--primary-color) !important;
+}
+
+/* 表单项 */
+.el-form-item__label {
+	color: var(--text-primary) !important;
+}
+
+.el-form-item__error {
+	color: var(--error-color) !important;
+}
+
+/* 按钮 */
+.el-button {
+	border-color: var(--border-color) !important;
+}
+
+.el-button--default {
+	background-color: var(--bg-secondary) !important;
+	color: var(--text-primary) !important;
+}
+
+.el-button--default:hover {
+	background-color: var(--bg-hover) !important;
+	border-color: var(--primary-color) !important;
+	color: var(--primary-color) !important;
+}
+
+.el-button--text {
+	color: var(--primary-color) !important;
+}
+
+.el-button--text:hover {
+	background-color: var(--bg-hover) !important;
+}
+
+/* 消息提示 */
+.el-message {
+	background-color: var(--bg-secondary) !important;
+	border-color: var(--border-light) !important;
+}
+
+.el-message__content {
+	color: var(--text-primary) !important;
+}
+
+.el-message.el-message--success {
+	background-color: rgba(103, 194, 58, 0.1) !important;
+	border-color: var(--success-color) !important;
+}
+
+.el-message.el-message--warning {
+	background-color: rgba(250, 173, 20, 0.1) !important;
+	border-color: var(--warning-color) !important;
+}
+
+.el-message.el-message--error {
+	background-color: rgba(245, 108, 108, 0.1) !important;
+	border-color: var(--error-color) !important;
+}
+
+.el-message.el-message--info {
+	background-color: rgba(64, 158, 255, 0.1) !important;
+	border-color: var(--info-color) !important;
+}
+
+/* 确认框 */
+.el-message-box {
+	background-color: var(--bg-secondary) !important;
+	border-color: var(--border-light) !important;
+}
+
+.el-message-box__title {
+	color: var(--text-primary) !important;
+}
+
+.el-message-box__content {
+	color: var(--text-primary) !important;
+}
+
+.el-message-box__message {
+	color: var(--text-secondary) !important;
+}
+
+/* Popover */
+.el-popover.el-popper {
+	background-color: var(--bg-secondary) !important;
+	border-color: var(--border-light) !important;
+	color: var(--text-primary) !important;
+}
+
+/* Tooltip */
+.el-tooltip__popper {
+	background-color: var(--bg-elevated) !important;
+	color: var(--text-primary) !important;
+	border: 1px solid var(--border-light) !important;
+}
+
+.el-tooltip__popper.is-dark {
+	background-color: rgba(0, 0, 0, 0.9) !important;
+	color: white !important;
+	border: none !important;
+}
+
+/* Dropdown */
+.el-dropdown-menu {
+	background-color: var(--bg-secondary) !important;
+	border-color: var(--border-light) !important;
+}
+
+.el-dropdown-menu__item {
+	color: var(--text-primary) !important;
+}
+
+.el-dropdown-menu__item:hover {
+	background-color: var(--bg-hover) !important;
+	color: var(--primary-color) !important;
+}
+
+/* Loading */
+.el-loading-mask {
+	background-color: rgba(0, 0, 0, 0.5) !important;
+}
+
+:root.dark-mode .el-loading-mask {
+	background-color: rgba(0, 0, 0, 0.7) !important;
+}
+
+.el-loading-spinner .path {
+	stroke: var(--primary-color) !important;
+}
+
+.el-loading-text {
+	color: var(--text-primary) !important;
+}
+
+/* Scrollbar in dark mode */
+:root.dark-mode .el-scrollbar__thumb {
+	background-color: var(--border-color) !important;
+}
+
+:root.dark-mode .el-scrollbar__thumb:hover {
+	background-color: var(--text-tertiary) !important;
+}
+
+/* Divider */
+.el-divider {
+	background-color: var(--border-light) !important;
+}
+
+/* ========== Dark Mode 特殊增强 ========== */
+/* 为dark模式提供额外的视觉增强 */
+
+:root.dark-mode {
+	/* 增强卡片和容器的对比度 */
+	--shadow: rgba(0, 0, 0, 0.3);
+	--shadow-md: rgba(0, 0, 0, 0.4);
+	--shadow-lg: rgba(0, 0, 0, 0.5);
+
+	/* 微调边框颜色以提高可见性 */
+	--border-light: #333333;
+	--border-color: #404040;
+}
+
+/* Dark模式下的特殊处理 */
+:root.dark-mode .el-input__wrapper:focus-within {
+	box-shadow: 0 0 0 1px var(--primary-color) inset !important;
+}
+
+:root.dark-mode .el-textarea__inner:focus {
+	border-color: var(--primary-color) !important;
+	box-shadow: 0 0 0 1px var(--primary-color) !important;
+}
+
+/* Dark模式下提高日期选择器的对比度 */
+:root.dark-mode .el-date-table td.in-range div {
+	background-color: rgba(102, 126, 234, 0.15) !important;
+}
+
+:root.dark-mode .el-date-table td.start-date span,
+:root.dark-mode .el-date-table td.end-date span {
+	background-color: var(--primary-color) !important;
+	color: white !important;
+}
+
+/* Dark模式下的标签对比度 */
+:root.dark-mode .el-tag.el-tag--info {
+	background-color: var(--bg-elevated) !important;
+	border-color: var(--border-color) !important;
+}
+
+/* Dark模式下的按钮增强 */
+:root.dark-mode .el-button--default {
+	border-color: var(--border-color) !important;
+}
+
+:root.dark-mode .el-button--default:hover {
+	border-color: var(--primary-color) !important;
+	background-color: var(--bg-elevated) !important;
 }
