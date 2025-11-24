@@ -28,9 +28,10 @@ export function useEvents() {
 		deleteEvent: deleteEventDb,
 	} = useSupabase();
 
-	// Computed
-	const eventCount = computed(() => events.value.length);
-	const hasEvents = computed(() => events.value.length > 0);
+	// Computed - filter out templates from regular events
+	const regularEvents = computed(() => events.value.filter((e) => !e.isTemplate));
+	const eventCount = computed(() => regularEvents.value.length);
+	const hasEvents = computed(() => regularEvents.value.length > 0);
 
 	/**
 	 * Fetch all events from database and update state
@@ -158,7 +159,7 @@ export function useEvents() {
 	};
 
 	/**
-	 * Get a single event by ID
+	 * Get a single event by ID (searches all events including templates)
 	 */
 	const getEventById = (id: string): CalendarEvent | undefined => {
 		return events.value.find((e) => e.id === id);
@@ -186,7 +187,8 @@ export function useEvents() {
 	 * Requirement 23.6: Toggle completion status and update all views
 	 */
 	const toggleEventCompletion = async (id: string): Promise<CalendarEvent> => {
-		const event = getEventById(id);
+		// Search in all events including templates
+		const event = events.value.find((e) => e.id === id);
 		if (!event) {
 			throw new Error("事件不存在");
 		}
@@ -265,8 +267,9 @@ export function useEvents() {
 	};
 
 	return {
-		// State
-		events,
+		// State - expose regularEvents as events (templates are filtered out)
+		events: regularEvents,
+		allEvents: events, // expose all events including templates for internal use
 		loading,
 		error,
 

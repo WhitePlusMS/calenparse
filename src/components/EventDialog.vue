@@ -61,7 +61,7 @@ const { toggleEventCompletion } = useEvents();
 
 // Import useTemplates for template functionality
 import { useTemplates } from "@/composables/useTemplates";
-const { createTemplateFromEvent } = useTemplates();
+const { createTemplateFromEvent, templates } = useTemplates();
 
 // Share dialog state
 const shareDialogVisible = ref(false);
@@ -69,9 +69,12 @@ const eventsToShare = computed(() => {
 	return props.event ? [props.event] : [];
 });
 
-// Template dialog state
+// Template dialog state (for saving as template)
 const templateDialogVisible = ref(false);
 const templateName = ref("");
+
+// Template selection state (for creating from template)
+const selectedTemplateId = ref<string>("");
 
 // Edit mode state
 const isEditMode = ref(false);
@@ -175,6 +178,38 @@ const handleCreateTag = async (tagName: string) => {
 	}
 };
 
+// Apply template to editable event
+const applyTemplate = (templateId: string) => {
+	const template = templates.value.find((t) => t.id === templateId);
+	if (!template || !props.quickCreateData) return;
+
+	// Calculate duration from template
+	const duration = template.endTime.getTime() - template.startTime.getTime();
+	const startTime = new Date(props.quickCreateData.startTime);
+	const endTime = new Date(startTime.getTime() + duration);
+
+	// Apply template data while keeping the selected time
+	editableEvent.value = {
+		title: template.title,
+		startTime: startTime,
+		endTime: endTime,
+		isAllDay: template.isAllDay,
+		location: template.location,
+		description: template.description,
+		tagIds: template.tagIds ? [...template.tagIds] : [],
+		isCompleted: false,
+	};
+
+	ElMessage.success(`已应用模板"${template.templateName}"`);
+};
+
+// Watch for template selection change
+watch(selectedTemplateId, (newTemplateId) => {
+	if (newTemplateId && isQuickCreateMode.value) {
+		applyTemplate(newTemplateId);
+	}
+});
+
 // Initialize editable event when props change
 watch(
 	() => [props.event, props.quickCreateData] as const,
@@ -196,6 +231,7 @@ watch(
 				updatedAt: newEvent.updatedAt,
 			};
 			isEditMode.value = false;
+			selectedTemplateId.value = ""; // Reset template selection
 		} else if (quickData) {
 			// Quick create mode - initialize with pre-filled data
 			editableEvent.value = {
@@ -209,6 +245,7 @@ watch(
 				isCompleted: false,
 			};
 			isEditMode.value = true; // Always in edit mode for quick create
+			selectedTemplateId.value = ""; // Reset template selection
 		}
 	},
 	{ immediate: true }
@@ -411,10 +448,13 @@ const confirmSaveAsTemplate = async () => {
 	}
 
 	try {
+		// Create a new template based on the event (don't modify the original event)
 		await createTemplateFromEvent(editableEvent.value as CalendarEvent, templateName.value.trim());
 		ElMessage.success(`模板"${templateName.value}"创建成功`);
 		templateDialogVisible.value = false;
 		templateName.value = "";
+		// Close the dialog after saving template
+		emit("update:visible", false);
 	} catch (error) {
 		console.error("Failed to create template:", error);
 		ElMessage.error(error instanceof Error ? error.message : "创建模板失败");
@@ -545,6 +585,49 @@ const cancelSaveAsTemplate = () => {
 
 			<!-- Edit Mode -->
 			<el-form v-else label-width="100px" class="event-dialog__form">
+				<!-- Template Selection (Quick Create Mode Only) -->
+				<div
+					v-if="isQuickCreateMode && templates.length > 0"
+					class="form-section template-section">
+					<div class="form-section__header">
+						<span class="form-section__icon">📋</span>
+						<span class="form-section__title">从模板创建</span>
+					</div>
+					<div class="form-section__divider"></div>
+
+					<el-form-item label="选择模板">
+						<el-select
+							v-model="selectedTemplateId"
+							placeholder="选择一个模板快速填充（可选）"
+							clearable
+							style="width: 100%"
+							@clear="selectedTemplateId = ''">
+							<el-option
+								v-for="template in templates"
+								:key="template.id"
+								:label="template.templateName"
+								:value="template.id">
+								<div
+									style="
+										display: flex;
+										align-items: center;
+										justify-content: space-between;
+									">
+									<span>{{ template.templateName }}</span>
+									<span
+										style="
+											font-size: 12px;
+											color: var(--text-tertiary);
+											margin-left: 12px;
+										">
+										{{ template.title }}
+									</span>
+								</div>
+							</el-option>
+						</el-select>
+					</el-form-item>
+				</div>
+
 				<!-- Basic Information Section -->
 				<div class="form-section">
 					<div class="form-section__header">
@@ -934,6 +1017,22 @@ const cancelSaveAsTemplate = () => {
 	background-color: var(--bg-color);
 	border-radius: 4px;
 	border: 1px solid var(--border-light);
+}
+
+/* Template Selection Section */
+.template-section {
+	background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+	padding: 16px;
+	border-radius: 8px;
+	margin-bottom: 20px;
+}
+
+.template-section .form-section__header {
+	margin-bottom: 8px;
+}
+
+.template-section .form-section__divider {
+	margin-bottom: 12px;
 }
 
 /* Form Error Styles */

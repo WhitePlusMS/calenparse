@@ -15,14 +15,14 @@ import type { CalendarEvent } from "@/types";
  * Requirements: 9.1, 9.2, 9.3, 9.4, 10.1, 10.2, 10.3, 10.4, 11.1, 11.2, 11.3, 11.4
  */
 export function useTemplates() {
-	const { events, createEvent, updateEvent, deleteEvent, loading, error } = useEvents();
+	const { allEvents, createEvent, updateEvent, deleteEvent, loading, error } = useEvents();
 
 	/**
 	 * Computed property: Filter all templates from events
 	 * Requirement 9.4: Display all saved templates
 	 * Automatically reactive to changes in events
 	 */
-	const templates = computed(() => events.value.filter((e) => e.isTemplate === true));
+	const templates = computed(() => allEvents.value.filter((e) => e.isTemplate === true));
 
 	/**
 	 * Create a template from an existing event
@@ -121,7 +121,7 @@ export function useTemplates() {
 	 * @returns The converted event
 	 */
 	const convertTemplateToEvent = async (templateId: string, startTime: Date): Promise<CalendarEvent> => {
-		const template = events.value.find((e) => e.id === templateId);
+		const template = allEvents.value.find((e) => e.id === templateId);
 		if (!template) {
 			throw new Error("模板不存在");
 		}

@@ -22,7 +22,6 @@ import dayjs from "dayjs";
 
 // Emit events
 const emit = defineEmits<{
-	createFromTemplate: [template: CalendarEvent];
 	editTemplate: [template: CalendarEvent];
 }>();
 
@@ -35,11 +34,6 @@ const availableTags = ref<Tag[]>([]);
 // Preview dialog state
 const previewDialogVisible = ref(false);
 const previewTemplate = ref<CalendarEvent | null>(null);
-
-// Create from template dialog state
-const createDialogVisible = ref(false);
-const selectedTemplate = ref<CalendarEvent | null>(null);
-const selectedDateTime = ref<Date>(new Date());
 
 // Load tags
 const loadTags = async () => {
@@ -109,32 +103,6 @@ const handleDelete = async (template: CalendarEvent) => {
 			ElMessage.error(error instanceof Error ? error.message : "删除模板失败");
 		}
 	}
-};
-
-// Open create from template dialog
-// Requirement 10.1: Provide quick entry to create events from templates
-// Requirement 10.2: Require user to specify date and time
-const handleUseTemplate = (template: CalendarEvent) => {
-	selectedTemplate.value = template;
-	// Set default to current time rounded to next hour
-	const now = new Date();
-	now.setHours(now.getHours() + 1, 0, 0, 0);
-	selectedDateTime.value = now;
-	createDialogVisible.value = true;
-};
-
-// Confirm create from template
-const confirmCreateFromTemplate = () => {
-	if (!selectedTemplate.value) return;
-
-	// Emit event with template and selected date/time
-	emit("createFromTemplate", {
-		...selectedTemplate.value,
-		startTime: selectedDateTime.value,
-	});
-
-	createDialogVisible.value = false;
-	selectedTemplate.value = null;
 };
 
 // Computed: Check if there are any templates
@@ -230,16 +198,9 @@ onMounted(() => {
 			</el-table-column>
 
 			<!-- Actions -->
-			<el-table-column label="操作" width="220" fixed="right">
+			<el-table-column label="操作" width="180" fixed="right">
 				<template #default="{ row }">
 					<div class="actions">
-						<el-button
-							link
-							type="primary"
-							size="small"
-							@click="handleUseTemplate(row)">
-							✨ 使用
-						</el-button>
 						<el-button link type="info" size="small" @click="handlePreview(row)">
 							👁️ 预览
 						</el-button>
@@ -332,46 +293,10 @@ onMounted(() => {
 						@click="
 							() => {
 								previewDialogVisible = false;
-								if (previewTemplate) handleUseTemplate(previewTemplate);
+								if (previewTemplate) handleEdit(previewTemplate);
 							}
 						">
-						使用此模板
-					</el-button>
-				</div>
-			</template>
-		</el-dialog>
-
-		<!-- Create from Template Dialog -->
-		<el-dialog v-model="createDialogVisible" title="从模板创建事件" width="500px" class="create-dialog">
-			<div v-if="selectedTemplate" class="create-content">
-				<div class="create-info">
-					<p class="create-info-text">
-						将使用模板
-						<strong>"{{ selectedTemplate.templateName }}"</strong>
-						创建新事件
-					</p>
-					<p class="create-info-subtext">事件标题：{{ selectedTemplate.title }}</p>
-				</div>
-
-				<div class="create-form">
-					<div class="form-label">选择开始时间 *</div>
-					<el-date-picker
-						v-model="selectedDateTime"
-						type="datetime"
-						placeholder="选择日期时间"
-						format="YYYY-MM-DD HH:mm"
-						style="width: 100%" />
-					<div class="form-hint">
-						事件持续时间：{{ getTemplateDuration(selectedTemplate) }}
-					</div>
-				</div>
-			</div>
-
-			<template #footer>
-				<div class="create-footer">
-					<el-button @click="createDialogVisible = false">取消</el-button>
-					<el-button type="primary" @click="confirmCreateFromTemplate">
-						创建事件
+						编辑模板
 					</el-button>
 				</div>
 			</template>

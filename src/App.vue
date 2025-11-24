@@ -9,6 +9,7 @@ import ImportExport from "./components/ImportExport.vue";
 import ThemeSettings from "./components/ThemeSettings.vue";
 import ShareDialog from "./components/ShareDialog.vue";
 import TagManager from "./components/TagManager.vue";
+import TemplateManager from "./components/TemplateManager.vue";
 import FloatingInput from "./components/FloatingInput.vue";
 import PreviewDialog from "./components/PreviewDialog.vue";
 import SearchBar from "./components/SearchBar.vue";
@@ -54,6 +55,9 @@ const shareDialogVisible = ref(false);
 
 // Tag manager dialog
 const tagManagerDialogVisible = ref(false);
+
+// Template manager dialog
+const templateManagerDialogVisible = ref(false);
 
 // Preview dialog state
 const previewDialogVisible = ref(false);
@@ -259,6 +263,14 @@ const handleTagsChanged = async () => {
 		console.error("Failed to refresh events after tag change:", error);
 	}
 };
+
+// Handle edit template
+const handleEditTemplate = (template: CalendarEvent) => {
+	selectedEvent.value = template;
+	quickCreateData.value = undefined;
+	eventDialogVisible.value = true;
+	templateManagerDialogVisible.value = false;
+};
 </script>
 
 <template>
@@ -305,6 +317,11 @@ const handleTagsChanged = async () => {
 				<div class="sidebar-divider"></div>
 
 				<!-- Tools -->
+				<div class="sidebar-item" @click="templateManagerDialogVisible = true" title="模板管理">
+					<span class="sidebar-item-icon">📋</span>
+					<span class="sidebar-item-label">模板</span>
+				</div>
+
 				<div class="sidebar-item" @click="tagManagerDialogVisible = true" title="标签管理">
 					<span class="sidebar-item-icon">🏷️</span>
 					<span class="sidebar-item-label">标签</span>
@@ -405,6 +422,15 @@ const handleTagsChanged = async () => {
 			width="800px"
 			:close-on-click-modal="false">
 			<TagManager @tags-changed="handleTagsChanged" />
+		</el-dialog>
+
+		<!-- Template Manager Dialog -->
+		<el-dialog
+			v-model="templateManagerDialogVisible"
+			title="模板管理"
+			width="1000px"
+			:close-on-click-modal="false">
+			<TemplateManager @edit-template="handleEditTemplate" />
 		</el-dialog>
 
 		<!-- Floating Input - ChatGPT Style -->

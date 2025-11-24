@@ -18,6 +18,8 @@ interface EventRow {
 	original_text: string | null;
 	tag_ids: string[] | null;
 	is_completed: boolean;
+	is_template: boolean;
+	template_name: string | null;
 	created_at: string;
 	updated_at: string;
 }
@@ -44,6 +46,8 @@ function rowToEvent(row: EventRow): CalendarEvent {
 		originalText: row.original_text || undefined,
 		tagIds: row.tag_ids || undefined,
 		isCompleted: row.is_completed || false,
+		isTemplate: row.is_template || false,
+		templateName: row.template_name || undefined,
 		createdAt: new Date(row.created_at),
 		updatedAt: new Date(row.updated_at),
 	};
@@ -76,6 +80,8 @@ function eventToRow(event: Partial<CalendarEvent>): Partial<EventRow> {
 	if (event.originalText !== undefined) row.original_text = event.originalText || null;
 	if (event.tagIds !== undefined) row.tag_ids = event.tagIds || null;
 	if (event.isCompleted !== undefined) row.is_completed = event.isCompleted;
+	if (event.isTemplate !== undefined) row.is_template = event.isTemplate;
+	if (event.templateName !== undefined) row.template_name = event.templateName || null;
 
 	return row;
 }
@@ -130,6 +136,60 @@ export function useSupabase() {
 			const { data, error } = await supabase
 				.from("events")
 				.select("*")
+				.order("start_time", { ascending: true });
+
+			if (error) {
+				throw new Error(`获取事件列表失败: ${error.message}`);
+			}
+
+			return (data as EventRow[]).map(rowToEvent);
+		} catch (err) {
+			const error = createAppError(
+				ErrorType.DATABASE,
+				err instanceof Error ? err.message : "获取事件列表失败",
+				err instanceof Error ? err : undefined
+			);
+			throw new Error(error.message);
+		}
+	};
+
+	/**
+	 * Fetch only template events from the database
+	 * Optimized query to avoid loading and filtering all events in memory
+	 */
+	const getAllTemplates = async (): Promise<CalendarEvent[]> => {
+		try {
+			const { data, error } = await supabase
+				.from("events")
+				.select("*")
+				.eq("is_template", true)
+				.order("template_name", { ascending: true });
+
+			if (error) {
+				throw new Error(`获取模板列表失败: ${error.message}`);
+			}
+
+			return (data as EventRow[]).map(rowToEvent);
+		} catch (err) {
+			const error = createAppError(
+				ErrorType.DATABASE,
+				err instanceof Error ? err.message : "获取模板列表失败",
+				err instanceof Error ? err : undefined
+			);
+			throw new Error(error.message);
+		}
+	};
+
+	/**
+	 * Fetch only regular (non-template) events from the database
+	 * Optimized query for calendar views that don't need templates
+	 */
+	const getRegularEvents = async (): Promise<CalendarEvent[]> => {
+		try {
+			const { data, error } = await supabase
+				.from("events")
+				.select("*")
+				.eq("is_template", false)
 				.order("start_time", { ascending: true });
 
 			if (error) {
@@ -358,6 +418,8 @@ export function useSupabase() {
 	return {
 		supabase,
 		getAllEvents,
+		getAllTemplates,
+		getRegularEvents,
 		createEvent,
 		updateEvent,
 		deleteEvent,
