@@ -215,13 +215,23 @@ watch(
 	() => [props.event, props.quickCreateData] as const,
 	([newEvent, quickData]) => {
 		if (newEvent) {
+			const startTime = new Date(newEvent.startTime);
+			const endTime = new Date(newEvent.endTime);
+
+			// Check if event spans multiple days
+			const isSameDayEvent =
+				startTime.getFullYear() === endTime.getFullYear() &&
+				startTime.getMonth() === endTime.getMonth() &&
+				startTime.getDate() === endTime.getDate();
+
 			// Deep clone to avoid mutating props
 			editableEvent.value = {
 				id: newEvent.id,
 				title: newEvent.title,
-				startTime: new Date(newEvent.startTime),
-				endTime: new Date(newEvent.endTime),
-				isAllDay: newEvent.isAllDay,
+				startTime: startTime,
+				endTime: endTime,
+				// If event spans multiple days, force isAllDay to false
+				isAllDay: isSameDayEvent ? newEvent.isAllDay : false,
 				location: newEvent.location,
 				description: newEvent.description,
 				originalText: newEvent.originalText,
@@ -233,12 +243,22 @@ watch(
 			isEditMode.value = false;
 			selectedTemplateId.value = ""; // Reset template selection
 		} else if (quickData) {
+			const startTime = new Date(quickData.startTime);
+			const endTime = new Date(quickData.endTime);
+
+			// Check if event spans multiple days
+			const isSameDayEvent =
+				startTime.getFullYear() === endTime.getFullYear() &&
+				startTime.getMonth() === endTime.getMonth() &&
+				startTime.getDate() === endTime.getDate();
+
 			// Quick create mode - initialize with pre-filled data
 			editableEvent.value = {
 				title: "",
-				startTime: new Date(quickData.startTime),
-				endTime: new Date(quickData.endTime),
-				isAllDay: quickData.isAllDay,
+				startTime: startTime,
+				endTime: endTime,
+				// If event spans multiple days, force isAllDay to false
+				isAllDay: isSameDayEvent ? quickData.isAllDay : false,
 				location: "",
 				description: "",
 				tagIds: [],

@@ -139,7 +139,33 @@ watch(
 	(newEvents) => {
 		if (newEvents && newEvents.length > 0) {
 			// Deep clone to avoid mutating props
-			editableEvents.value = newEvents.map((event) => ({ ...event }));
+			editableEvents.value = newEvents.map((event) => {
+				const clonedEvent = { ...event };
+
+				// Check if event spans multiple days
+				if (clonedEvent.startTime && clonedEvent.endTime) {
+					const startTime =
+						clonedEvent.startTime instanceof Date
+							? clonedEvent.startTime
+							: new Date(clonedEvent.startTime);
+					const endTime =
+						clonedEvent.endTime instanceof Date
+							? clonedEvent.endTime
+							: new Date(clonedEvent.endTime);
+
+					const isSameDayEvent =
+						startTime.getFullYear() === endTime.getFullYear() &&
+						startTime.getMonth() === endTime.getMonth() &&
+						startTime.getDate() === endTime.getDate();
+
+					// If event spans multiple days, force isAllDay to false
+					if (!isSameDayEvent) {
+						clonedEvent.isAllDay = false;
+					}
+				}
+
+				return clonedEvent;
+			});
 			currentEventIndex.value = 0;
 		}
 	},
