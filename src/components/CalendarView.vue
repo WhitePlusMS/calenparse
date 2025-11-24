@@ -81,7 +81,27 @@ onMounted(async () => {
 	await Promise.all([fetchEvents(), loadTags()]);
 	// Load saved view preference
 	loadViewPreference();
+	// Setup double-click listener after calendar is mounted
+	setupDoubleClickListener();
 });
+
+/**
+ * Setup native double-click listener on calendar
+ * This is more reliable than FullCalendar's dateClick for double-click detection
+ */
+function setupDoubleClickListener() {
+	// Wait for calendar to be fully rendered
+	setTimeout(() => {
+		const calendarEl = calendarRef.value?.$el as HTMLElement;
+		if (!calendarEl) {
+			console.warn("Calendar element not found");
+			return;
+		}
+
+		// Add double-click listener to calendar
+		calendarEl.addEventListener("dblclick", handleNativeDoubleClick);
+	}, 500);
+}
 
 /**
  * Save view preference to localStorage
@@ -231,12 +251,9 @@ const calendarOptions = computed<CalendarOptions>(() => ({
 	nowIndicator: true,
 	// Multi-month year view settings
 	multiMonthMaxColumns: 3,
-	// Date click handler for quick navigation
-	dateClick: handleDateClick,
 	// Track date changes
 	datesSet: handleDatesSet,
-	// Requirement 3.1, 3.2: Double-click to create events
-	// Enable selection for double-click detection
+	// Requirement 3.1, 3.2: Double-click to create events (handled by native dblclick listener)
 	selectable: false,
 }));
 
@@ -299,48 +316,52 @@ function renderEventContent(eventInfo: any) {
 }
 
 /**
- * Handle date click
- * Requirement 3.10: Quick switch to day view when clicking a date
+ * Handle native double-click event
+ * Handles double-click on calendar dates and time slots
  */
-function handleDateClick(dateClickInfo: any) {
-	// Check if this is a double-click
-	const now = Date.now();
-	const lastClickTime = (dateClickInfo.jsEvent.target as any)._lastClickTime || 0;
-	const timeDiff = now - lastClickTime;
+function handleNativeDoubleClick(event: MouseEvent) {
+	const target = event.target as HTMLElement;
 
-	// Store click time for double-click detection
-	(dateClickInfo.jsEvent.target as any)._lastClickTime = now;
+	// Check if clicked on a date cell or time slot
+	const dateCell = target.closest(".fc-daygrid-day, .fc-timegrid-slot");
+	if (!dateCell) return;
 
-	// If double-click (within 300ms)
-	if (timeDiff < 300 && timeDiff > 0) {
-		handleDateDblClick(dateClickInfo);
-		return;
+	// Get the calendar API
+	const calendarApi = calendarRef.value?.getApi();
+	if (!calendarApi) return;
+
+	// Determine the date based on the clicked element
+	let clickedDate: Date | null = null;
+
+	// For day grid (month view)
+	if (dateCell.classList.contains("fc-daygrid-day")) {
+		const dateStr = dateCell.getAttribute("data-date");
+		if (dateStr) {
+			clickedDate = new Date(dateStr);
+			// Set to noon to avoid timezone issues
+			clickedDate.setHours(12, 0, 0, 0);
+
+			if (import.meta.env.DEV) {
+				console.log("Day grid cell clicked, date:", clickedDate);
+			}
+
+			handleDateCellDblClick(clickedDate);
+		}
 	}
+	// For time grid (day/week view)
+	else if (dateCell.classList.contains("fc-timegrid-slot")) {
+		const timeStr = dateCell.getAttribute("data-time");
+		if (timeStr) {
+			// Get current date from calendar view
+			const currentViewDate = calendarApi.getDate();
+			const timeParts = timeStr.split(":").map(Number);
+			const hours = timeParts[0] || 0;
+			const minutes = timeParts[1] || 0;
 
-	// Single click - switch to day view
-	if (currentView.value !== "timeGridDay") {
-		currentDate.value = dateClickInfo.date;
-		switchView("timeGridDay");
-	}
-}
-
-/**
- * Handle date double-click
- * Requirement 3.1: Double-click date to create event with pre-filled date
- * Requirement 3.2: Double-click time slot to create event with pre-filled date and time
- */
-function handleDateDblClick(dateClickInfo: any) {
-	const clickedDate = dateClickInfo.date;
-
-	// Determine if this is a time slot click (day/week view) or date cell click (month view)
-	const isTimeSlot = dateClickInfo.view.type === "timeGridDay" || dateClickInfo.view.type === "timeGridWeek";
-
-	if (isTimeSlot) {
-		// Time slot double-click - create timed event
-		handleTimeSlotDblClick(clickedDate);
-	} else {
-		// Date cell double-click - create all-day event
-		handleDateCellDblClick(clickedDate);
+			clickedDate = new Date(currentViewDate);
+			clickedDate.setHours(hours, minutes, 0, 0);
+			handleTimeSlotDblClick(clickedDate);
+		}
 	}
 }
 
