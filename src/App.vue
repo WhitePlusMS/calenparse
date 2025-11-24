@@ -276,18 +276,8 @@ const handleEditTemplate = (template: CalendarEvent) => {
 	<div class="app-layout">
 		<!-- Minimal Sidebar -->
 		<aside class="sidebar">
-			<!-- Logo / Home -->
-			<div class="sidebar-header">
-				<div class="sidebar-item" title="CalenParse">
-					<span class="sidebar-item-icon">📅</span>
-					<span class="sidebar-item-label">日历</span>
-				</div>
-			</div>
-
 			<!-- Main Navigation -->
 			<nav class="sidebar-nav">
-				<div class="sidebar-divider"></div>
-
 				<!-- View Navigation -->
 				<div
 					:class="['sidebar-item', { active: currentViewMode === 'calendar' }]"
@@ -339,8 +329,6 @@ const handleEditTemplate = (template: CalendarEvent) => {
 
 			<!-- Footer Actions -->
 			<div class="sidebar-footer">
-				<div class="sidebar-divider"></div>
-
 				<div
 					class="sidebar-item"
 					@click="toggleMode"
@@ -468,13 +456,6 @@ const handleEditTemplate = (template: CalendarEvent) => {
 	box-shadow: 2px 0 8px var(--shadow);
 }
 
-.sidebar-header {
-	padding: var(--spacing-md) 0;
-	display: flex;
-	justify-content: center;
-	border-bottom: 1px solid var(--border-light);
-}
-
 .sidebar-nav {
 	flex: 1;
 	padding: var(--spacing-sm) 0;
@@ -486,7 +467,6 @@ const handleEditTemplate = (template: CalendarEvent) => {
 
 .sidebar-footer {
 	padding: var(--spacing-sm) 0;
-	border-top: 1px solid var(--border-light);
 }
 
 /* Sidebar Item */
@@ -592,10 +572,6 @@ const handleEditTemplate = (template: CalendarEvent) => {
 		flex-direction: row;
 	}
 
-	.sidebar-header {
-		display: none;
-	}
-
 	.sidebar-nav {
 		flex-direction: row;
 		justify-content: space-around;
@@ -608,7 +584,6 @@ const handleEditTemplate = (template: CalendarEvent) => {
 	.sidebar-footer {
 		display: flex;
 		flex-direction: row;
-		border-top: none;
 		border-left: 1px solid var(--border-light);
 		padding: 0 var(--spacing-sm);
 	}
