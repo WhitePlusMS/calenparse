@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from "vue";
+import { Search } from "@element-plus/icons-vue";
 import FullCalendar from "@fullcalendar/vue3";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
@@ -8,8 +9,9 @@ import type { CalendarOptions, EventClickArg } from "@fullcalendar/core";
 import type { CalendarEvent, Tag } from "@/types";
 import { useEvents } from "@/composables/useEvents";
 import { useSupabase } from "@/composables/useSupabase";
+import { useSearch } from "@/composables/useSearch";
 import ErrorState from "./ErrorState.vue";
-import SearchBar from "./SearchBar.vue";
+import dayjs from "dayjs";
 
 /**
  * CalendarView Component
@@ -32,17 +34,10 @@ const emit = defineEmits<{
 	filtered: [events: CalendarEvent[]];
 }>();
 
-// Handle filtered events from SearchBar
-const handleFilteredEvents = (filteredEvents: CalendarEvent[]) => {
-	emit("filtered", filteredEvents);
-};
-
 // Composables
 const { events: allEvents, fetchEvents, loading, error, clearError } = useEvents();
 const { getAllTags } = useSupabase();
-
-// Use filtered events if provided, otherwise use all events
-const events = computed(() => props.filteredEvents ?? allEvents.value);
+const { getUniqueLocations } = useSearch();
 
 // State
 const calendarRef = ref<InstanceType<typeof FullCalendar> | null>(null);
@@ -50,10 +45,15 @@ const currentView = ref<ViewType>("dayGridMonth");
 const currentDate = ref<Date>(new Date());
 const isCalendarMounted = ref(false);
 
-// Tag filtering state
-const availableTags = ref<Tag[]>([]);
+// Integrated filter panel state
+const showFilterPanel = ref(false);
+const searchKeyword = ref("");
+const dateRange = ref<[Date, Date] | null>(null);
+const selectedLocations = ref<string[]>([]);
 const selectedTagIds = ref<string[]>([]);
-const showTagFilter = ref(false);
+
+// Tag data
+const availableTags = ref<Tag[]>([]);
 
 // Get tag by ID
 const getTagById = (id: string): Tag | undefined => {
@@ -69,7 +69,86 @@ const loadTags = async () => {
 	}
 };
 
-// Toggle tag filter
+// Computed - Available locations from all events
+const availableLocations = computed(() => {
+	return getUniqueLocations(allEvents.value);
+});
+
+// Apply all filters to get filtered events
+const filteredEvents = computed(() => {
+	let result = allEvents.value;
+
+	// Apply keyword search
+	if (searchKeyword.value) {
+		const keyword = searchKeyword.value.toLowerCase();
+		result = result.filter(
+			(event) =>
+				event.title.toLowerCase().includes(keyword) ||
+				event.description?.toLowerCase().includes(keyword) ||
+				event.location?.toLowerCase().includes(keyword)
+		);
+	}
+
+	// Apply date range filter
+	if (dateRange.value) {
+		const [start, end] = dateRange.value;
+		result = result.filter((event) => {
+			const eventStart = new Date(event.startTime);
+			return eventStart >= start && eventStart <= end;
+		});
+	}
+
+	// Apply location filter
+	if (selectedLocations.value.length > 0) {
+		result = result.filter((event) => event.location && selectedLocations.value.includes(event.location));
+	}
+
+	// Apply tag filter
+	if (selectedTagIds.value.length > 0) {
+		result = result.filter(
+			(event) => event.tagIds && event.tagIds.some((tagId) => selectedTagIds.value.includes(tagId))
+		);
+	}
+
+	return result;
+});
+
+// Use filtered events if provided from props, otherwise use local filtered events
+const events = computed(() => props.filteredEvents ?? filteredEvents.value);
+
+// Filter statistics
+const totalEventsCount = computed(() => allEvents.value.length);
+const filteredEventsCount = computed(() => filteredEvents.value.length);
+const hasActiveFilters = computed(() => {
+	return (
+		searchKeyword.value !== "" ||
+		dateRange.value !== null ||
+		selectedLocations.value.length > 0 ||
+		selectedTagIds.value.length > 0
+	);
+});
+const activeFilterCount = computed(() => {
+	let count = 0;
+	if (searchKeyword.value) count++;
+	if (dateRange.value) count++;
+	if (selectedLocations.value.length > 0) count += selectedLocations.value.length;
+	if (selectedTagIds.value.length > 0) count += selectedTagIds.value.length;
+	return count;
+});
+
+// Filter handlers
+const handleSearchChange = () => {
+	emit("filtered", filteredEvents.value);
+};
+
+const handleDateRangeChange = () => {
+	emit("filtered", filteredEvents.value);
+};
+
+const handleLocationChange = () => {
+	emit("filtered", filteredEvents.value);
+};
+
 const toggleTagFilter = (tagId: string) => {
 	const index = selectedTagIds.value.indexOf(tagId);
 	if (index > -1) {
@@ -77,12 +156,55 @@ const toggleTagFilter = (tagId: string) => {
 	} else {
 		selectedTagIds.value.push(tagId);
 	}
+	emit("filtered", filteredEvents.value);
 };
 
-// Clear all tag filters
-const clearTagFilters = () => {
-	selectedTagIds.value = [];
+const removeLocation = (location: string) => {
+	selectedLocations.value = selectedLocations.value.filter((l) => l !== location);
+	emit("filtered", filteredEvents.value);
 };
+
+const removeTag = (tagId: string) => {
+	selectedTagIds.value = selectedTagIds.value.filter((id) => id !== tagId);
+	emit("filtered", filteredEvents.value);
+};
+
+const clearAllFilters = () => {
+	searchKeyword.value = "";
+	dateRange.value = null;
+	selectedLocations.value = [];
+	selectedTagIds.value = [];
+	emit("filtered", filteredEvents.value);
+};
+
+const applyDatePreset = (preset: "today" | "thisWeek" | "thisMonth") => {
+	const today = dayjs();
+	switch (preset) {
+		case "today":
+			dateRange.value = [today.startOf("day").toDate(), today.endOf("day").toDate()];
+			break;
+		case "thisWeek":
+			dateRange.value = [today.startOf("week").toDate(), today.endOf("week").toDate()];
+			break;
+		case "thisMonth":
+			dateRange.value = [today.startOf("month").toDate(), today.endOf("month").toDate()];
+			break;
+	}
+	handleDateRangeChange();
+};
+
+const formatDateRange = (range: [Date, Date]) => {
+	return `${dayjs(range[0]).format("YYYY-MM-DD")} ~ ${dayjs(range[1]).format("YYYY-MM-DD")}`;
+};
+
+// Watch for filtered events changes
+watch(
+	filteredEvents,
+	(newFiltered) => {
+		emit("filtered", newFiltered);
+	},
+	{ immediate: true }
+);
 
 // Load events and tags on mount
 onMounted(async () => {
@@ -548,9 +670,6 @@ defineExpose({
 			</button>
 		</div>
 
-		<!-- Search Bar - Below view switcher -->
-		<SearchBar @filtered="handleFilteredEvents" />
-
 		<!-- Error State -->
 		<!-- Requirement 13.3: Error state with retry button -->
 		<ErrorState v-if="error && !loading" title="加载日历失败" :message="error" @retry="handleRetry" />
@@ -589,55 +708,208 @@ defineExpose({
 			<!-- Requirement 3.8: Year view showing schedule density -->
 			<FullCalendar ref="calendarRef" :options="calendarOptions" />
 
-			<!-- Tag Filter - Below Calendar -->
-			<!-- Requirement 18.5: Filter events by clicking tags -->
-			<div v-if="availableTags.length > 0" class="tag-filter-container">
-				<button class="tag-filter-toggle" @click="showTagFilter = !showTagFilter">
-					<span class="filter-icon">🏷️</span>
-					<span class="filter-label">标签筛选</span>
-					<span v-if="selectedTagIds.length > 0" class="filter-count">{{
-						selectedTagIds.length
+			<!-- Integrated Search and Filter Panel - Below Calendar -->
+			<div class="search-filter-panel">
+				<!-- Search and Filter Toggle Button -->
+				<button class="filter-toggle-btn" @click="showFilterPanel = !showFilterPanel">
+					<span class="filter-icon">🔍</span>
+					<span class="filter-label">搜索与筛选</span>
+					<span v-if="activeFilterCount > 0" class="filter-count">{{
+						activeFilterCount
 					}}</span>
-					<span class="filter-arrow" :class="{ expanded: showTagFilter }">▼</span>
+					<span class="filter-arrow" :class="{ expanded: showFilterPanel }">▼</span>
 				</button>
 
-				<div v-show="showTagFilter" class="tag-filter-panel">
-					<div class="tag-filter-header">
-						<span class="tag-filter-title">选择标签筛选</span>
-						<button
-							v-if="selectedTagIds.length > 0"
-							class="clear-filters-btn"
-							@click="clearTagFilters">
-							清除筛选
-						</button>
+				<!-- Expandable Filter Panel -->
+				<div v-show="showFilterPanel" class="filter-panel-content">
+					<!-- Search Input -->
+					<div class="filter-section">
+						<div class="section-header">
+							<span class="section-icon">🔍</span>
+							<span class="section-title">关键词搜索</span>
+						</div>
+						<el-input
+							v-model="searchKeyword"
+							placeholder="搜索标题、描述或地点..."
+							clearable
+							@input="handleSearchChange"
+							class="search-input">
+							<template #prefix>
+								<el-icon><Search /></el-icon>
+							</template>
+						</el-input>
 					</div>
-					<div class="tag-filter-list">
-						<button
-							v-for="tag in availableTags"
-							:key="tag.id"
-							:class="[
-								'tag-filter-item',
-								{ active: selectedTagIds.includes(tag.id) },
-							]"
-							:style="{
-								'--tag-color': tag.color,
-								backgroundColor: selectedTagIds.includes(tag.id)
-									? tag.color
-									: 'white',
-								color: selectedTagIds.includes(tag.id)
-									? 'white'
-									: '#606266',
-								borderColor: tag.color,
-							}"
-							@click="toggleTagFilter(tag.id)">
-							<span
-								class="tag-color-dot"
-								:style="{ backgroundColor: tag.color }"></span>
-							<span class="tag-name">{{ tag.name }}</span>
-							<span v-if="selectedTagIds.includes(tag.id)" class="tag-check"
-								>✓</span
+
+					<!-- Date Range Filter -->
+					<div class="filter-section">
+						<div class="section-header">
+							<span class="section-icon">📅</span>
+							<span class="section-title">日期范围</span>
+						</div>
+						<div class="date-filter-content">
+							<el-date-picker
+								v-model="dateRange"
+								type="daterange"
+								range-separator="至"
+								start-placeholder="开始日期"
+								end-placeholder="结束日期"
+								clearable
+								@change="handleDateRangeChange"
+								class="date-range-picker" />
+							<div class="date-presets">
+								<el-button
+									size="small"
+									text
+									@click="applyDatePreset('today')"
+									>今天</el-button
+								>
+								<el-button
+									size="small"
+									text
+									@click="applyDatePreset('thisWeek')"
+									>本周</el-button
+								>
+								<el-button
+									size="small"
+									text
+									@click="applyDatePreset('thisMonth')"
+									>本月</el-button
+								>
+							</div>
+						</div>
+					</div>
+
+					<!-- Location Filter -->
+					<div class="filter-section" v-if="availableLocations.length > 0">
+						<div class="section-header">
+							<span class="section-icon">📍</span>
+							<span class="section-title">地点筛选</span>
+							<span v-if="selectedLocations.length > 0" class="selected-count"
+								>({{ selectedLocations.length }})</span
 							>
-						</button>
+						</div>
+						<el-select
+							v-model="selectedLocations"
+							multiple
+							collapse-tags
+							collapse-tags-tooltip
+							placeholder="选择地点"
+							clearable
+							filterable
+							@change="handleLocationChange"
+							class="location-select">
+							<el-option
+								v-for="location in availableLocations"
+								:key="location"
+								:label="location"
+								:value="location" />
+						</el-select>
+					</div>
+
+					<!-- Tag Filter -->
+					<div class="filter-section" v-if="availableTags.length > 0">
+						<div class="section-header">
+							<span class="section-icon">🏷️</span>
+							<span class="section-title">标签筛选</span>
+							<span v-if="selectedTagIds.length > 0" class="selected-count"
+								>({{ selectedTagIds.length }})</span
+							>
+						</div>
+						<div class="tag-filter-list">
+							<button
+								v-for="tag in availableTags"
+								:key="tag.id"
+								:class="[
+									'tag-filter-item',
+									{ active: selectedTagIds.includes(tag.id) },
+								]"
+								:style="{
+									backgroundColor: selectedTagIds.includes(tag.id)
+										? tag.color
+										: 'white',
+									color: selectedTagIds.includes(tag.id)
+										? 'white'
+										: '#606266',
+									borderColor: tag.color,
+								}"
+								@click="toggleTagFilter(tag.id)">
+								<span
+									class="tag-color-dot"
+									:style="{ backgroundColor: tag.color }"></span>
+								<span class="tag-name">{{ tag.name }}</span>
+								<span
+									v-if="selectedTagIds.includes(tag.id)"
+									class="tag-check"
+									>✓</span
+								>
+							</button>
+						</div>
+					</div>
+
+					<!-- Active Filters Summary -->
+					<div v-if="hasActiveFilters" class="active-filters-section">
+						<div class="section-header">
+							<span class="section-icon">✨</span>
+							<span class="section-title">当前筛选</span>
+							<el-button
+								size="small"
+								text
+								type="danger"
+								@click="clearAllFilters"
+								>清除全部</el-button
+							>
+						</div>
+						<div class="active-filters-list">
+							<el-tag
+								v-if="searchKeyword"
+								closable
+								@close="
+									searchKeyword = '';
+									handleSearchChange();
+								"
+								size="small">
+								关键词: {{ searchKeyword }}
+							</el-tag>
+							<el-tag
+								v-if="dateRange"
+								closable
+								@close="
+									dateRange = null;
+									handleDateRangeChange();
+								"
+								size="small">
+								日期: {{ formatDateRange(dateRange) }}
+							</el-tag>
+							<el-tag
+								v-for="location in selectedLocations"
+								:key="location"
+								closable
+								@close="removeLocation(location)"
+								size="small">
+								📍 {{ location }}
+							</el-tag>
+							<el-tag
+								v-for="tagId in selectedTagIds"
+								:key="tagId"
+								:color="getTagById(tagId)?.color"
+								closable
+								@close="removeTag(tagId)"
+								size="small"
+								style="color: white; border: none">
+								{{ getTagById(tagId)?.name }}
+							</el-tag>
+						</div>
+					</div>
+
+					<!-- Results Count -->
+					<div class="results-summary">
+						<span v-if="hasActiveFilters" class="results-text">
+							显示 <strong>{{ filteredEventsCount }}</strong> /
+							{{ totalEventsCount }} 个事件
+						</span>
+						<span v-else class="results-text">
+							共 <strong>{{ totalEventsCount }}</strong> 个事件
+						</span>
 					</div>
 				</div>
 			</div>
@@ -662,67 +934,75 @@ defineExpose({
 	padding: 20px;
 }
 
-/* Tag Filter Styles */
-.tag-filter-container {
-	margin-top: 20px;
+/* Integrated Search and Filter Panel */
+.search-filter-panel {
+	margin-top: var(--spacing-xl);
 }
 
-.tag-filter-toggle {
+.filter-toggle-btn {
 	display: flex;
 	align-items: center;
-	gap: 8px;
-	padding: 10px 16px;
-	background: var(--bg-secondary);
+	gap: var(--spacing-md);
+	padding: var(--spacing-md) var(--spacing-lg);
+	background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-hover) 100%);
 	border: 2px solid var(--border-color);
-	border-radius: 8px;
+	border-radius: var(--radius-xl);
 	cursor: pointer;
 	transition: all 0.3s ease;
-	font-size: 14px;
-	font-weight: 500;
-	color: var(--text-secondary);
+	font-size: var(--font-size-base);
+	font-weight: var(--font-weight-semibold);
+	color: var(--text-primary);
 	width: 100%;
 	justify-content: space-between;
+	box-shadow: 0 2px 8px var(--shadow);
 }
 
-.tag-filter-toggle:hover {
+.filter-toggle-btn:hover {
 	border-color: var(--primary-color);
-	background: var(--bg-hover);
+	background: linear-gradient(135deg, var(--bg-hover) 0%, var(--primary-light) 10%);
+	transform: translateY(-2px);
+	box-shadow: 0 4px 12px var(--shadow-md);
 }
 
 .filter-icon {
-	font-size: 18px;
+	font-size: 20px;
 }
 
 .filter-label {
 	flex: 1;
 	text-align: left;
+	font-size: var(--font-size-base);
 }
 
 .filter-count {
 	background: var(--primary-color);
 	color: white;
-	padding: 2px 8px;
-	border-radius: 12px;
-	font-size: 12px;
-	font-weight: 600;
+	padding: 4px 10px;
+	border-radius: var(--radius-full);
+	font-size: var(--font-size-xs);
+	font-weight: var(--font-weight-bold);
+	min-width: 24px;
+	text-align: center;
 }
 
 .filter-arrow {
-	font-size: 12px;
+	font-size: 14px;
 	transition: transform 0.3s ease;
+	color: var(--text-secondary);
 }
 
 .filter-arrow.expanded {
 	transform: rotate(180deg);
 }
 
-.tag-filter-panel {
-	margin-top: 8px;
-	padding: 12px;
+.filter-panel-content {
+	margin-top: var(--spacing-md);
+	padding: var(--spacing-xl);
 	background: var(--bg-secondary);
-	border: 2px solid var(--border-color);
-	border-radius: 8px;
+	border: 2px solid var(--border-light);
+	border-radius: var(--radius-xl);
 	animation: slideDown 0.3s ease-out;
+	box-shadow: 0 4px 16px var(--shadow);
 }
 
 @keyframes slideDown {
@@ -736,47 +1016,70 @@ defineExpose({
 	}
 }
 
-.tag-filter-header {
+.filter-section {
+	margin-bottom: var(--spacing-xl);
+}
+
+.filter-section:last-child {
+	margin-bottom: 0;
+}
+
+.section-header {
 	display: flex;
-	justify-content: space-between;
 	align-items: center;
-	margin-bottom: 12px;
-	padding-bottom: 8px;
-	border-bottom: 1px solid #ebeef5;
+	gap: var(--spacing-sm);
+	margin-bottom: var(--spacing-md);
+	padding-bottom: var(--spacing-sm);
+	border-bottom: 2px solid var(--border-light);
 }
 
-.tag-filter-title {
-	font-size: 13px;
-	font-weight: 600;
-	color: #303133;
+.section-icon {
+	font-size: 18px;
 }
 
-.clear-filters-btn {
-	padding: 4px 12px;
-	background: #f5f7fa;
-	border: 1px solid #dcdfe6;
-	border-radius: 4px;
-	cursor: pointer;
-	font-size: 12px;
-	color: #606266;
-	transition: all 0.2s ease;
+.section-title {
+	font-size: var(--font-size-base);
+	font-weight: var(--font-weight-semibold);
+	color: var(--text-primary);
+	flex: 1;
 }
 
-.clear-filters-btn:hover {
-	background: #e4e7ed;
-	color: #303133;
+.selected-count {
+	font-size: var(--font-size-sm);
+	color: var(--primary-color);
+	font-weight: var(--font-weight-bold);
+}
+
+.search-input {
+	width: 100%;
+}
+
+.date-filter-content {
+	display: flex;
+	flex-direction: column;
+	gap: var(--spacing-md);
+}
+
+.date-range-picker {
+	width: 100%;
+}
+
+.date-presets {
+	display: flex;
+	gap: var(--spacing-sm);
+	flex-wrap: wrap;
+}
+
+.location-select {
+	width: 100%;
 }
 
 .tag-filter-list {
 	display: flex;
 	flex-wrap: wrap;
-	gap: 8px;
+	gap: var(--spacing-md);
 }
 
-/* Requirement 14.1: Rounded rectangles with soft background */
-/* Requirement 14.2: Text color matches background */
-/* Requirement 14.3: Appropriate spacing */
-/* Requirement 14.4: Hover effect */
 .tag-filter-item {
 	display: flex;
 	align-items: center;
@@ -788,7 +1091,7 @@ defineExpose({
 	transition: all 0.2s ease;
 	font-size: var(--font-size-sm);
 	font-weight: var(--font-weight-semibold);
-	background-color: var(--bg-secondary);
+	background-color: white;
 }
 
 .tag-filter-item:hover {
@@ -822,9 +1125,38 @@ defineExpose({
 }
 
 .tag-check {
-	font-size: var(--font-size-lg);
+	font-size: var(--font-size-base);
 	font-weight: var(--font-weight-bold);
 	line-height: 1;
+}
+
+.active-filters-section {
+	padding-top: var(--spacing-lg);
+	border-top: 2px solid var(--border-light);
+}
+
+.active-filters-list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--spacing-sm);
+}
+
+.results-summary {
+	margin-top: var(--spacing-lg);
+	padding-top: var(--spacing-lg);
+	border-top: 2px solid var(--border-light);
+	text-align: center;
+}
+
+.results-text {
+	font-size: var(--font-size-base);
+	color: var(--text-secondary);
+}
+
+.results-text strong {
+	color: var(--primary-color);
+	font-weight: var(--font-weight-bold);
+	font-size: var(--font-size-lg);
 }
 
 /* View Switcher Styles */
