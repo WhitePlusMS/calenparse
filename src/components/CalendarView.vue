@@ -951,7 +951,7 @@ defineExpose({
 .calendar-view {
 	position: relative;
 	width: 100%;
-	max-width: 1200px;
+	max-width: 1600px;
 	margin: 0 auto;
 	padding: 20px;
 }
@@ -1650,7 +1650,7 @@ defineExpose({
 
 /* Day frame - Requirement 12.3: Whitespace for separation */
 :deep(.fc-daygrid-day-frame) {
-	min-height: 100px;
+	min-height: 140px;
 	padding: var(--spacing-sm);
 	transition: background-color 0.2s ease;
 }
