@@ -474,8 +474,7 @@ const cancelSaveAsTemplate = () => {
 		:title="isEditMode ? '编辑事件' : '事件详情'"
 		width="600px"
 		:before-close="handleClose"
-		class="event-dialog"
-		:close-on-click-modal="false">
+		class="event-dialog">
 		<div v-if="editableEvent" class="event-dialog__content">
 			<!-- View Mode -->
 			<div v-if="!isEditMode" class="event-dialog__view">
@@ -820,12 +819,7 @@ const cancelSaveAsTemplate = () => {
 	<share-dialog v-model:visible="shareDialogVisible" :events="eventsToShare" />
 
 	<!-- Template Name Dialog -->
-	<el-dialog
-		v-model="templateDialogVisible"
-		title="保存为模板"
-		width="400px"
-		:close-on-click-modal="false"
-		class="template-dialog">
+	<el-dialog v-model="templateDialogVisible" title="保存为模板" width="400px" class="template-dialog">
 		<div class="template-dialog__content">
 			<p class="template-dialog__description">请为模板输入一个名称，以便日后快速创建相似的事件。</p>
 			<el-form label-width="80px">

@@ -378,20 +378,12 @@ const handleEditTemplate = (template: CalendarEvent) => {
 			@delete="handleEventDelete" />
 
 		<!-- Import/Export Dialog -->
-		<el-dialog
-			v-model="importExportDialogVisible"
-			title="导入/导出"
-			width="600px"
-			:close-on-click-modal="false">
+		<el-dialog v-model="importExportDialogVisible" title="导入/导出" width="600px">
 			<ImportExport />
 		</el-dialog>
 
 		<!-- Theme Settings Dialog -->
-		<el-dialog
-			v-model="themeSettingsDialogVisible"
-			title="主题设置"
-			width="700px"
-			:close-on-click-modal="false">
+		<el-dialog v-model="themeSettingsDialogVisible" title="主题设置" width="700px">
 			<ThemeSettings />
 		</el-dialog>
 
@@ -399,20 +391,12 @@ const handleEditTemplate = (template: CalendarEvent) => {
 		<ShareDialog v-model:visible="shareDialogVisible" :events="events" />
 
 		<!-- Tag Manager Dialog -->
-		<el-dialog
-			v-model="tagManagerDialogVisible"
-			title="标签管理"
-			width="800px"
-			:close-on-click-modal="false">
+		<el-dialog v-model="tagManagerDialogVisible" title="标签管理" width="800px">
 			<TagManager @tags-changed="handleTagsChanged" />
 		</el-dialog>
 
 		<!-- Template Manager Dialog -->
-		<el-dialog
-			v-model="templateManagerDialogVisible"
-			title="模板管理"
-			width="1000px"
-			:close-on-click-modal="false">
+		<el-dialog v-model="templateManagerDialogVisible" title="模板管理" width="1000px">
 			<TemplateManager @edit-template="handleEditTemplate" />
 		</el-dialog>
 

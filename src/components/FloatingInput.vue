@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { useLLM } from "@/composables/useLLM";
 import { useSupabase } from "@/composables/useSupabase";
@@ -21,6 +21,7 @@ import type { ParsedEvent } from "@/types";
 const inputText = ref("");
 const isExpanded = ref(false);
 const inputRef = ref<HTMLTextAreaElement | null>(null);
+const containerRef = ref<HTMLDivElement | null>(null);
 
 const { parseText, isLoading } = useLLM();
 const { getAllTags } = useSupabase();
@@ -54,6 +55,33 @@ const handleBlur = (e: FocusEvent) => {
 		isExpanded.value = false;
 	}
 };
+
+/**
+ * Handle click outside - collapse if expanded and empty
+ */
+const handleClickOutside = (e: MouseEvent) => {
+	if (!isExpanded.value) return;
+
+	const target = e.target as HTMLElement;
+	const container = containerRef.value;
+
+	// Check if click is outside the container
+	if (container && !container.contains(target)) {
+		// Collapse if empty
+		if (!inputText.value.trim()) {
+			isExpanded.value = false;
+		}
+	}
+};
+
+// Add click outside listener
+onMounted(() => {
+	document.addEventListener("click", handleClickOutside);
+});
+
+onUnmounted(() => {
+	document.removeEventListener("click", handleClickOutside);
+});
 
 /**
  * Handle input - auto-resize textarea
@@ -130,7 +158,7 @@ const handleSend = async () => {
 </script>
 
 <template>
-	<div class="floating-input-container">
+	<div ref="containerRef" class="floating-input-container">
 		<div :class="['input-box', { expanded: isExpanded, focused: isExpanded, loading: isLoading }]">
 			<!-- Collapsed state - single line -->
 			<textarea
