@@ -51,6 +51,7 @@ const searchKeyword = ref("");
 const dateRange = ref<[Date, Date] | null>(null);
 const selectedLocations = ref<string[]>([]);
 const selectedTagIds = ref<string[]>([]);
+const completionStatus = ref<"all" | "completed" | "uncompleted">("all");
 
 // Tag data
 const availableTags = ref<Tag[]>([]);
@@ -110,6 +111,13 @@ const filteredEvents = computed(() => {
 		);
 	}
 
+	// Apply completion status filter
+	if (completionStatus.value === "completed") {
+		result = result.filter((event) => event.isCompleted === true);
+	} else if (completionStatus.value === "uncompleted") {
+		result = result.filter((event) => event.isCompleted !== true);
+	}
+
 	return result;
 });
 
@@ -124,7 +132,8 @@ const hasActiveFilters = computed(() => {
 		searchKeyword.value !== "" ||
 		dateRange.value !== null ||
 		selectedLocations.value.length > 0 ||
-		selectedTagIds.value.length > 0
+		selectedTagIds.value.length > 0 ||
+		completionStatus.value !== "all"
 	);
 });
 const activeFilterCount = computed(() => {
@@ -133,6 +142,7 @@ const activeFilterCount = computed(() => {
 	if (dateRange.value) count++;
 	if (selectedLocations.value.length > 0) count += selectedLocations.value.length;
 	if (selectedTagIds.value.length > 0) count += selectedTagIds.value.length;
+	if (completionStatus.value !== "all") count++;
 	return count;
 });
 
@@ -174,6 +184,11 @@ const clearAllFilters = () => {
 	dateRange.value = null;
 	selectedLocations.value = [];
 	selectedTagIds.value = [];
+	completionStatus.value = "all";
+	emit("filtered", filteredEvents.value);
+};
+
+const handleCompletionStatusChange = () => {
 	emit("filtered", filteredEvents.value);
 };
 
@@ -287,7 +302,7 @@ function loadViewPreference() {
 
 /**
  * Switch calendar view
- * Requirement 3.9: Maintain current selected date when switching views
+ * Requirement 3.9: Jump to today when switching views
  * Requirement 3.10: Allow quick switch to day view from any view
  */
 function switchView(view: ViewType) {
@@ -296,8 +311,10 @@ function switchView(view: ViewType) {
 	if (calendarApi) {
 		currentView.value = view;
 		calendarApi.changeView(view);
-		// Maintain the current date when switching views
-		calendarApi.gotoDate(currentDate.value);
+		// Jump to today when switching views
+		const today = new Date();
+		calendarApi.gotoDate(today);
+		currentDate.value = today;
 		saveViewPreference();
 	}
 }
@@ -441,9 +458,12 @@ function handleEventClick(clickInfo: EventClickArg) {
  * Requirement 18.4: Display event tags and colors in calendar view
  */
 function renderEventContent(eventInfo: any) {
-	const { event } = eventInfo;
+	const { event, view } = eventInfo;
 	const location = event.extendedProps.location;
 	const tagIds = event.extendedProps.tagIds || [];
+
+	// 检查是否是年视图
+	const isYearView = view.type === "multiMonthYear";
 
 	// Create custom HTML for event display
 	let timeText = "全天";
@@ -475,28 +495,28 @@ function renderEventContent(eventInfo: any) {
 		}
 	}
 
-	// Generate tags HTML
+	// Generate tags HTML - inline with time (年视图中不显示标签)
 	const tagsHtml =
-		tagIds.length > 0
-			? `<div class="fc-event-tags">
-				${tagIds
+		!isYearView && tagIds.length > 0
+			? tagIds
 					.map((tagId: string) => {
 						const tag = getTagById(tagId);
 						if (!tag) return "";
 						return `<span class="fc-event-tag" style="background-color: ${tag.color};">${tag.name}</span>`;
 					})
-					.join("")}
-			</div>`
+					.join("")
 			: "";
 
 	return {
 		html: `
 			<div class="fc-event-main-frame">
-				<div class="fc-event-time">${timeText}</div>
+				<div class="fc-event-header">
+					<div class="fc-event-time">${timeText}</div>
+					${tagsHtml ? `<div class="fc-event-tags">${tagsHtml}</div>` : ""}
+				</div>
 				<div class="fc-event-title-container">
 					<div class="fc-event-title">${event.title}</div>
-					${location ? `<div class="fc-event-location">📍 ${location}</div>` : ""}
-					${tagsHtml}
+					${!isYearView && location ? `<div class="fc-event-location">📍 ${location}</div>` : ""}
 				</div>
 			</div>
 		`,
@@ -663,28 +683,28 @@ defineExpose({
 				:class="['view-button', { active: currentView === 'timeGridDay' }]"
 				@click="switchView('timeGridDay')"
 				title="日视图 - 显示单日详细日程">
-				<span class="view-icon">📅</span>
+				<el-icon class="view-icon"><Timer /></el-icon>
 				<span class="view-label">日</span>
 			</button>
 			<button
 				:class="['view-button', { active: currentView === 'timeGridWeek' }]"
 				@click="switchView('timeGridWeek')"
 				title="周视图 - 显示一周七天概览">
-				<span class="view-icon">📆</span>
+				<el-icon class="view-icon"><Calendar /></el-icon>
 				<span class="view-label">周</span>
 			</button>
 			<button
 				:class="['view-button', { active: currentView === 'dayGridMonth' }]"
 				@click="switchView('dayGridMonth')"
 				title="月视图 - 显示整月日程分布">
-				<span class="view-icon">🗓️</span>
+				<el-icon class="view-icon"><Calendar /></el-icon>
 				<span class="view-label">月</span>
 			</button>
 			<button
 				:class="['view-button', { active: currentView === 'multiMonthYear' }]"
 				@click="switchView('multiMonthYear')"
 				title="年视图 - 显示全年日程密度">
-				<span class="view-icon">📊</span>
+				<el-icon class="view-icon"><TrendCharts /></el-icon>
 				<span class="view-label">年</span>
 			</button>
 		</div>
@@ -731,7 +751,7 @@ defineExpose({
 			<div class="search-filter-panel">
 				<!-- Search and Filter Toggle Button -->
 				<button class="filter-toggle-btn" @click="showFilterPanel = !showFilterPanel">
-					<span class="filter-icon">🔍</span>
+					<el-icon class="filter-icon"><Search /></el-icon>
 					<span class="filter-label">搜索与筛选</span>
 					<span v-if="activeFilterCount > 0" class="filter-count">{{
 						activeFilterCount
@@ -744,7 +764,7 @@ defineExpose({
 					<!-- Search Input -->
 					<div class="filter-section">
 						<div class="section-header">
-							<span class="section-icon">🔍</span>
+							<el-icon class="section-icon"><Search /></el-icon>
 							<span class="section-title">关键词搜索</span>
 						</div>
 						<el-input
@@ -762,7 +782,7 @@ defineExpose({
 					<!-- Date Range Filter -->
 					<div class="filter-section">
 						<div class="section-header">
-							<span class="section-icon">📅</span>
+							<el-icon class="section-icon"><Calendar /></el-icon>
 							<span class="section-title">日期范围</span>
 						</div>
 						<div class="date-filter-content">
@@ -801,7 +821,7 @@ defineExpose({
 					<!-- Location Filter -->
 					<div class="filter-section" v-if="availableLocations.length > 0">
 						<div class="section-header">
-							<span class="section-icon">📍</span>
+							<el-icon class="section-icon"><Location /></el-icon>
 							<span class="section-title">地点筛选</span>
 							<span v-if="selectedLocations.length > 0" class="selected-count"
 								>({{ selectedLocations.length }})</span
@@ -828,7 +848,7 @@ defineExpose({
 					<!-- Tag Filter -->
 					<div class="filter-section" v-if="availableTags.length > 0">
 						<div class="section-header">
-							<span class="section-icon">🏷️</span>
+							<el-icon class="section-icon"><PriceTag /></el-icon>
 							<span class="section-title">标签筛选</span>
 							<span v-if="selectedTagIds.length > 0" class="selected-count"
 								>({{ selectedTagIds.length }})</span
@@ -865,10 +885,26 @@ defineExpose({
 						</div>
 					</div>
 
+					<!-- Completion Status Filter -->
+					<div class="filter-section">
+						<div class="section-header">
+							<el-icon class="section-icon"><Select /></el-icon>
+							<span class="section-title">完成状态</span>
+						</div>
+						<el-radio-group
+							v-model="completionStatus"
+							@change="handleCompletionStatusChange"
+							class="completion-status-group">
+							<el-radio-button label="all">全部</el-radio-button>
+							<el-radio-button label="uncompleted">未完成</el-radio-button>
+							<el-radio-button label="completed">已完成</el-radio-button>
+						</el-radio-group>
+					</div>
+
 					<!-- Active Filters Summary -->
 					<div v-if="hasActiveFilters" class="active-filters-section">
 						<div class="section-header">
-							<span class="section-icon">✨</span>
+							<el-icon class="section-icon"><Filter /></el-icon>
 							<span class="section-title">当前筛选</span>
 							<el-button
 								size="small"
@@ -898,6 +934,21 @@ defineExpose({
 								"
 								size="small">
 								日期: {{ formatDateRange(dateRange) }}
+							</el-tag>
+							<el-tag
+								v-if="completionStatus !== 'all'"
+								closable
+								@close="
+									completionStatus = 'all';
+									handleCompletionStatusChange();
+								"
+								size="small">
+								状态:
+								{{
+									completionStatus === "completed"
+										? "已完成"
+										: "未完成"
+								}}
 							</el-tag>
 							<el-tag
 								v-for="location in selectedLocations"
@@ -936,7 +987,7 @@ defineExpose({
 			<!-- Empty State -->
 			<!-- Requirement 13.2: Friendly empty state with illustration and guidance -->
 			<div v-if="events.length === 0" class="empty-state">
-				<div class="empty-icon">📅</div>
+				<el-icon class="empty-icon" :size="64"><Calendar /></el-icon>
 				<p class="empty-title">暂无日程事件</p>
 				<p class="empty-hint">使用上方输入框解析通告文本来创建日程</p>
 			</div>
@@ -1147,6 +1198,21 @@ defineExpose({
 	font-size: var(--font-size-base);
 	font-weight: var(--font-weight-bold);
 	line-height: 1;
+}
+
+/* Completion Status Filter */
+.completion-status-group {
+	width: 100%;
+	display: flex;
+}
+
+.completion-status-group :deep(.el-radio-button) {
+	flex: 1;
+}
+
+.completion-status-group :deep(.el-radio-button__inner) {
+	width: 100%;
+	border-radius: var(--radius-md);
 }
 
 .active-filters-section {
@@ -1380,6 +1446,29 @@ defineExpose({
 	padding: var(--spacing-md);
 }
 
+/* 周视图：让同一时间的事件纵向堆叠而非横向并排 */
+:deep(.fc-timegrid-col-events) {
+	/* 改变事件容器的布局方式 */
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+:deep(.fc-timegrid-event-harness) {
+	/* 重置定位，让事件按文档流排列 */
+	position: relative !important;
+	left: auto !important;
+	right: auto !important;
+	width: 100% !important;
+	margin: 0 !important;
+}
+
+:deep(.fc-timegrid-event) {
+	/* 确保事件占满宽度 */
+	width: 100% !important;
+	position: relative !important;
+}
+
 /* FullCalendar dark mode support */
 :deep(.fc .fc-scrollgrid) {
 	border-color: var(--border-light);
@@ -1536,6 +1625,14 @@ defineExpose({
 	padding-left: var(--spacing-sm);
 }
 
+/* Event header - time and tags in one row */
+:deep(.fc-event-header) {
+	display: flex;
+	align-items: center;
+	gap: var(--spacing-sm);
+	flex-wrap: wrap;
+}
+
 /* Event Content Typography - Requirement 12.1: Font size hierarchy */
 :deep(.fc-event-time) {
 	font-size: var(--font-size-xs);
@@ -1545,6 +1642,7 @@ defineExpose({
 	align-items: center;
 	gap: var(--spacing-xs);
 	line-height: var(--line-height-tight);
+	flex-shrink: 0;
 }
 
 :deep(.fc-event-time::before) {
@@ -1580,14 +1678,14 @@ defineExpose({
 	display: flex;
 	flex-wrap: wrap;
 	gap: var(--spacing-xs);
-	margin-top: var(--spacing-xs);
+	align-items: center;
 }
 
 /* Requirement 14.1, 14.2: Rounded rectangles with matching text colors */
 :deep(.fc-event-tag) {
 	display: inline-flex;
 	align-items: center;
-	padding: 2px var(--spacing-sm);
+	padding: 2px 6px;
 	border-radius: var(--radius-md);
 	font-size: 10px;
 	font-weight: var(--font-weight-semibold);
@@ -1596,6 +1694,7 @@ defineExpose({
 	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
 	transition: all 0.2s ease;
 	border: none;
+	line-height: 1.2;
 }
 
 /* Requirement 14.4: Hover effect for tags */

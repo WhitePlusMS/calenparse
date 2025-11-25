@@ -52,6 +52,7 @@ const searchKeyword = ref("");
 const dateRange = ref<[Date, Date] | null>(null);
 const selectedLocations = ref<string[]>([]);
 const selectedTagIds = ref<string[]>([]);
+const completionStatus = ref<"all" | "completed" | "uncompleted">("all");
 
 // Composables for filtering
 const { getUniqueLocations } = useSearch();
@@ -99,6 +100,13 @@ const filteredEvents = computed(() => {
 		);
 	}
 
+	// Apply completion status filter
+	if (completionStatus.value === "completed") {
+		result = result.filter((event) => event.isCompleted === true);
+	} else if (completionStatus.value === "uncompleted") {
+		result = result.filter((event) => event.isCompleted !== true);
+	}
+
 	return result;
 });
 
@@ -113,7 +121,8 @@ const hasActiveFilters = computed(() => {
 		searchKeyword.value !== "" ||
 		dateRange.value !== null ||
 		selectedLocations.value.length > 0 ||
-		selectedTagIds.value.length > 0
+		selectedTagIds.value.length > 0 ||
+		completionStatus.value !== "all"
 	);
 });
 const activeFilterCount = computed(() => {
@@ -122,6 +131,7 @@ const activeFilterCount = computed(() => {
 	if (dateRange.value) count++;
 	if (selectedLocations.value.length > 0) count += selectedLocations.value.length;
 	if (selectedTagIds.value.length > 0) count += selectedTagIds.value.length;
+	if (completionStatus.value !== "all") count++;
 	return count;
 });
 
@@ -163,6 +173,11 @@ const clearAllFilters = () => {
 	dateRange.value = null;
 	selectedLocations.value = [];
 	selectedTagIds.value = [];
+	completionStatus.value = "all";
+	emit("filtered", filteredEvents.value);
+};
+
+const handleCompletionStatusChange = () => {
 	emit("filtered", filteredEvents.value);
 };
 
@@ -547,7 +562,7 @@ const handleRetry = async () => {
 		<div class="top-toolbar">
 			<!-- 搜索筛选按钮 -->
 			<button class="filter-toggle-btn" @click="showFilterPanel = !showFilterPanel">
-				<span class="filter-icon">🔍</span>
+				<el-icon class="filter-icon"><Search /></el-icon>
 				<span class="filter-label">搜索与筛选</span>
 				<span v-if="activeFilterCount > 0" class="filter-count">{{ activeFilterCount }}</span>
 				<span class="filter-arrow" :class="{ expanded: showFilterPanel }">▼</span>
@@ -559,7 +574,10 @@ const handleRetry = async () => {
 				class="batch-toggle-btn"
 				:class="{ active: isSelectionMode }"
 				@click="toggleSelectionMode">
-				<span class="batch-icon">{{ isSelectionMode ? "✓" : "☐" }}</span>
+				<el-icon class="batch-icon">
+					<Select v-if="isSelectionMode" />
+					<span v-else>☐</span>
+				</el-icon>
 				<span class="batch-text">{{ isSelectionMode ? "取消选择" : "批量操作" }}</span>
 			</button>
 		</div>
@@ -570,7 +588,7 @@ const handleRetry = async () => {
 				<!-- Search Input -->
 				<div class="filter-section">
 					<div class="section-header">
-						<span class="section-icon">🔍</span>
+						<el-icon class="section-icon"><Search /></el-icon>
 						<span class="section-title">关键词搜索</span>
 					</div>
 					<el-input
@@ -588,7 +606,7 @@ const handleRetry = async () => {
 				<!-- Date Range Filter -->
 				<div class="filter-section">
 					<div class="section-header">
-						<span class="section-icon">📅</span>
+						<el-icon class="section-icon"><Calendar /></el-icon>
 						<span class="section-title">日期范围</span>
 					</div>
 					<div class="date-filter-content">
@@ -624,7 +642,7 @@ const handleRetry = async () => {
 				<!-- Location Filter -->
 				<div class="filter-section" v-if="availableLocations.length > 0">
 					<div class="section-header">
-						<span class="section-icon">📍</span>
+						<el-icon class="section-icon"><Location /></el-icon>
 						<span class="section-title">地点筛选</span>
 						<span v-if="selectedLocations.length > 0" class="selected-count"
 							>({{ selectedLocations.length }})</span
@@ -651,7 +669,7 @@ const handleRetry = async () => {
 				<!-- Tag Filter -->
 				<div class="filter-section" v-if="availableTags.length > 0">
 					<div class="section-header">
-						<span class="section-icon">🏷️</span>
+						<el-icon class="section-icon"><PriceTag /></el-icon>
 						<span class="section-title">标签筛选</span>
 						<span v-if="selectedTagIds.length > 0" class="selected-count"
 							>({{ selectedTagIds.length }})</span
@@ -686,10 +704,26 @@ const handleRetry = async () => {
 					</div>
 				</div>
 
+				<!-- Completion Status Filter -->
+				<div class="filter-section">
+					<div class="section-header">
+						<el-icon class="section-icon"><Select /></el-icon>
+						<span class="section-title">完成状态</span>
+					</div>
+					<el-radio-group
+						v-model="completionStatus"
+						@change="handleCompletionStatusChange"
+						class="completion-status-group">
+						<el-radio-button label="all">全部</el-radio-button>
+						<el-radio-button label="uncompleted">未完成</el-radio-button>
+						<el-radio-button label="completed">已完成</el-radio-button>
+					</el-radio-group>
+				</div>
+
 				<!-- Active Filters Summary -->
 				<div v-if="hasActiveFilters" class="active-filters-section">
 					<div class="section-header">
-						<span class="section-icon">✨</span>
+						<el-icon class="section-icon"><Filter /></el-icon>
 						<span class="section-title">当前筛选</span>
 						<el-button size="small" text type="danger" @click="clearAllFilters"
 							>清除全部</el-button
@@ -715,6 +749,17 @@ const handleRetry = async () => {
 							"
 							size="small">
 							日期: {{ formatDateRange(dateRange) }}
+						</el-tag>
+						<el-tag
+							v-if="completionStatus !== 'all'"
+							closable
+							@close="
+								completionStatus = 'all';
+								handleCompletionStatusChange();
+							"
+							size="small">
+							状态:
+							{{ completionStatus === "completed" ? "已完成" : "未完成" }}
 						</el-tag>
 						<el-tag
 							v-for="location in selectedLocations"
@@ -801,7 +846,7 @@ const handleRetry = async () => {
 				<!-- Month Group Header -->
 				<div class="month-group-header" @click="toggleMonthGroup(group.month)">
 					<div class="month-group-info">
-						<span class="month-group-icon">📅</span>
+						<el-icon class="month-group-icon"><Calendar /></el-icon>
 						<span class="month-group-title">{{ group.displayMonth }}</span>
 						<span class="month-group-count">{{ group.events.length }}</span>
 					</div>
@@ -943,7 +988,9 @@ const handleRetry = async () => {
 								</div>
 
 								<div v-if="event.location" class="event-meta-item">
-									<span class="event-meta-icon">📍</span>
+									<el-icon class="event-meta-icon"
+										><Location
+									/></el-icon>
 									<span class="event-meta-text">{{
 										event.location
 									}}</span>
@@ -1932,6 +1979,21 @@ const handleRetry = async () => {
 	font-size: var(--font-size-base);
 	font-weight: var(--font-weight-bold);
 	line-height: 1;
+}
+
+/* Completion Status Filter */
+.completion-status-group {
+	width: 100%;
+	display: flex;
+}
+
+.completion-status-group :deep(.el-radio-button) {
+	flex: 1;
+}
+
+.completion-status-group :deep(.el-radio-button__inner) {
+	width: 100%;
+	border-radius: var(--radius-md);
 }
 
 .active-filters-section {
