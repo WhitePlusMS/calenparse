@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
-import { Loading } from "@element-plus/icons-vue";
 import CalendarView from "./components/CalendarView.vue";
 import ListView from "./components/ListView.vue";
 import StatisticsView from "./components/StatisticsView.vue";
@@ -418,7 +417,7 @@ const handleEventsRetry = async () => {
 	<!-- 全屏 Loading - 身份检查中 -->
 	<div v-if="isAuthChecking" class="auth-loading-overlay">
 		<el-icon class="is-loading" :size="40">
-			<Loading />
+			<Refresh />
 		</el-icon>
 		<p class="loading-text">正在加载...</p>
 	</div>
@@ -441,7 +440,7 @@ const handleEventsRetry = async () => {
 					:class="['sidebar-item', { active: currentViewMode === 'calendar' }]"
 					@click="switchViewMode('calendar')"
 					title="日历视图">
-					<span class="sidebar-item-icon">📅</span>
+					<el-icon class="sidebar-item-icon"><Calendar /></el-icon>
 					<span class="sidebar-item-label">日历</span>
 				</div>
 
@@ -449,7 +448,7 @@ const handleEventsRetry = async () => {
 					:class="['sidebar-item', { active: currentViewMode === 'list' }]"
 					@click="switchViewMode('list')"
 					title="列表视图">
-					<span class="sidebar-item-icon">📋</span>
+					<el-icon class="sidebar-item-icon"><List /></el-icon>
 					<span class="sidebar-item-label">列表</span>
 				</div>
 
@@ -457,7 +456,7 @@ const handleEventsRetry = async () => {
 					:class="['sidebar-item', { active: currentViewMode === 'statistics' }]"
 					@click="switchViewMode('statistics')"
 					title="统计分析">
-					<span class="sidebar-item-icon">📊</span>
+					<el-icon class="sidebar-item-icon"><DataAnalysis /></el-icon>
 					<span class="sidebar-item-label">统计</span>
 				</div>
 
@@ -467,7 +466,7 @@ const handleEventsRetry = async () => {
 					:class="['sidebar-item', { active: currentViewMode === 'monitoring' }]"
 					@click="switchViewMode('monitoring')"
 					title="访客监控">
-					<span class="sidebar-item-icon">👥</span>
+					<el-icon class="sidebar-item-icon"><User /></el-icon>
 					<span class="sidebar-item-label">监控</span>
 				</div>
 
@@ -479,7 +478,7 @@ const handleEventsRetry = async () => {
 						class="sidebar-item sidebar-section-header"
 						@click="toolsCollapsed = !toolsCollapsed"
 						title="工具">
-						<span class="sidebar-item-icon">🔧</span>
+						<el-icon class="sidebar-item-icon"><SetUp /></el-icon>
 						<span class="sidebar-item-label">工具</span>
 						<span class="sidebar-collapse-icon">{{
 							toolsCollapsed ? "▶" : "▼"
@@ -491,7 +490,7 @@ const handleEventsRetry = async () => {
 							class="sidebar-item sidebar-sub-item"
 							@click="templateManagerDialogVisible = true"
 							title="模板管理">
-							<span class="sidebar-item-icon">📋</span>
+							<el-icon class="sidebar-item-icon"><Document /></el-icon>
 							<span class="sidebar-item-label">模板</span>
 						</div>
 
@@ -499,7 +498,7 @@ const handleEventsRetry = async () => {
 							class="sidebar-item sidebar-sub-item"
 							@click="tagManagerDialogVisible = true"
 							title="标签管理">
-							<span class="sidebar-item-icon">🏷️</span>
+							<el-icon class="sidebar-item-icon"><PriceTag /></el-icon>
 							<span class="sidebar-item-label">标签</span>
 						</div>
 
@@ -507,7 +506,7 @@ const handleEventsRetry = async () => {
 							class="sidebar-item sidebar-sub-item"
 							@click="handleShareAllEvents"
 							title="分享">
-							<span class="sidebar-item-icon">📤</span>
+							<el-icon class="sidebar-item-icon"><Share /></el-icon>
 							<span class="sidebar-item-label">分享</span>
 						</div>
 
@@ -515,7 +514,7 @@ const handleEventsRetry = async () => {
 							class="sidebar-item sidebar-sub-item"
 							@click="importExportDialogVisible = true"
 							title="导入/导出">
-							<span class="sidebar-item-icon">📦</span>
+							<el-icon class="sidebar-item-icon"><Box /></el-icon>
 							<span class="sidebar-item-label">导入导出</span>
 						</div>
 					</div>
@@ -528,16 +527,17 @@ const handleEventsRetry = async () => {
 					class="sidebar-item"
 					@click="toggleMode"
 					:title="`切换到${theme.mode === 'light' ? '深色' : '浅色'}模式`">
-					<span class="sidebar-item-icon">{{
-						theme.mode === "light" ? "🌙" : "☀️"
-					}}</span>
+					<el-icon class="sidebar-item-icon">
+						<Moon v-if="theme.mode === 'light'" />
+						<Sunny v-else />
+					</el-icon>
 					<span class="sidebar-item-label">{{
 						theme.mode === "light" ? "Dark" : "Light"
 					}}</span>
 				</div>
 
 				<div class="sidebar-item" @click="themeSettingsDialogVisible = true" title="设置">
-					<span class="sidebar-item-icon">⚙️</span>
+					<el-icon class="sidebar-item-icon"><Setting /></el-icon>
 					<span class="sidebar-item-label">设置</span>
 				</div>
 
@@ -546,7 +546,10 @@ const handleEventsRetry = async () => {
 					class="sidebar-item"
 					@click="handleAuthButtonClick"
 					:title="isAdmin ? '管理员登出' : '管理员登录'">
-					<span class="sidebar-item-icon">{{ isAdmin ? "👤" : "🔐" }}</span>
+					<el-icon class="sidebar-item-icon">
+						<UserFilled v-if="isAdmin" />
+						<Lock v-else />
+					</el-icon>
 					<span class="sidebar-item-label">{{ isAdmin ? "登出" : "登录" }}</span>
 				</div>
 			</div>
@@ -772,6 +775,11 @@ const handleEventsRetry = async () => {
 .sidebar-item-icon {
 	font-size: 22px;
 	line-height: 1;
+}
+
+/* el-icon 作为图标容器时的样式 */
+.sidebar-item .el-icon.sidebar-item-icon {
+	font-size: 22px;
 }
 
 .sidebar-item-label {

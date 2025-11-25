@@ -63,7 +63,7 @@ const handleCancel = () => {
 <template>
 	<div class="batch-operation-bar">
 		<div class="batch-operation-info">
-			<span class="batch-operation-icon">✓</span>
+			<el-icon class="batch-operation-icon"><Select /></el-icon>
 			<span class="batch-operation-text"
 				>已选择 <strong>{{ selectedCount }}</strong> 个事件</span
 			>
@@ -73,14 +73,14 @@ const handleCancel = () => {
 			<!-- Batch Edit Button -->
 			<!-- Requirement 12.4: Batch edit common fields -->
 			<button class="batch-action-btn batch-action-btn--edit" @click="handleEdit">
-				<span class="action-icon">✏️</span>
+				<el-icon class="action-icon"><Edit /></el-icon>
 				<span class="action-text">批量编辑</span>
 			</button>
 
 			<!-- Batch Delete Button -->
 			<!-- Requirement 12.3: Batch delete with confirmation -->
 			<button class="batch-action-btn batch-action-btn--delete" @click="handleDelete">
-				<span class="action-icon">🗑️</span>
+				<el-icon class="action-icon"><Delete /></el-icon>
 				<span class="action-text">批量删除</span>
 			</button>
 

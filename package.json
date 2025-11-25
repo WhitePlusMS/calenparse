@@ -12,6 +12,7 @@
 		"test:ui": "vitest --ui"
 	},
 	"dependencies": {
+		"@element-plus/icons-vue": "^2.3.2",
 		"@fingerprintjs/fingerprintjs": "^5.0.1",
 		"@fullcalendar/core": "^6.1.19",
 		"@fullcalendar/daygrid": "^6.1.19",

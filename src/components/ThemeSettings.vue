@@ -40,13 +40,13 @@ const handleReset = () => {
 				<button
 					:class="['mode-button', { active: theme.mode === 'light' }]"
 					@click="setMode('light')">
-					<span class="mode-icon">☀️</span>
+					<el-icon class="mode-icon"><Sunny /></el-icon>
 					<span class="mode-label">浅色模式</span>
 				</button>
 				<button
 					:class="['mode-button', { active: theme.mode === 'dark' }]"
 					@click="setMode('dark')">
-					<span class="mode-icon">🌙</span>
+					<el-icon class="mode-icon"><Moon /></el-icon>
 					<span class="mode-label">深色模式</span>
 				</button>
 			</div>
@@ -104,13 +104,13 @@ const handleReset = () => {
 					<button
 						:class="['unit-button', { active: countdownSettings.unit === 'day' }]"
 						@click="updateCountdownSettings({ unit: 'day' })">
-						<span class="unit-icon">📅</span>
+						<el-icon class="unit-icon"><Calendar /></el-icon>
 						<span class="unit-name">天</span>
 					</button>
 					<button
 						:class="['unit-button', { active: countdownSettings.unit === 'hour' }]"
 						@click="updateCountdownSettings({ unit: 'hour' })">
-						<span class="unit-icon">⏰</span>
+						<el-icon class="unit-icon"><Timer /></el-icon>
 						<span class="unit-name">小时</span>
 					</button>
 					<button
@@ -119,7 +119,7 @@ const handleReset = () => {
 							{ active: countdownSettings.unit === 'minute' },
 						]"
 						@click="updateCountdownSettings({ unit: 'minute' })">
-						<span class="unit-icon">⏱️</span>
+						<el-icon class="unit-icon"><Clock /></el-icon>
 						<span class="unit-name">分钟</span>
 					</button>
 				</div>

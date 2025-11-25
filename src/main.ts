@@ -4,10 +4,14 @@ import ElementPlus from "element-plus";
 import "element-plus/dist/index.css";
 import "./style.css";
 import App from "./App.vue";
-import { handleError } from "./utils/errorHandler";
+import { handleError } from "@/utils/errorHandler";
+import { registerIcons } from "@/utils/icons";
 
 const app = createApp(App);
 const pinia = createPinia();
+
+// Register Element Plus icons globally
+registerIcons(app);
 
 // Global error handler
 // Requirement 2.13, 10.3: Handle errors gracefully with user-friendly messages

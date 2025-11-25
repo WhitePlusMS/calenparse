@@ -32,7 +32,7 @@ const handleRetry = () => {
 		<h3 class="error-title">{{ title }}</h3>
 		<p class="error-message">{{ message }}</p>
 		<button v-if="showRetry" class="retry-button" @click="handleRetry">
-			<span class="retry-icon">🔄</span>
+			<el-icon class="retry-icon"><Refresh /></el-icon>
 			<span class="retry-text">重试</span>
 		</button>
 	</div>

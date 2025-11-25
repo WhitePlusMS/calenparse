@@ -149,7 +149,7 @@ watch(
 
 				<!-- 错误提示 -->
 				<div v-if="errorMessage" class="error-message">
-					<span class="error-icon">⚠️</span>
+					<el-icon class="error-icon"><Warning /></el-icon>
 					<span class="error-text">{{ errorMessage }}</span>
 				</div>
 			</el-form>

@@ -347,14 +347,14 @@ const handleRetry = async () => {
 		<div v-else class="statistics-header">
 			<div class="statistics-summary">
 				<div class="summary-card">
-					<div class="summary-icon">📊</div>
+					<el-icon class="summary-icon" :size="32"><DataAnalysis /></el-icon>
 					<div class="summary-content">
 						<div class="summary-label">总事件数</div>
 						<div class="summary-value">{{ totalEvents }}</div>
 					</div>
 				</div>
 				<div class="summary-card">
-					<div class="summary-icon">📅</div>
+					<el-icon class="summary-icon" :size="32"><Calendar /></el-icon>
 					<div class="summary-content">
 						<div class="summary-label">已筛选事件</div>
 						<div class="summary-value">{{ filteredEvents.length }}</div>

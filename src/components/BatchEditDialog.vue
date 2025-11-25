@@ -96,7 +96,7 @@ const handleCancel = () => {
 			<!-- Content -->
 			<div class="dialog-content">
 				<div class="dialog-info">
-					<span class="info-icon">ℹ️</span>
+					<el-icon class="info-icon"><InfoFilled /></el-icon>
 					<span class="info-text"
 						>将对 <strong>{{ events.length }}</strong> 个事件进行批量修改</span
 					>

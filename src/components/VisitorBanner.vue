@@ -38,6 +38,20 @@ const props = defineProps<Props>();
 	margin-bottom: var(--spacing-md);
 }
 
+/* 暗色模式下增强 el-alert 的对比度 */
+:deep(.el-alert) {
+	background-color: var(--bg-secondary) !important;
+	border-color: var(--border-color) !important;
+}
+
+:deep(.el-alert__icon) {
+	color: var(--info-color) !important;
+}
+
+:deep(.el-alert__title) {
+	color: var(--text-primary) !important;
+}
+
 .banner-content {
 	display: flex;
 	align-items: center;
@@ -47,21 +61,21 @@ const props = defineProps<Props>();
 
 .banner-title {
 	font-weight: 600;
-	color: var(--text-primary);
+	color: var(--text-primary) !important;
 }
 
 .banner-quota {
-	color: var(--text-secondary);
+	color: var(--text-primary) !important;
 	font-size: 14px;
 }
 
 .banner-quota strong {
-	color: var(--primary-color);
-	font-weight: 600;
+	color: var(--primary-color) !important;
+	font-weight: 700;
 }
 
 .banner-refresh-hint {
-	color: var(--text-tertiary);
+	color: var(--text-secondary) !important;
 	font-size: 13px;
 	font-style: italic;
 }

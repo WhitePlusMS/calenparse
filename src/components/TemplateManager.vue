@@ -137,7 +137,7 @@ onMounted(() => {
 			<el-table-column label="模板名称" prop="templateName" min-width="150">
 				<template #default="{ row }">
 					<div class="template-name">
-						<span class="template-icon">📝</span>
+						<el-icon class="template-icon"><Document /></el-icon>
 						<span class="template-title">{{ row.templateName }}</span>
 					</div>
 				</template>

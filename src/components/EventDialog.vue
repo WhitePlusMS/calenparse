@@ -585,7 +585,7 @@ const cancelSaveAsTemplate = () => {
 					<div class="event-dialog__label">模板信息</div>
 					<div class="event-dialog__value event-dialog__value--template">
 						<div class="template-badge">
-							<span class="template-icon">📋</span>
+							<el-icon class="template-icon"><Document /></el-icon>
 							<span class="template-text">这是一个事件模板</span>
 						</div>
 						<div v-if="editableEvent.templateName" class="template-name">
@@ -667,7 +667,7 @@ const cancelSaveAsTemplate = () => {
 				<!-- Basic Information Section -->
 				<div class="form-section">
 					<div class="form-section__header">
-						<span class="form-section__icon">📝</span>
+						<el-icon class="form-section__icon"><Edit /></el-icon>
 						<span class="form-section__title">基本信息</span>
 					</div>
 					<div class="form-section__divider"></div>
@@ -746,7 +746,7 @@ const cancelSaveAsTemplate = () => {
 				<!-- Detailed Information Section -->
 				<div class="form-section">
 					<div class="form-section__header">
-						<span class="form-section__icon">📄</span>
+						<el-icon class="form-section__icon"><Document /></el-icon>
 						<span class="form-section__title">详细信息</span>
 					</div>
 					<div class="form-section__divider"></div>
@@ -755,7 +755,7 @@ const cancelSaveAsTemplate = () => {
 					<el-form-item label="地点">
 						<template #label>
 							<span class="form-label-with-icon">
-								<span class="form-label-icon">📍</span>
+								<el-icon class="form-label-icon"><Location /></el-icon>
 								<span>地点</span>
 							</span>
 						</template>
@@ -770,7 +770,7 @@ const cancelSaveAsTemplate = () => {
 					<el-form-item label="标签">
 						<template #label>
 							<span class="form-label-with-icon">
-								<span class="form-label-icon">🏷️</span>
+								<el-icon class="form-label-icon"><PriceTag /></el-icon>
 								<span>标签</span>
 							</span>
 						</template>
@@ -814,7 +814,7 @@ const cancelSaveAsTemplate = () => {
 					<el-form-item label="描述">
 						<template #label>
 							<span class="form-label-with-icon">
-								<span class="form-label-icon">📋</span>
+								<el-icon class="form-label-icon"><Document /></el-icon>
 								<span>描述</span>
 							</span>
 						</template>
@@ -831,7 +831,7 @@ const cancelSaveAsTemplate = () => {
 					<el-form-item label="原始通告">
 						<template #label>
 							<span class="form-label-with-icon">
-								<span class="form-label-icon">📄</span>
+								<el-icon class="form-label-icon"><Document /></el-icon>
 								<span>原始通告</span>
 							</span>
 						</template>
@@ -850,7 +850,7 @@ const cancelSaveAsTemplate = () => {
 					v-if="isQuickCreateMode && templates.length > 0"
 					class="form-section template-section">
 					<div class="form-section__header">
-						<span class="form-section__icon">📋</span>
+						<el-icon class="form-section__icon"><Document /></el-icon>
 						<span class="form-section__title">从模板创建</span>
 					</div>
 					<div class="form-section__divider"></div>

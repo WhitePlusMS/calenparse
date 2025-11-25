@@ -308,7 +308,9 @@ const formatDate = (date: Date, isAllDay: boolean): string => {
 					]">
 					<!-- Header -->
 					<div class="share-preview__header">
-						<div class="share-preview__title">📅 日程分享</div>
+						<div class="share-preview__title">
+							<el-icon><Calendar /></el-icon> 日程分享
+						</div>
 						<div class="share-preview__count">
 							{{
 								selectedEvents.length === 1
@@ -336,7 +338,7 @@ const formatDate = (date: Date, isAllDay: boolean): string => {
 
 							<!-- Event time -->
 							<div class="share-preview__event-info">
-								<span class="share-preview__icon">⏰</span>
+								<el-icon class="share-preview__icon"><Timer /></el-icon>
 								<span>{{
 									formatDate(event.startTime, event.isAllDay)
 								}}</span>
@@ -348,7 +350,9 @@ const formatDate = (date: Date, isAllDay: boolean): string => {
 
 							<!-- Event location -->
 							<div v-if="event.location" class="share-preview__event-info">
-								<span class="share-preview__icon">📍</span>
+								<el-icon class="share-preview__icon"
+									><Location
+								/></el-icon>
 								<span>{{ event.location }}</span>
 							</div>
 
@@ -356,7 +360,9 @@ const formatDate = (date: Date, isAllDay: boolean): string => {
 							<div
 								v-if="event.tagIds && event.tagIds.length > 0"
 								class="share-preview__event-tags">
-								<span class="share-preview__icon">🏷️</span>
+								<el-icon class="share-preview__icon"
+									><PriceTag
+								/></el-icon>
 								<div class="share-preview__tags-list">
 									<span
 										v-for="tag in getEventTags(event)"
