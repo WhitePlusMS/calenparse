@@ -426,7 +426,7 @@ const handleEventsRetry = async () => {
 	<div v-else class="app-layout">
 		<!-- 全局错误提示 - 事件加载失败 -->
 		<div v-if="eventsError" class="global-error-banner">
-			<span class="error-icon">⚠️</span>
+			<el-icon class="error-icon"><WarningFilled /></el-icon>
 			<span class="error-message">{{ eventsError }}</span>
 			<button class="retry-button-small" @click="handleEventsRetry">重试</button>
 		</div>

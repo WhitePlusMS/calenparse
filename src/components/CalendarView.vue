@@ -516,7 +516,11 @@ function renderEventContent(eventInfo: any) {
 				</div>
 				<div class="fc-event-title-container">
 					<div class="fc-event-title">${event.title}</div>
-					${!isYearView && location ? `<div class="fc-event-location">📍 ${location}</div>` : ""}
+					${
+						!isYearView && location
+							? `<div class="fc-event-location"><span class="location-icon">📍</span> ${location}</div>`
+							: ""
+					}
 				</div>
 			</div>
 		`,
@@ -956,7 +960,7 @@ defineExpose({
 								closable
 								@close="removeLocation(location)"
 								size="small">
-								📍 {{ location }}
+								<el-icon><Location /></el-icon> {{ location }}
 							</el-tag>
 							<el-tag
 								v-for="tagId in selectedTagIds"
@@ -1646,7 +1650,7 @@ defineExpose({
 }
 
 :deep(.fc-event-time::before) {
-	content: "🕐";
+	content: "⏰";
 	font-size: 12px;
 }
 

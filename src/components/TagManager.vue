@@ -219,9 +219,11 @@ onMounted(() => {
 			<h3>标签管理</h3>
 			<div class="header-actions">
 				<el-button v-if="selectedTags.length > 0" type="danger" @click="handleBatchDelete">
-					🗑️ 批量删除 ({{ selectedTags.length }})
+					<el-icon><Delete /></el-icon> 批量删除 ({{ selectedTags.length }})
 				</el-button>
-				<el-button type="primary" @click="openCreateDialog"> ➕ 创建标签 </el-button>
+				<el-button type="primary" @click="openCreateDialog">
+					<el-icon><Plus /></el-icon> 创建标签
+				</el-button>
 			</div>
 		</div>
 

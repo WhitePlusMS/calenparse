@@ -90,7 +90,9 @@ const handleCancel = () => {
 			<!-- Header -->
 			<div class="dialog-header">
 				<h3 class="dialog-title">批量编辑事件</h3>
-				<button class="dialog-close-btn" @click="handleClose">✕</button>
+				<button class="dialog-close-btn" @click="handleClose">
+					<el-icon><Close /></el-icon>
+				</button>
 			</div>
 
 			<!-- Content -->
@@ -146,7 +148,7 @@ const handleCancel = () => {
 				</div>
 
 				<div class="dialog-hint">
-					<span class="hint-icon">💡</span>
+					<el-icon class="hint-icon"><InfoFilled /></el-icon>
 					<span class="hint-text">只有勾选的字段会被更新</span>
 				</div>
 			</div>

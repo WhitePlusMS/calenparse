@@ -767,7 +767,7 @@ const handleRetry = async () => {
 							closable
 							@close="removeLocation(location)"
 							size="small">
-							📍 {{ location }}
+							<el-icon><Location /></el-icon> {{ location }}
 						</el-tag>
 						<el-tag
 							v-for="tagId in selectedTagIds"
@@ -832,7 +832,9 @@ const handleRetry = async () => {
 		<!-- Requirement 8.6: Display empty state prompt when no events exist -->
 		<!-- Requirement 13.2: Friendly empty state with illustration and guidance -->
 		<div v-else-if="isEmpty" class="empty-state">
-			<div class="empty-icon">📋</div>
+			<div class="empty-icon">
+				<el-icon :size="64"><Document /></el-icon>
+			</div>
 			<p class="empty-title">暂无日程事件</p>
 			<p class="empty-hint">使用上方输入框解析通告文本来创建日程</p>
 		</div>
@@ -975,7 +977,9 @@ const handleRetry = async () => {
 
 							<div class="event-meta">
 								<div class="event-meta-item">
-									<span class="event-meta-icon">🕐</span>
+									<el-icon class="event-meta-icon"
+										><Clock
+									/></el-icon>
 									<span class="event-meta-text">
 										{{
 											formatTime(

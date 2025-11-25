@@ -264,7 +264,7 @@ const handleKeydown = (event: Event | KeyboardEvent) => {
 						</span>
 					</template>
 					<template v-else>
-						<span class="input-panel__button-icon">🚀</span>
+						<el-icon class="input-panel__button-icon"><VideoPlay /></el-icon>
 						解析日程
 					</template>
 				</el-button>

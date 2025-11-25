@@ -35,7 +35,9 @@ const handleReset = () => {
 	<div class="theme-settings">
 		<!-- Mode Selection -->
 		<div class="setting-section">
-			<h3 class="section-title">🌓 主题模式</h3>
+			<h3 class="section-title">
+				<el-icon><MoonNight /></el-icon> 主题模式
+			</h3>
 			<div class="mode-selector">
 				<button
 					:class="['mode-button', { active: theme.mode === 'light' }]"
@@ -55,7 +57,9 @@ const handleReset = () => {
 
 		<!-- Primary Color -->
 		<div class="setting-section">
-			<h3 class="section-title">🎨 主色调</h3>
+			<h3 class="section-title">
+				<el-icon><Brush /></el-icon> 主色调
+			</h3>
 			<div class="color-presets">
 				<button
 					v-for="preset in colorPresets"
@@ -81,7 +85,9 @@ const handleReset = () => {
 
 		<!-- Countdown Settings -->
 		<div class="setting-section">
-			<h3 class="section-title">⏱️ 倒计时设置</h3>
+			<h3 class="section-title">
+				<el-icon><Timer /></el-icon> 倒计时设置
+			</h3>
 
 			<!-- Enable/Disable Toggle -->
 			<div class="countdown-toggle">
@@ -128,7 +134,9 @@ const handleReset = () => {
 
 		<!-- Preview -->
 		<div class="setting-section">
-			<h3 class="section-title">👀 预览</h3>
+			<h3 class="section-title">
+				<el-icon><View /></el-icon> 预览
+			</h3>
 			<div class="preview-box">
 				<div class="preview-header" :style="{ backgroundColor: theme.primaryColor }">
 					<h4>CalenParse</h4>

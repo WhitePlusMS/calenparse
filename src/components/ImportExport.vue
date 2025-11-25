@@ -237,12 +237,12 @@ const importEvents = async (parsedEvents: Partial<CalendarEvent>[]) => {
 			<button
 				:class="['tab-button', { active: activeTab === 'export' }]"
 				@click="activeTab = 'export'">
-				📤 导出
+				<el-icon><Upload /></el-icon> 导出
 			</button>
 			<button
 				:class="['tab-button', { active: activeTab === 'import' }]"
 				@click="activeTab = 'import'">
-				📥 导入
+				<el-icon><Download /></el-icon> 导入
 			</button>
 		</div>
 
@@ -305,7 +305,10 @@ const importEvents = async (parsedEvents: Partial<CalendarEvent>[]) => {
 					导出{{ selectedCount > 0 ? `选中的 ${selectedCount} 个` : "全部" }}事件
 				</button>
 				<p v-if="selectedCount === 0 || selectedCount === events.length" class="form-hint">
-					💾 导出全部事件时，JSON 格式将自动包含备份元数据（版本号、备份时间等）
+					<el-icon style="vertical-align: middle; margin-right: 4px"
+						><FolderOpened
+					/></el-icon>
+					导出全部事件时，JSON 格式将自动包含备份元数据（版本号、备份时间等）
 				</p>
 			</div>
 		</div>
@@ -333,7 +336,10 @@ const importEvents = async (parsedEvents: Partial<CalendarEvent>[]) => {
 				<button class="btn btn-primary" @click="triggerImportFile">选择文件导入</button>
 				<p class="form-hint">
 					支持 .ics 和 .json 格式<br />
-					💾 系统会自动识别备份文件并提示
+					<el-icon style="vertical-align: middle; margin-right: 4px"
+						><FolderOpened
+					/></el-icon>
+					系统会自动识别备份文件并提示
 				</p>
 			</div>
 

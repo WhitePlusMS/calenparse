@@ -88,7 +88,7 @@ const handleLoadingClick = () => {
 						<span>⚙</span>
 					</button>
 					<button class="btn btn-danger btn-icon" @click="handleClick">
-						<span>🗑</span>
+						<el-icon><Delete /></el-icon>
 					</button>
 				</div>
 			</section>
@@ -127,15 +127,15 @@ const handleLoadingClick = () => {
 				<p class="text-secondary">按钮文字配合图标</p>
 				<div class="button-group">
 					<button class="btn btn-primary" @click="handleClick">
-						<span>➕</span>
+						<el-icon><Plus /></el-icon>
 						<span>添加事件</span>
 					</button>
 					<button class="btn btn-secondary" @click="handleClick">
-						<span>📤</span>
+						<el-icon><Share /></el-icon>
 						<span>分享</span>
 					</button>
 					<button class="btn btn-danger" @click="handleClick">
-						<span>🗑️</span>
+						<el-icon><Delete /></el-icon>
 						<span>删除</span>
 					</button>
 				</div>

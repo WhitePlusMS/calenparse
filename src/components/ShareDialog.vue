@@ -282,7 +282,9 @@ const formatDate = (date: Date, isAllDay: boolean): string => {
 				<div class="share-dialog__preview-label">预览：</div>
 				<!-- Empty state for text -->
 				<div v-if="selectedEvents.length === 0" class="share-dialog__empty-state">
-					<div class="empty-state__icon">📭</div>
+					<div class="empty-state__icon">
+						<el-icon :size="64"><FolderOpened /></el-icon>
+					</div>
 					<div class="empty-state__text">请先选择要分享的事件</div>
 				</div>
 				<div v-else class="share-dialog__text-preview">
@@ -295,7 +297,9 @@ const formatDate = (date: Date, isAllDay: boolean): string => {
 				<div class="share-dialog__preview-label">预览：</div>
 				<!-- Empty state for image -->
 				<div v-if="selectedEvents.length === 0" class="share-dialog__empty-state">
-					<div class="empty-state__icon">📭</div>
+					<div class="empty-state__icon">
+						<el-icon :size="64"><FolderOpened /></el-icon>
+					</div>
 					<div class="empty-state__text">请先选择要分享的事件</div>
 				</div>
 				<div
@@ -378,7 +382,9 @@ const formatDate = (date: Date, isAllDay: boolean): string => {
 							<div
 								v-if="event.description"
 								class="share-preview__event-section">
-								<div class="share-preview__section-label">📝 描述</div>
+								<div class="share-preview__section-label">
+									<el-icon><Document /></el-icon> 描述
+								</div>
 								<div class="share-preview__section-text">
 									{{ event.description }}
 								</div>
@@ -389,7 +395,7 @@ const formatDate = (date: Date, isAllDay: boolean): string => {
 								v-if="event.originalText"
 								class="share-preview__event-section">
 								<div class="share-preview__section-label">
-									📄 原始通告
+									<el-icon><Tickets /></el-icon> 原始通告
 								</div>
 								<div class="share-preview__section-text">
 									{{ event.originalText }}
@@ -399,14 +405,14 @@ const formatDate = (date: Date, isAllDay: boolean): string => {
 							<!-- Metadata -->
 							<div class="share-preview__event-metadata">
 								<div class="share-preview__metadata-item">
-									🕐 创建：{{
+									<el-icon><Clock /></el-icon> 创建：{{
 										dayjs(event.createdAt).format(
 											"YYYY-MM-DD HH:mm"
 										)
 									}}
 								</div>
 								<div class="share-preview__metadata-item">
-									🔄 更新：{{
+									<el-icon><Refresh /></el-icon> 更新：{{
 										dayjs(event.updatedAt).format(
 											"YYYY-MM-DD HH:mm"
 										)

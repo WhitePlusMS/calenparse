@@ -116,7 +116,9 @@ onMounted(() => {
 <template>
 	<div class="template-manager">
 		<div class="header">
-			<h3>📋 事件模板</h3>
+			<h3>
+				<el-icon><Document /></el-icon> 事件模板
+			</h3>
 			<div class="header-info">
 				<span class="template-count">共 {{ templates.length }} 个模板</span>
 			</div>
@@ -160,7 +162,9 @@ onMounted(() => {
 			<!-- Location -->
 			<el-table-column label="地点" prop="location" width="150">
 				<template #default="{ row }">
-					<span v-if="row.location" class="location"> 📍 {{ row.location }} </span>
+					<span v-if="row.location" class="location">
+						<el-icon><Location /></el-icon> {{ row.location }}
+					</span>
 					<span v-else class="no-data">-</span>
 				</template>
 			</el-table-column>

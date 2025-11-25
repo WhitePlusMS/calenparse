@@ -28,7 +28,9 @@ const handleRetry = () => {
 
 <template>
 	<div class="error-state">
-		<div class="error-icon">⚠️</div>
+		<div class="error-icon">
+			<el-icon :size="64"><WarningFilled /></el-icon>
+		</div>
 		<h3 class="error-title">{{ title }}</h3>
 		<p class="error-message">{{ message }}</p>
 		<button v-if="showRetry" class="retry-button" @click="handleRetry">

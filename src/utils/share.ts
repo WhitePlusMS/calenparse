@@ -17,6 +17,22 @@ import html2canvas from "html2canvas";
  */
 
 /**
+ * 文本标签配置
+ * 集中管理所有标签文本，便于统一修改格式
+ */
+const LABELS = {
+	TITLE: "[日历]",
+	TIME: "[时间]",
+	LOCATION: "[地点]",
+	TAG: "[标签]",
+	DESCRIPTION: "[描述]",
+	ORIGINAL: "[原文]",
+	CREATED: "[创建]",
+	UPDATED: "[更新]",
+	LIST: "[列表]",
+} as const;
+
+/**
  * Helper: Format date and time consistently
  */
 function formatDateTime(date: Date): string {
@@ -40,48 +56,48 @@ export function formatEventAsText(event: CalendarEvent, tags: Tag[] = []): strin
 	const lines: string[] = [];
 
 	// Title (Requirement 19.2)
-	lines.push(`📅 ${event.title}`);
+	lines.push(`${LABELS.TITLE} ${event.title}`);
 	lines.push("");
 
 	// Time (Requirement 19.2)
 	if (event.isAllDay) {
-		lines.push(`⏰ 时间：${dayjs(event.startTime).format("YYYY年MM月DD日")} (全天)`);
+		lines.push(`${LABELS.TIME} 时间：${dayjs(event.startTime).format("YYYY年MM月DD日")} (全天)`);
 	} else {
-		lines.push(`⏰ 开始：${formatDateTime(event.startTime)}`);
-		lines.push(`   结束：${formatDateTime(event.endTime)}`);
+		lines.push(`${LABELS.TIME} 开始：${formatDateTime(event.startTime)}`);
+		lines.push(`${" ".repeat(LABELS.TIME.length)} 结束：${formatDateTime(event.endTime)}`);
 	}
 
 	// Location (Requirement 19.2)
 	if (event.location) {
-		lines.push(`📍 地点：${event.location}`);
+		lines.push(`${LABELS.LOCATION} 地点：${event.location}`);
 	}
 
 	// Tags
 	if (event.tagIds?.length && tags.length) {
 		const eventTags = getEventTagNames(event.tagIds, tags);
 		if (eventTags.length) {
-			lines.push(`🏷️ 标签：${eventTags.join(", ")}`);
+			lines.push(`${LABELS.TAG} 标签：${eventTags.join(", ")}`);
 		}
 	}
 
 	// Description (Requirement 19.2)
 	if (event.description) {
 		lines.push("");
-		lines.push(`📝 描述：`);
+		lines.push(`${LABELS.DESCRIPTION} 描述：`);
 		lines.push(event.description);
 	}
 
 	// Original Text
 	if (event.originalText) {
 		lines.push("");
-		lines.push(`📄 原始通告：`);
+		lines.push(`${LABELS.ORIGINAL} 原始通告：`);
 		lines.push(event.originalText);
 	}
 
 	// Metadata
 	lines.push("");
-	lines.push(`🕐 创建时间：${formatDateTime(event.createdAt)}`);
-	lines.push(`🔄 更新时间：${formatDateTime(event.updatedAt)}`);
+	lines.push(`${LABELS.CREATED} 创建时间：${formatDateTime(event.createdAt)}`);
+	lines.push(`${LABELS.UPDATED} 更新时间：${formatDateTime(event.updatedAt)}`);
 
 	return lines.join("\n");
 }
@@ -102,7 +118,7 @@ export function generateShareText(events: CalendarEvent[], tags: Tag[] = []): st
 
 	// Multiple events (Requirement 19.4)
 	const lines: string[] = [];
-	lines.push(`📋 共 ${events.length} 个事件`);
+	lines.push(`${LABELS.LIST} 共 ${events.length} 个事件`);
 	lines.push("");
 	lines.push("─".repeat(40));
 	lines.push("");

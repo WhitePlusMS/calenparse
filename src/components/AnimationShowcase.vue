@@ -95,15 +95,15 @@ const listItems = ["项目 1", "项目 2", "项目 3", "项目 4", "项目 5"];
 				<p class="text-secondary">加载指示器和图标旋转</p>
 				<div class="demo-grid">
 					<div class="demo-box">
-						<span class="spin">⚙️</span>
+						<el-icon class="spin" :size="32"><Setting /></el-icon>
 						<span>旋转</span>
 					</div>
 					<div class="demo-box">
-						<span class="spin-slow">🔄</span>
+						<el-icon class="spin-slow" :size="32"><RefreshRight /></el-icon>
 						<span>慢速旋转</span>
 					</div>
 					<div class="demo-box">
-						<span class="spin-fast">⏳</span>
+						<el-icon class="spin-fast" :size="32"><Loading /></el-icon>
 						<span>快速旋转</span>
 					</div>
 				</div>

@@ -211,8 +211,8 @@ const handleSend = async () => {
 					:disabled="!inputText.trim() || isLoading"
 					@click="handleSend"
 					title="解析日程">
-					<span v-if="isLoading" class="loading-icon">⏳</span>
-					<span v-else class="send-icon">🚀</span>
+					<el-icon v-if="isLoading" class="loading-icon"><Loading /></el-icon>
+					<el-icon v-else class="send-icon"><VideoPlay /></el-icon>
 				</button>
 			</div>
 
@@ -233,8 +233,8 @@ const handleSend = async () => {
 				:disabled="!inputText.trim() || isLoading"
 				@click="handleSend"
 				title="解析日程">
-				<span v-if="isLoading" class="loading-icon">⏳</span>
-				<span v-else class="send-icon">🚀</span>
+				<el-icon v-if="isLoading" class="loading-icon"><Loading /></el-icon>
+				<el-icon v-else class="send-icon"><VideoPlay /></el-icon>
 			</button>
 		</div>
 	</div>

@@ -43,14 +43,14 @@ const countdownClass = computed(() => {
 	return "";
 });
 
-// Get icon based on countdown type
-const countdownIcon = computed(() => {
+// Get icon component based on countdown type
+const countdownIconComponent = computed(() => {
 	if (countdownInfo.value.type === "start") {
-		return "🚀"; // Start icon
+		return "VideoPlay"; // Start icon
 	} else if (countdownInfo.value.type === "end") {
-		return "⏰"; // End icon
+		return "Timer"; // End icon
 	} else if (countdownInfo.value.type === "overdue") {
-		return "⚠️"; // Overdue warning icon
+		return "Warning"; // Overdue warning icon
 	}
 	return "";
 });
@@ -71,7 +71,9 @@ const countdownIcon = computed(() => {
 		"
 		:aria-live="'polite'"
 		tabindex="0">
-		<span class="countdown-icon" aria-hidden="true">{{ countdownIcon }}</span>
+		<el-icon class="countdown-icon" aria-hidden="true">
+			<component :is="countdownIconComponent" />
+		</el-icon>
 		<span class="countdown-text">{{ countdownInfo.text }}</span>
 	</div>
 </template>
