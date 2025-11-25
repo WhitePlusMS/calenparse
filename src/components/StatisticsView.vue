@@ -86,7 +86,6 @@ const timeChartData = computed(() => {
 const timeChartOptions = computed(() => {
 	// 依赖 theme.mode 以便主题切换时重新计算
 	const isDark = theme.value.mode === "dark";
-	const textColor = isDark ? "#e5e7eb" : "#1f2937";
 	const secondaryTextColor = isDark ? "#9ca3af" : "#6b7280";
 	const gridColor = isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.05)";
 
