@@ -233,9 +233,13 @@ export function useAuth(): UseAuthReturn {
 
 		if (error) {
 			// 根据错误类型提供友好提示
-			if (error.message.includes("Invalid login credentials")) {
+			const errorMsg = error.message.toLowerCase();
+			if (
+				errorMsg.includes("invalid login credentials") ||
+				errorMsg.includes("invalid email or password")
+			) {
 				throw new Error("邮箱或密码错误，请重试");
-			} else if (error.message.includes("Email not confirmed")) {
+			} else if (errorMsg.includes("email not confirmed")) {
 				throw new Error("邮箱未验证，请检查邮箱");
 			} else {
 				throw new Error(`登录失败: ${error.message}`);
@@ -269,32 +273,26 @@ export function useAuth(): UseAuthReturn {
 			return;
 		}
 
-		try {
-			isLoggingOut.value = true;
+		isLoggingOut.value = true;
 
+		try {
 			const { error } = await supabase.auth.signOut();
 
 			if (error) {
 				throw new Error(`登出失败: ${error.message}`);
 			}
-
-			// 注意：signOut() 会触发 onAuthStateChange 的 SIGNED_OUT 事件
-			// 状态清理和访客模式初始化在回调中统一处理
-		} catch (err) {
-			// 登出失败时，强制清理本地状态
+		} finally {
+			// 无论登出成功或失败，都清理本地状态并切换到访客模式
 			adminSession.value = null;
 			mode.value = "visitor";
+			isLoggingOut.value = false;
 
-			// 尝试初始化访客模式
+			// 尝试初始化访客模式（不阻塞，失败也不影响登出）
 			try {
 				await initVisitorMode();
 			} catch (initErr) {
 				console.error("初始化访客模式失败:", initErr);
 			}
-
-			throw err;
-		} finally {
-			isLoggingOut.value = false;
 		}
 	};
 
@@ -364,23 +362,19 @@ export function useAuth(): UseAuthReturn {
 			if (error) {
 				console.warn("检查会话失败:", error);
 				// 出错时默认进入访客模式
-				await initVisitorMode();
+				await safelyFallbackToVisitor();
 			} else if (session) {
 				// 有效会话 → 管理员模式
 				adminSession.value = session;
 				mode.value = "admin";
 			} else {
 				// 无会话 → 访客模式
-				await initVisitorMode();
+				await safelyFallbackToVisitor();
 			}
 		} catch (err) {
 			console.error("身份检查失败:", err);
 			// 出错时默认进入访客模式
-			try {
-				await initVisitorMode();
-			} catch (initErr) {
-				console.error("初始化访客模式失败:", initErr);
-			}
+			await safelyFallbackToVisitor();
 		} finally {
 			// 身份确定后设为 false
 			isAuthChecking.value = false;
@@ -396,6 +390,8 @@ export function useAuth(): UseAuthReturn {
 	 * 统一处理错误，避免代码重复
 	 */
 	const safelyFallbackToVisitor = async (): Promise<void> => {
+		adminSession.value = null;
+		mode.value = "visitor";
 		try {
 			await initVisitorMode();
 		} catch (err) {
@@ -418,8 +414,6 @@ export function useAuth(): UseAuthReturn {
 			if (event === "SIGNED_OUT") {
 				// 被动登出（如其他设备登出、会话过期等）
 				// 不显示错误提示，静默切换到访客模式
-				adminSession.value = null;
-				mode.value = "visitor";
 				await safelyFallbackToVisitor();
 			} else if (event === "SIGNED_IN" && session) {
 				// 登录成功

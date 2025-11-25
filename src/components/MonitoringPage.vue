@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, watch } from "vue";
 import { useAuth } from "@/composables/useAuth";
 import { useMonitoring } from "@/composables/useMonitoring";
 import { ElMessage } from "element-plus";
@@ -90,6 +90,25 @@ onMounted(async () => {
 		} catch (err) {
 			ElMessage.error("加载监控数据失败");
 		}
+	}
+});
+
+/**
+ * 监听管理员状态变化，登出时清空数据
+ */
+watch(isAdmin, (newIsAdmin) => {
+	if (!newIsAdmin) {
+		// 登出时清空监控数据
+		sessions.value = [];
+		statistics.value = {
+			totalVisitors: 0,
+			totalLLMCalls: 0,
+			totalTokens: 0,
+			totalEvents: 0,
+			lastCleanupTime: null,
+		};
+		selectedSession.value = null;
+		sessionEvents.value = [];
 	}
 });
 

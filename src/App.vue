@@ -361,15 +361,16 @@ const handleAuthButtonClick = async () => {
 			// 用户确认登出
 			await logout();
 			ElMessage.success("已退出管理员模式");
-			// 等待访客模式完全初始化后再刷新事件
-			await new Promise((resolve) => setTimeout(resolve, 300));
-			try {
-				await fetchEvents();
-			} catch (err) {
-				console.error("刷新事件列表失败:", err);
-				// 如果刷新失败，再等待一下重试
-				await new Promise((resolve) => setTimeout(resolve, 500));
-				await fetchEvents();
+
+			// 刷新访客配额
+			await loadVisitorQuota();
+
+			// 刷新事件列表（切换到访客事件）
+			await fetchEvents();
+
+			// 如果当前在监控页面，切换到日历视图
+			if (currentViewMode.value === "monitoring") {
+				currentViewMode.value = "calendar";
 			}
 		} catch (error) {
 			// 用户取消或登出失败
