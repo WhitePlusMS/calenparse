@@ -39,6 +39,9 @@ const formRef = ref();
 // 加载状态
 const loading = ref(false);
 
+// 错误信息
+const errorMessage = ref("");
+
 // 表单验证规则
 const rules = {
 	email: [
@@ -56,6 +59,9 @@ const handleLogin = async () => {
 	if (!formRef.value) return;
 
 	try {
+		// 清空之前的错误信息
+		errorMessage.value = "";
+
 		// 验证表单
 		await formRef.value.validate();
 
@@ -69,8 +75,12 @@ const handleLogin = async () => {
 		emit("success");
 		handleClose();
 	} catch (error) {
-		// 错误已在 useAuth 中处理并显示
-		console.error("Login failed:", error);
+		// 显示错误信息
+		if (error instanceof Error) {
+			errorMessage.value = error.message;
+		} else {
+			errorMessage.value = "登录失败，请重试";
+		}
 	} finally {
 		loading.value = false;
 	}
@@ -85,6 +95,8 @@ const handleClose = () => {
 		email: "",
 		password: "",
 	};
+	// 清空错误信息
+	errorMessage.value = "";
 };
 
 // 监听对话框关闭
@@ -134,6 +146,12 @@ watch(
 						show-password
 						@keyup.enter="handleLogin" />
 				</el-form-item>
+
+				<!-- 错误提示 -->
+				<div v-if="errorMessage" class="error-message">
+					<span class="error-icon">⚠️</span>
+					<span class="error-text">{{ errorMessage }}</span>
+				</div>
 			</el-form>
 		</div>
 
@@ -202,6 +220,43 @@ watch(
 /* 密码输入框段前间距 */
 .password-item {
 	margin-top: var(--spacing-xl);
+}
+
+/* 错误提示 */
+.error-message {
+	display: flex;
+	align-items: center;
+	gap: var(--spacing-sm);
+	padding: var(--spacing-md);
+	background: rgba(245, 108, 108, 0.1);
+	border: 1px solid var(--danger-color);
+	border-radius: var(--radius-md);
+	margin-top: var(--spacing-lg);
+	animation: errorSlideIn 0.3s ease;
+}
+
+@keyframes errorSlideIn {
+	from {
+		opacity: 0;
+		transform: translateY(-10px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+.error-icon {
+	font-size: 18px;
+	line-height: 1;
+}
+
+.error-text {
+	flex: 1;
+	font-size: 14px;
+	color: var(--danger-color);
+	font-weight: 500;
+	line-height: 1.5;
 }
 
 /* Footer - 移除顶部分隔线 */

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import { ElMessage } from "element-plus";
+import { ElMessage, ElMessageBox } from "element-plus";
 import { Loading } from "@element-plus/icons-vue";
 import CalendarView from "./components/CalendarView.vue";
 import ListView from "./components/ListView.vue";
@@ -26,7 +26,7 @@ import type { CalendarEvent, ParsedEvent, VisitorQuota } from "@/types";
 const { toggleMode, theme } = useTheme();
 
 // Initialize auth (身份检查)
-const { isAuthChecking, mode, isAdmin, getVisitorQuota } = useAuth();
+const { isAuthChecking, mode, isAdmin, getVisitorQuota, logout } = useAuth();
 
 // 访客配额状态
 const visitorQuota = ref<VisitorQuota>({
@@ -347,6 +347,42 @@ const handleLoginSuccess = async () => {
 	await fetchEvents();
 };
 
+// 处理登录/登出按钮点击
+const handleAuthButtonClick = async () => {
+	if (isAdmin.value) {
+		// 管理员模式 - 显示登出确认
+		try {
+			await ElMessageBox.confirm("确定要退出管理员模式吗？退出后将切换到访客模式。", "确认登出", {
+				confirmButtonText: "登出",
+				cancelButtonText: "取消",
+				type: "warning",
+			});
+
+			// 用户确认登出
+			await logout();
+			ElMessage.success("已退出管理员模式");
+			// 等待访客模式完全初始化后再刷新事件
+			await new Promise((resolve) => setTimeout(resolve, 300));
+			try {
+				await fetchEvents();
+			} catch (err) {
+				console.error("刷新事件列表失败:", err);
+				// 如果刷新失败，再等待一下重试
+				await new Promise((resolve) => setTimeout(resolve, 500));
+				await fetchEvents();
+			}
+		} catch (error) {
+			// 用户取消或登出失败
+			if (error !== "cancel") {
+				console.error("Logout failed:", error);
+			}
+		}
+	} else {
+		// 访客模式 - 打开登录对话框
+		adminLoginDialogVisible.value = true;
+	}
+};
+
 // 监听身份检查完成，初始化事件和配额
 import { watch } from "vue";
 watch(
@@ -504,14 +540,13 @@ const handleEventsRetry = async () => {
 					<span class="sidebar-item-label">设置</span>
 				</div>
 
-				<!-- 管理员登录按钮（仅访客模式显示） -->
+				<!-- 登录/登出按钮 -->
 				<div
-					v-if="mode === 'visitor'"
 					class="sidebar-item"
-					@click="adminLoginDialogVisible = true"
-					title="管理员登录">
-					<span class="sidebar-item-icon">🔐</span>
-					<span class="sidebar-item-label">登录</span>
+					@click="handleAuthButtonClick"
+					:title="isAdmin ? '管理员登出' : '管理员登录'">
+					<span class="sidebar-item-icon">{{ isAdmin ? "👤" : "🔐" }}</span>
+					<span class="sidebar-item-label">{{ isAdmin ? "登出" : "登录" }}</span>
 				</div>
 			</div>
 		</aside>
