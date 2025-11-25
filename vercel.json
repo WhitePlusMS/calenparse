@@ -3,6 +3,12 @@
 	"outputDirectory": "dist",
 	"framework": "vite",
 	"installCommand": "npm ci --legacy-peer-deps",
+	"git": {
+		"deploymentEnabled": {
+			"main": true,
+			"dev": false
+		}
+	},
 	"rewrites": [
 		{
 			"source": "/(.*)",
