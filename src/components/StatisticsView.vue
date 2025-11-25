@@ -2,6 +2,7 @@
 import { ref, computed, watch } from "vue";
 import { Bar, Pie } from "vue-chartjs";
 import { Chart as ChartJS, Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale, ArcElement } from "chart.js";
+import { FolderOpened } from "@element-plus/icons-vue";
 import { useEvents } from "@/composables/useEvents";
 import { useStatistics } from "@/composables/useStatistics";
 import { useTheme } from "@/composables/useTheme";

@@ -1,6 +1,17 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from "vue";
 import { ElDialog, ElButton, ElRadioGroup, ElRadioButton, ElMessage, ElLoading } from "element-plus";
+import {
+	Calendar,
+	Timer,
+	Location,
+	PriceTag,
+	Document,
+	Tickets,
+	Clock,
+	Refresh,
+	FolderOpened,
+} from "@element-plus/icons-vue";
 import type { CalendarEvent, Tag } from "@/types";
 import { generateShareText, copyToClipboard, generateShareImage, downloadBlob } from "@/utils/share";
 import { useSupabase } from "@/composables/useSupabase";

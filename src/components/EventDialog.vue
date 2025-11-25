@@ -429,7 +429,8 @@ const validateForm = (): boolean => {
 	if (!editableEvent.value.startTime || !editableEvent.value.endTime) {
 		formErrors.value.dateRange = "请选择开始和结束时间";
 		isValid = false;
-	} else if (editableEvent.value.startTime >= editableEvent.value.endTime) {
+	} else if (!editableEvent.value.isAllDay && editableEvent.value.startTime >= editableEvent.value.endTime) {
+		// 只有非全天事件才需要验证结束时间晚于开始时间
 		formErrors.value.dateRange = "结束时间必须晚于开始时间";
 		isValid = false;
 	}

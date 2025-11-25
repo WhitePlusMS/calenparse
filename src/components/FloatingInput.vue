@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
+import { Loading, VideoPlay } from "@element-plus/icons-vue";
 import { useLLM } from "@/composables/useLLM";
 import { useSupabase } from "@/composables/useSupabase";
 import type { ParsedEvent } from "@/types";

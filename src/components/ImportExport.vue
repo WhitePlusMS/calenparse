@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
+import { Upload, Download, FolderOpened } from "@element-plus/icons-vue";
 import { useEvents } from "@/composables/useEvents";
 import { useAuth } from "@/composables/useAuth";
 import type { CalendarEvent } from "@/types";

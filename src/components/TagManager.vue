@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
+import { Delete, Plus } from "@element-plus/icons-vue";
 import { useSupabase } from "@/composables/useSupabase";
 import { useAuth } from "@/composables/useAuth";
 import type { Tag } from "@/types";

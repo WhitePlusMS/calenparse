@@ -2,6 +2,7 @@
 import { useTheme } from "@/composables/useTheme";
 import { useCountdownSettings } from "@/composables/useCountdownSettings";
 import { ElMessage } from "element-plus";
+import { Sunny, Moon, MoonNight, Brush, View, Timer, Calendar, Clock } from "@element-plus/icons-vue";
 
 /**
  * Theme Settings Component

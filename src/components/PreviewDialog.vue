@@ -240,7 +240,8 @@ const handleConfirm = () => {
 	// Validate time ranges
 	for (let i = 0; i < editableEvents.value.length; i++) {
 		const event = editableEvents.value[i];
-		if (event && event.startTime && event.endTime && event.startTime >= event.endTime) {
+		// 只有非全天事件才需要验证结束时间晚于开始时间
+		if (event && !event.isAllDay && event.startTime && event.endTime && event.startTime >= event.endTime) {
 			ElMessage({
 				message: `事件 ${i + 1}: 结束时间必须晚于开始时间`,
 				type: "warning",

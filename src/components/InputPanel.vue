@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { ElInput, ElButton, ElMessage, ElMessageBox, ElAlert } from "element-plus";
+import { VideoPlay } from "@element-plus/icons-vue";
 import { useLLM } from "@/composables/useLLM";
 import { useEvents } from "@/composables/useEvents";
 import { useSupabase } from "@/composables/useSupabase";
@@ -364,7 +365,11 @@ const handleKeydown = (event: Event | KeyboardEvent) => {
 }
 
 .input-panel__button-icon {
-	margin-right: 4px;
+	margin-right: 8px;
+	font-size: 16px;
+	vertical-align: middle;
+	display: inline-flex;
+	align-items: center;
 }
 
 .input-panel__loading-text {

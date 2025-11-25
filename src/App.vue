@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
+import { WarningFilled } from "@element-plus/icons-vue";
 import CalendarView from "./components/CalendarView.vue";
 import ListView from "./components/ListView.vue";
 import StatisticsView from "./components/StatisticsView.vue";
