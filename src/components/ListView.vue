@@ -1378,10 +1378,6 @@ const handleRetry = async () => {
 	color: var(--text-disabled);
 }
 
-.event-item--completed .event-date-badge {
-	background: linear-gradient(135deg, var(--text-tertiary) 0%, var(--text-disabled) 100%);
-}
-
 @keyframes slideInUp {
 	from {
 		opacity: 0;
@@ -1472,6 +1468,12 @@ const handleRetry = async () => {
 
 .event-item--past .event-date-badge {
 	background: linear-gradient(135deg, var(--text-tertiary) 0%, var(--text-secondary) 100%);
+}
+
+/* Completed event date badge - 已完成事件的日期卡片应该是灰色 */
+.event-item--completed .event-date-badge {
+	background: linear-gradient(135deg, #909399 0%, #a8abb2 100%) !important;
+	box-shadow: 0 4px 12px rgba(144, 147, 153, 0.3);
 }
 
 /* Typography hierarchy within badge - 方案A优化：字体缩小 */
