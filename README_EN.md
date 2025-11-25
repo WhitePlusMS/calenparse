@@ -1,4 +1,4 @@
-# CalenParse - Smart Calendar Parser
+# CalenParse - Smart Countdown Application
 
 English | [中文](./README.md)
 
@@ -6,9 +6,9 @@ English | [中文](./README.md)
 
 ## 📅 Project Overview
 
-CalenParse (Smart Calendar Parser) is a modern frontend calendar management application that automatically parses schedule information from text using AI Large Language Models (LLM) to quickly create calendar events. Say goodbye to manual input and let AI manage your schedule!
+CalenParse is a modern countdown and event management application built with Vue 3 + TypeScript, supporting both visitor and admin modes. It leverages AI Large Language Models (LLM) to automatically parse schedule information from text and quickly create countdown events. Visitors can experience core features for free, while administrators have full permissions and monitoring capabilities. Data is synchronized in real-time through Supabase PostgreSQL cloud database.
 
-## 📸 Screenshots
+## 📸 Application Screenshots
 
 <div align="center">
   <img src="./assets/主界面.png" alt="Main Interface" width="800"/>
@@ -40,39 +40,30 @@ CalenParse (Smart Calendar Parser) is a modern frontend calendar management appl
   <p><em>Share Feature - Export and Share</em></p>
 </div>
 
-### ✨ Key Features
+### ✨ Core Features
 
+#### Dual-Mode System
+- 👥 **Visitor Mode** - No registration required, browser fingerprint-based, free core features
+  - 1 LLM smart parsing quota
+  - 3 event storage quota
+  - Full countdown and management features
+- 🔐 **Admin Mode** - Full permissions, no quota limits
+  - Unlimited events and LLM calls
+  - Visitor monitoring page
+  - Data statistics and analysis
+
+#### Core Functionality
 - 🤖 **AI Smart Parsing** - Input any text, automatically extract schedule information
-- 📋 **Multiple Views** - Calendar view, list view, and statistics analysis
-- 🏷️ **Tag Management** - Add colorful tags to events for categorization
-- 📝 **Template System** - Save common events as templates for quick creation
-- 🔍 **Smart Search** - Multi-dimensional filtering by keyword, date range, location, and tags
-- 📤 **Import/Export** - Support for JSON and iCal format data import/export
-- 🎨 **Theme Switching** - Light/dark mode with custom theme colors
+- ⏱️ **Countdown Display** - Real-time countdown to event start/end, supports past event counting
+- 📋 **Multi-View Display** - Calendar view, list view, statistics analysis, monitoring page (admin)
+- 🏷️ **Tag Management** - Add colored tags to events, categorize management, support multi-tag filtering
+- 📝 **Template Feature** - Save common events as templates, quickly create new events
+- 🔍 **Smart Search** - Support keyword, date range, location, tag multi-dimensional filtering
+- 📤 **Import/Export** - Support JSON, iCal (.ics) format data import/export
+- 🎨 **Theme Switching** - Light/dark mode, custom theme colors, cross-session persistence
 - 📱 **Responsive Design** - Perfect adaptation for desktop, tablet, and mobile devices
-- ⏱️ **Countdown Reminders** - Real-time display of event start/end countdowns
-- 📊 **Data Statistics** - Visual display of event distribution and trends
-
-## 🛠️ Tech Stack
-
-### Core Framework
-- **Vue 3** - Progressive JavaScript framework (Composition API)
-- **TypeScript** - Type-safe JavaScript superset
-- **Vite** - Next-generation frontend build tool
-
-### UI & Styling
-- **Element Plus** - Enterprise-level Vue 3 component library
-- **FullCalendar** - Powerful calendar component
-- **Chart.js** - Flexible charting library
-
-### State & Data
-- **Pinia** - Official Vue 3 state management library
-- **Supabase** - Open-source Firebase alternative (PostgreSQL)
-- **Day.js** - Lightweight date manipulation library
-
-### Testing
-- **Vitest** - Vite-based unit testing framework
-- **fast-check** - Property-based testing library
+- 📊 **Data Statistics** - Visualize event distribution, tag usage, and trend analysis
+- 🔄 **Real-time Sync** - Cloud data storage based on Supabase, multi-device real-time sync
 
 ## 🚀 Quick Start
 
@@ -85,7 +76,7 @@ CalenParse (Smart Calendar Parser) is a modern frontend calendar management appl
 ### 1. Clone the Project
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/your-username/calenparse.git
 cd calenparse
 ```
 
@@ -100,27 +91,38 @@ npm install
 #### 3.1 Create Supabase Project
 
 1. Visit [Supabase](https://supabase.com) and create a new project
-2. Run the SQL statements from `supabase-schema.sql` in the project's SQL Editor
+2. Run all SQL statements from the `supabase-init.sql` file in the project's SQL Editor (create table structure and triggers)
 3. Get the project URL and anon key (in Settings > API)
+4. Create admin account: Add user in Supabase Dashboard's Authentication > Users
 
 #### 3.2 Configure Environment Variables
 
-1. Copy the environment variable template:
+1. Copy environment variable template:
 ```bash
+# Windows
 copy .env.example .env
+
+# macOS/Linux
+cp .env.example .env
 ```
 
 2. Edit the `.env` file and fill in the following configuration:
 
 ```env
-# Supabase Configuration
-VITE_SUPABASE_URL=your_supabase_project_url
+# Supabase Configuration (Required)
+VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 
-# LLM API Configuration (for smart parsing)
+# LLM API Configuration (Currently only supports Zhipu GLM)
 VITE_LLM_API_KEY=your_llm_api_key
-VITE_LLM_API_ENDPOINT=your_llm_api_endpoint
+VITE_LLM_API_ENDPOINT=https://open.bigmodel.cn/api/paas/v4/chat/completions
+# VITE_LLM_MODEL=glm-5
 ```
+
+**Note**:
+- All environment variables must start with `VITE_` to be accessible in the frontend
+- LLM configuration is optional, you can still manually create events without it
+- Do not commit the `.env` file to version control
 
 ### 4. Start Development Server
 
@@ -128,7 +130,13 @@ VITE_LLM_API_ENDPOINT=your_llm_api_endpoint
 npm run dev
 ```
 
-The application will start at `http://localhost:5173`. It will automatically test the Supabase connection on startup.
+The application will start at `http://localhost:5173`.
+
+**First-time Use:**
+- The app automatically enters visitor mode, using FingerprintJS to generate a stable browser fingerprint
+- Visitor mode quota: 1 LLM call + 3 event storage
+- Click the "Login" button at the bottom of the sidebar to switch to admin mode (requires Supabase Auth account)
+- Visitor data will be automatically cleaned after 30 days of inactivity
 
 ### 5. Build for Production
 
@@ -149,83 +157,160 @@ npm run preview
 ```
 calenparse/
 ├── src/
-│   ├── components/          # Vue components
-│   │   ├── CalendarView.vue      # Calendar view
-│   │   ├── ListView.vue          # List view
-│   │   ├── StatisticsView.vue    # Statistics view
+│   ├── components/          # Vue components (PascalCase naming)
+│   │   ├── CalendarView.vue      # Calendar view (FullCalendar)
+│   │   ├── ListView.vue          # List view (supports batch operations)
+│   │   ├── StatisticsView.vue    # Statistics view (Chart.js)
+│   │   ├── MonitoringPage.vue    # Monitoring page (admin only)
 │   │   ├── EventDialog.vue       # Event edit dialog
-│   │   ├── FloatingInput.vue     # Floating input box
-│   │   ├── PreviewDialog.vue     # Preview dialog
+│   │   ├── FloatingInput.vue     # Floating input box (ChatGPT style)
+│   │   ├── PreviewDialog.vue     # LLM parsing result preview
 │   │   ├── TagManager.vue        # Tag management
 │   │   ├── TemplateManager.vue   # Template management
+│   │   ├── ShareDialog.vue       # Share dialog
+│   │   ├── ImportExport.vue      # Import/export
+│   │   ├── ThemeSettings.vue     # Theme settings
+│   │   ├── VisitorBanner.vue     # Visitor quota banner
+│   │   ├── AdminLoginDialog.vue  # Admin login
+│   │   ├── SearchBar.vue         # Search bar
+│   │   ├── BatchOperationBar.vue # Batch operation bar
+│   │   ├── BatchEditDialog.vue   # Batch edit dialog
+│   │   ├── CountdownIndicator.vue# Countdown indicator
+│   │   ├── ErrorState.vue        # Error state component
 │   │   └── ...                   # Other components
-│   ├── composables/         # Composable functions (business logic)
-│   │   ├── useEvents.ts          # Event management
+│   ├── composables/         # Composable functions (useXxx.ts, logic with side effects)
+│   │   ├── useAuth.ts            # Visitor/admin authentication (singleton pattern)
+│   │   ├── useEvents.ts          # Event management (unified interface)
+│   │   ├── useVisitorEvents.ts   # Visitor event management
 │   │   ├── useSupabase.ts        # Supabase integration
 │   │   ├── useLLM.ts             # LLM API integration
 │   │   ├── useSearch.ts          # Search functionality
 │   │   ├── useTheme.ts           # Theme management
-│   │   └── ...                   # Other logic
-│   ├── types/               # TypeScript type definitions
-│   │   └── index.ts              # Core types
-│   ├── utils/               # Utility functions
-│   │   ├── date.ts               # Date handling
+│   │   ├── useMonitoring.ts      # Visitor monitoring (admin)
+│   │   ├── useTags.ts            # Tag management
+│   │   ├── useTemplates.ts       # Template management
+│   │   └── useCountdown.ts       # Countdown calculation
+│   ├── types/               # TypeScript type definitions (centralized in index.ts)
+│   │   └── index.ts              # All shared type definitions
+│   ├── utils/               # Utility functions (pure functions, no side effects)
+│   │   ├── date.ts               # Date handling (Day.js)
 │   │   ├── errorHandler.ts       # Error handling
-│   │   ├── import-export.ts      # Import/export
-│   │   └── ...                   # Other utilities
+│   │   ├── import-export.ts      # Import/export (JSON/iCal)
+│   │   ├── animations.css        # Animation styles
+│   │   ├── buttons.css           # Button styles
+│   │   └── tags-badges.css       # Tag badge styles
 │   ├── test/                # Test files
-│   ├── App.vue              # Root component
+│   │   ├── date.test.ts          # Date utility tests
+│   │   ├── countdown.test.ts     # Countdown tests
+│   │   └── ...                   # Other tests
+│   ├── App.vue              # Root component (minimalist sidebar layout)
 │   ├── main.ts              # Application entry
-│   └── style.css            # Global styles
+│   └── style.css            # Global styles (CSS variables)
 ├── .kiro/                   # Kiro AI configuration
-│   ├── specs/                    # Feature specifications
+│   ├── specs/                    # Feature specification documents
 │   └── steering/                 # AI guidance rules
+│       ├── bms.md                # Global rules
+│       ├── tech.md               # Tech stack specifications
+│       ├── structure.md          # Project structure specifications
+│       └── product.md            # Product specifications
+├── assets/                  # Application screenshots
 ├── public/                  # Static assets
 ├── dist/                    # Build output (auto-generated)
-├── supabase-schema.sql      # Database schema
+├── supabase-init.sql        # Database initialization script
 ├── package.json             # Project configuration
-├── vite.config.ts           # Vite configuration
+├── vite.config.ts           # Vite configuration (path alias @/)
 ├── vitest.config.ts         # Vitest configuration
-└── tsconfig.json            # TypeScript configuration
+├── tsconfig.json            # TypeScript configuration (strict mode)
+├── tsconfig.app.json        # Application TS configuration
+├── tsconfig.node.json       # Node TS configuration
+├── vercel.json              # Vercel deployment configuration
+├── .env.example             # Environment variable template
+└── README.md                # Project documentation
 ```
 
 ## 🎯 Core Features Explained
 
-### 1. AI Smart Parsing
+### 1. Dual-Mode System
 
-Input any text containing schedule information in the floating input box, for example:
+#### Visitor Mode
+- **Auto-initialization**: First visit automatically generates browser fingerprint (FingerprintJS), no registration required
+- **Quota Limits**:
+  - 1 LLM smart parsing (can still manually create events after exhausted)
+  - 3 event storage (need to delete old events or upgrade to admin after exceeded)
+- **Data Isolation**: Each visitor's data is independently stored in the `visitor_events` table, based on fingerprint recognition
+- **Auto-cleanup**: Visitor data inactive for 30 days will be automatically cleaned (via database triggers)
+- **Session Management**: `visitor_sessions` table records fingerprint, LLM usage count, token consumption, etc.
+
+#### Admin Mode
+- **Full Permissions**: No quota limits, unlimited events and LLM calls
+- **Monitoring Page**: View all visitor sessions, LLM usage, event statistics, token consumption
+- **Data Management**: Admin events stored in `events` table, completely isolated from visitor data
+- **Authentication**: Login via Supabase Auth, supports email/password authentication
+- **Mode Switching**: Can switch between visitor/admin modes anytime, data switches automatically
+
+### 2. AI Smart Parsing
+
+Enter any text containing schedule information in the floating input box, for example:
 
 ```
-Project review meeting tomorrow from 3 PM to 5 PM in Conference Room A
+Tomorrow 3pm to 5pm project review meeting in Conference Room A
 Team building activity all day next Monday
+Christmas party on December 25, 2024
 ```
 
 AI will automatically extract:
 - Event title
-- Start/end time
+- Start/end time (supports relative and absolute time)
+- All-day event flag
 - Location
 - Description
 - Related tags
 
-### 2. Multi-View Management
+**Technical Implementation**:
+- Uses LLM API (OpenAI format) for natural language parsing
+- Supports parsing multiple events simultaneously
+- Parsing results confirmed in preview dialog before creation
+- Automatically matches existing tags, does not auto-create new tags
 
-- **Calendar View** - Month, week, day views for intuitive schedule display
-- **List View** - All events listed chronologically with batch operations support
+**Quota Explanation**:
+- Visitor mode: 1 free call (can still manually create events after exhausted)
+- Admin mode: Unlimited
+- Token consumption recorded in `visitor_sessions` table
+
+### 3. Countdown Feature
+
+- **Future Events**: Display "X days/hours/minutes until start"
+- **Past Events**: Display "Expired X days ago" (count-up)
+- **Ongoing Events**: Display "X days/hours/minutes until end"
+- **Custom Units**: Can select default display unit in settings (days/hours/minutes)
+- **Real-time Update**: Countdown updates in real-time, no page refresh needed
+- **Smart Units**: Automatically selects appropriate display unit based on time length
+
+**Technical Implementation**:
+- Uses Day.js for date calculations
+- `useCountdown` composable provides countdown calculation logic
+- `CountdownIndicator` component handles display
+
+### 4. Multi-View Management
+
+- **Calendar View** - Month, week, day views, intuitive schedule display
+- **List View** - List all events in chronological order, supports batch operations
 - **Statistics View** - Charts showing event distribution, tag usage, etc.
+- **Monitoring View** (Admin) - Visitor session monitoring, LLM usage statistics, event analysis
 
-### 3. Tag System
+### 5. Tag System
 
 - Create custom tags with color selection
 - Add multiple tags to events
 - Filter and analyze events by tags
 
-### 4. Template System
+### 6. Template Feature
 
 - Save common events as templates
 - Quickly create new events from templates
 - Manage and edit template library
 
-### 5. Search & Filter
+### 7. Search and Filtering
 
 - Keyword search (title, description, location)
 - Date range filtering
@@ -233,43 +318,22 @@ AI will automatically extract:
 - Tag filtering
 - Multi-criteria combined filtering
 
-### 6. Import/Export
+### 8. Import/Export
 
-- **Export formats**: JSON, iCal (.ics)
-- **Import formats**: JSON, iCal (.ics)
-- Support for batch import/export
+- **Export Formats**: JSON, iCal (.ics)
+- **Import Formats**: JSON, iCal (.ics)
+- Supports batch import/export
 
-### 7. Sharing
+### 9. Share Feature
 
-- Generate event sharing links
-- Export as iCal files for sharing
-- Support selective sharing of multiple events
+- Generate event share images (html2canvas)
+- Export as iCal file for sharing
+- Supports selective sharing of multiple events
 
-## 🧪 Testing
-
-### Run Tests
-
-```bash
-# Run all tests once
-npm run test
-
-# Watch mode (for development)
-npm run test:watch
-
-# Run tests with UI interface
-npm run test:ui
-```
-
-### Test Coverage
-
-The project includes:
-- Unit tests - Test independent functions and components
-- Property tests - Property-based testing using fast-check
-- Integration tests - Test component interactions
 
 ## 🎨 Theme Customization
 
-The application supports light/dark mode switching and theme customization:
+The application supports light/dark mode switching and provides theme customization:
 
 1. Click the theme toggle button at the bottom of the sidebar
 2. Customize theme colors in settings
@@ -281,37 +345,34 @@ The application supports light/dark mode switching and theme customization:
 - **Tablet** (768px-480px) - Bottom navigation bar, touch-optimized
 - **Mobile** (<480px) - Compact layout, gesture-friendly
 
-## 🔧 Development Guide
-
-### Code Standards
-
-- Use TypeScript strict mode
-- Follow Vue 3 Composition API best practices
-- Components use `<script setup>` syntax
-- Use `@/` path alias for module imports
-
-### Adding New Features
-
-1. Create feature specification document in `.kiro/specs/`
-2. Add Vue components in `src/components/`
-3. Add business logic in `src/composables/`
-4. Define TypeScript types in `src/types/`
-5. Write unit tests and property tests
-
-### Common Issues
+### FAQ
 
 **Q: Supabase connection failed?**
 - Check if `.env` file configuration is correct
-- Confirm Supabase project is created and database tables are initialized
+- Confirm Supabase project is created and database tables are initialized (run `supabase-init.sql`)
 - Check browser console for detailed error messages
+
+**Q: What to do when visitor mode quota is exhausted?**
+- After LLM quota is exhausted, can still manually create events
+- After event quota is exhausted, can delete old events or contact admin for upgrade
+- Admin mode has no quota limits
+
+**Q: How to create admin account?**
+- Add user in Supabase project's Authentication > Users
+- Or use Supabase CLI: `supabase auth signup --email admin@example.com --password yourpassword`
 
 **Q: LLM parsing not working?**
 - Confirm `VITE_LLM_API_KEY` and `VITE_LLM_API_ENDPOINT` are configured
 - Check if API key is valid
-- Verify network requests are successful
+- In visitor mode, check if quota remains
+- Check if network request is successful
 
 **Q: How to customize LLM prompts?**
 - Edit the prompt template in `src/composables/useLLM.ts`
+
+**Q: Will visitor data be cleaned?**
+- Visitor sessions and events inactive for 30 days will be automatically cleaned
+- Admins can manually clean visitor data on the monitoring page
 
 ## 📄 License
 
@@ -320,3 +381,11 @@ The application supports light/dark mode switching and theme customization:
 ## 🤝 Contributing
 
 Issues and Pull Requests are welcome!
+
+### Contribution Guidelines
+
+1. Fork this repository
+2. Create feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to branch (`git push origin feature/AmazingFeature`)
+5. Open Pull Request
