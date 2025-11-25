@@ -1,6 +1,8 @@
 import { ref } from "vue";
 import type { ParsedEvent } from "@/types";
 import { handleApiError, isNetworkError, retryWithBackoff } from "@/utils/errorHandler";
+import { useAuth } from "@/composables/useAuth";
+import { useVisitorEvents } from "@/composables/useVisitorEvents";
 
 // Constants
 const MAX_TEXT_LENGTH = 10000;
@@ -31,6 +33,10 @@ export function useLLM() {
 	const isLoading = ref(false);
 	const error = ref<string | null>(null);
 
+	// 访问控制：获取用户身份和访客事件管理
+	const { mode, fingerprint } = useAuth();
+	const visitorEvents = useVisitorEvents();
+
 	/**
 	 * Parse announcement text using LLM API
 	 * Extracts calendar event information from text
@@ -40,6 +46,8 @@ export function useLLM() {
 	 * - Handles multiple events in one text
 	 * - Handles missing fields gracefully (leaves them undefined)
 	 * - Handles repeat patterns if present
+	 *
+	 * Requirements: 4.1, 4.2, 4.3 - 访客模式配额检查
 	 *
 	 * @param text - The announcement text to parse
 	 * @param existingTags - Optional array of existing tag names to suggest from
@@ -51,6 +59,33 @@ export function useLLM() {
 		error.value = null;
 
 		try {
+			// 访客模式：使用 useVisitorEvents 的 callLLM 方法（含配额检查）
+			if (mode.value === "visitor") {
+				if (!fingerprint.value) {
+					throw new Error("访客指纹未初始化");
+				}
+
+				// 调用访客 LLM（含配额检查）
+				const llmResult = await visitorEvents.callLLM(text, fingerprint.value);
+
+				// 将访客事件格式转换为 ParsedEvent 格式
+				const events: ParsedEvent[] = llmResult.events.map((ve) => ({
+					title: ve.title,
+					startTime: new Date(ve.start_time),
+					endTime: new Date(ve.end_time),
+					isAllDay: ve.is_all_day,
+					location: ve.location,
+					description: ve.description,
+				}));
+
+				if (events.length === 0) {
+					throw new Error(ERROR_MESSAGES.NO_EVENTS_FOUND);
+				}
+
+				return events;
+			}
+
+			// 管理员模式：使用原有逻辑（无配额限制）
 			const config = getApiConfig();
 			const prompt = buildPrompt(text, existingTags);
 			const response = await callLLMApi(config, prompt);

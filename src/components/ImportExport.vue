@@ -2,6 +2,7 @@
 import { ref, computed } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { useEvents } from "@/composables/useEvents";
+import { useAuth } from "@/composables/useAuth";
 import type { CalendarEvent } from "@/types";
 import {
 	exportToICalendar,
@@ -20,9 +21,11 @@ import dayjs from "dayjs";
  * Task 23.1: Export functionality
  * Task 23.2: Import functionality
  * Task 23.3: Backup and restore
+ * Requirement 1.9: 访客模式禁用导入导出
  */
 
 const { events, createEvent } = useEvents();
+const { isAdmin } = useAuth();
 
 // UI state
 const activeTab = ref<"export" | "import">("export");
@@ -62,6 +65,12 @@ const toggleEventSelection = (eventId: string) => {
 
 // Export functions
 const handleExport = async () => {
+	// 访客模式禁用导出 (需求 1.9)
+	if (!isAdmin.value) {
+		ElMessage.warning("访客模式不支持导入导出功能，请登录后使用");
+		return;
+	}
+
 	try {
 		const eventsToExport =
 			selectedCount.value > 0
@@ -106,6 +115,11 @@ const handleExport = async () => {
 
 // Import functions
 const triggerImportFile = () => {
+	// 访客模式禁用导入 (需求 1.9)
+	if (!isAdmin.value) {
+		ElMessage.warning("访客模式不支持导入导出功能，请登录后使用");
+		return;
+	}
 	importFileInput.value?.click();
 };
 

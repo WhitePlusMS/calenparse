@@ -2,9 +2,11 @@
 import { ref, computed, onMounted } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { useSupabase } from "@/composables/useSupabase";
+import { useAuth } from "@/composables/useAuth";
 import type { Tag } from "@/types";
 
 const { getAllTags, createTag, updateTag, deleteTag } = useSupabase();
+const { isAdmin } = useAuth();
 
 // Emit events
 const emit = defineEmits<{
@@ -55,6 +57,11 @@ const loadTags = async () => {
 
 // Open dialog for creating new tag
 const openCreateDialog = () => {
+	// 访客模式禁用标签管理 (需求 1.9)
+	if (!isAdmin.value) {
+		ElMessage.warning("访客模式不支持标签管理，请登录后使用");
+		return;
+	}
 	editingTag.value = null;
 	tagForm.value = {
 		name: "",
@@ -65,6 +72,11 @@ const openCreateDialog = () => {
 
 // Open dialog for editing tag
 const openEditDialog = (tag: Tag) => {
+	// 访客模式禁用标签管理 (需求 1.9)
+	if (!isAdmin.value) {
+		ElMessage.warning("访客模式不支持标签管理，请登录后使用");
+		return;
+	}
 	editingTag.value = tag;
 	tagForm.value = {
 		name: tag.name,
@@ -102,6 +114,12 @@ const saveTag = async () => {
 
 // Delete tag with confirmation
 const handleDelete = async (tag: Tag) => {
+	// 访客模式禁用标签管理 (需求 1.9)
+	if (!isAdmin.value) {
+		ElMessage.warning("访客模式不支持标签管理，请登录后使用");
+		return;
+	}
+
 	try {
 		await ElMessageBox.confirm(
 			`确定要删除标签"${tag.name}"吗？删除后，所有事件中的该标签也会被移除。`,
@@ -134,6 +152,12 @@ const handleSelectionChange = (selection: Tag[]) => {
 
 // Batch delete tags
 const handleBatchDelete = async () => {
+	// 访客模式禁用标签管理 (需求 1.9)
+	if (!isAdmin.value) {
+		ElMessage.warning("访客模式不支持标签管理，请登录后使用");
+		return;
+	}
+
 	if (selectedTags.value.length === 0) {
 		ElMessage.warning("请先选择要删除的标签");
 		return;

@@ -59,6 +59,10 @@ const { getAllTags, createTag } = useSupabase();
 import { useEvents } from "@/composables/useEvents";
 const { toggleEventCompletion } = useEvents();
 
+// Import useAuth for visitor mode check
+import { useAuth } from "@/composables/useAuth";
+const { isAdmin } = useAuth();
+
 // Import useTemplates for template functionality
 import { useTemplates } from "@/composables/useTemplates";
 const { createTemplateFromEvent, templates } = useTemplates();
@@ -892,10 +896,13 @@ const cancelSaveAsTemplate = () => {
 				<!-- View mode buttons -->
 				<div v-if="!isEditMode" class="event-dialog__footer-actions">
 					<div class="event-dialog__footer-left">
-						<el-button type="danger" plain @click="handleDelete">删除</el-button>
+						<!-- 访客模式隐藏编辑/删除按钮 (需求 1.9, 3.5) -->
+						<el-button v-if="isAdmin" type="danger" plain @click="handleDelete"
+							>删除</el-button
+						>
 						<el-button type="success" plain @click="handleShare">分享</el-button>
 						<el-button
-							v-if="!editableEvent.isTemplate"
+							v-if="isAdmin && !editableEvent.isTemplate"
 							type="warning"
 							plain
 							@click="handleSaveAsTemplate">
@@ -904,7 +911,10 @@ const cancelSaveAsTemplate = () => {
 					</div>
 					<div class="event-dialog__footer-right">
 						<el-button @click="handleClose">关闭</el-button>
-						<el-button type="primary" @click="enterEditMode">编辑</el-button>
+						<!-- 访客模式隐藏编辑按钮 (需求 1.9, 3.5) -->
+						<el-button v-if="isAdmin" type="primary" @click="enterEditMode"
+							>编辑</el-button
+						>
 					</div>
 				</div>
 

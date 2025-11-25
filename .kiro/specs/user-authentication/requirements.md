@@ -279,9 +279,11 @@ CREATE POLICY "Prevent public delete" ON visitor_sessions
 CREATE POLICY "Allow public read access" ON visitor_events
   FOR SELECT USING (true);
 
--- 允许插入（前端配额检查）
-CREATE POLICY "Allow public insert" ON visitor_events
-  FOR INSERT WITH CHECK (true);
+-- 🔥 允许插入（数据库层面配额检查，防止恶意绕过前端）
+CREATE POLICY "Allow public insert with quota check" ON visitor_events
+  FOR INSERT WITH CHECK (
+    (SELECT COUNT(*) FROM visitor_events WHERE fingerprint = visitor_events.fingerprint) < 3
+  );
 
 -- 禁止更新和删除
 CREATE POLICY "Prevent public update" ON visitor_events
@@ -420,8 +422,11 @@ CREATE POLICY "Prevent public delete" ON visitor_sessions
 CREATE POLICY "Allow public read access" ON visitor_events
   FOR SELECT USING (true);
 
-CREATE POLICY "Allow public insert" ON visitor_events
-  FOR INSERT WITH CHECK (true);
+-- 🔥 数据库层面配额检查，防止恶意绕过前端
+CREATE POLICY "Allow public insert with quota check" ON visitor_events
+  FOR INSERT WITH CHECK (
+    (SELECT COUNT(*) FROM visitor_events WHERE fingerprint = visitor_events.fingerprint) < 3
+  );
 
 CREATE POLICY "Prevent public update" ON visitor_events
   FOR UPDATE USING (false);

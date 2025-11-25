@@ -29,6 +29,7 @@ const { getAllTags } = useSupabase();
 // Emit events
 const emit = defineEmits<{
 	showPreview: [events: ParsedEvent[], originalText: string];
+	quotaChanged: [];
 }>();
 
 // Character count with warning
@@ -53,6 +54,10 @@ const handleBlur = (e: FocusEvent) => {
 	// Collapse if empty
 	if (!inputText.value.trim()) {
 		isExpanded.value = false;
+		// 清除内联样式，让 CSS 接管
+		if (inputRef.value) {
+			inputRef.value.style.height = "";
+		}
 	}
 };
 
@@ -70,6 +75,10 @@ const handleClickOutside = (e: MouseEvent) => {
 		// Collapse if empty
 		if (!inputText.value.trim()) {
 			isExpanded.value = false;
+			// 清除内联样式
+			if (inputRef.value) {
+				inputRef.value.style.height = "";
+			}
 		}
 	}
 };
@@ -88,7 +97,8 @@ onUnmounted(() => {
  */
 const handleInput = () => {
 	const textarea = inputRef.value;
-	if (textarea) {
+	if (textarea && isExpanded.value) {
+		// 只在展开状态下自动调整高度
 		textarea.style.height = "auto";
 		textarea.style.height = Math.min(textarea.scrollHeight, 200) + "px";
 	}
@@ -107,7 +117,11 @@ const handleKeydown = (e: KeyboardEvent) => {
 	// Esc to collapse if empty
 	if (e.key === "Escape" && !inputText.value.trim()) {
 		isExpanded.value = false;
-		inputRef.value?.blur();
+		// 清除内联样式
+		if (inputRef.value) {
+			inputRef.value.style.height = "";
+			inputRef.value.blur();
+		}
 	}
 };
 
@@ -145,10 +159,15 @@ const handleSend = async () => {
 
 		const events = await parseText(trimmedText, existingTagNames);
 		emit("showPreview", events, trimmedText);
+		emit("quotaChanged"); // 通知配额已变化
 		ElMessage.success(`成功解析 ${events.length} 个日程事件`);
 		// Clear input after successful parse
 		inputText.value = "";
 		isExpanded.value = false;
+		// 清除内联样式，让 CSS 接管折叠状态的高度
+		if (inputRef.value) {
+			inputRef.value.style.height = "";
+		}
 	} catch (err) {
 		if (err instanceof Error && err.message.includes("无法从文本中识别")) {
 			ElMessage.warning(err.message);

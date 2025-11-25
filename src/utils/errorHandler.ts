@@ -15,6 +15,9 @@ export const ErrorType = {
 	API: "API",
 	VALIDATION: "VALIDATION",
 	DATABASE: "DATABASE",
+	AUTH: "AUTH",
+	QUOTA: "QUOTA",
+	PERMISSION: "PERMISSION",
 	UNKNOWN: "UNKNOWN",
 } as const;
 
@@ -38,6 +41,54 @@ export function classifyError(error: unknown): ErrorType {
 	if (error instanceof Error) {
 		const message = error.message.toLowerCase();
 
+		// 认证错误（优先级最高）
+		if (
+			message.includes("会话已过期") ||
+			message.includes("session expired") ||
+			message.includes("邮箱或密码错误") ||
+			message.includes("invalid login credentials") ||
+			message.includes("邮箱未验证") ||
+			message.includes("email not confirmed") ||
+			message.includes("登录失败") ||
+			message.includes("login failed") ||
+			message.includes("登出失败") ||
+			message.includes("logout failed") ||
+			message.includes("未能创建会话") ||
+			message.includes("failed to create session")
+		) {
+			return ErrorType.AUTH;
+		}
+
+		// 配额错误
+		if (
+			message.includes("试用次数已用完") ||
+			message.includes("已达到试用上限") ||
+			message.includes("配额不足") ||
+			message.includes("quota exceeded") ||
+			message.includes("剩余配额不足") ||
+			message.includes("insufficient quota") ||
+			message.includes("事件配额已满") ||
+			message.includes("配额已满") ||
+			message.includes("llm 配额已满") ||
+			message.includes("llm配额已满")
+		) {
+			return ErrorType.QUOTA;
+		}
+
+		// 权限错误
+		if (
+			message.includes("权限不足") ||
+			message.includes("permission denied") ||
+			message.includes("unauthorized") ||
+			message.includes("forbidden") ||
+			message.includes("此页面仅限管理员访问") ||
+			message.includes("admin only") ||
+			message.includes("无法执行此操作") ||
+			message.includes("cannot perform this action")
+		) {
+			return ErrorType.PERMISSION;
+		}
+
 		if (
 			message.includes("network") ||
 			message.includes("连接") ||
@@ -54,9 +105,7 @@ export function classifyError(error: unknown): ErrorType {
 			message.includes("429") ||
 			message.includes("500") ||
 			message.includes("502") ||
-			message.includes("503") ||
-			message.includes("unauthorized") ||
-			message.includes("认证")
+			message.includes("503")
 		) {
 			return ErrorType.API;
 		}
@@ -100,6 +149,18 @@ export function getUserFriendlyMessage(error: unknown): string {
 	const originalMessage = error instanceof Error ? error.message : String(error);
 
 	switch (errorType) {
+		case ErrorType.AUTH:
+			// 认证错误：直接返回原始消息（已经是友好提示）
+			return originalMessage;
+
+		case ErrorType.QUOTA:
+			// 配额错误：直接返回原始消息（已经是友好提示）
+			return originalMessage;
+
+		case ErrorType.PERMISSION:
+			// 权限错误：直接返回原始消息（已经是友好提示）
+			return originalMessage;
+
 		case ErrorType.NETWORK:
 			return "网络连接失败，请检查您的网络连接后重试";
 
@@ -131,6 +192,9 @@ export function getUserFriendlyMessage(error: unknown): string {
 			if (originalMessage.includes("Missing") || originalMessage.includes("缺失")) {
 				return "数据库配置错误，请检查 Supabase 环境变量";
 			}
+			if (originalMessage.includes("连接失败") || originalMessage.includes("connection failed")) {
+				return "数据库连接失败，请稍后重试";
+			}
 			return `数据库操作失败：${originalMessage}`;
 
 		case ErrorType.UNKNOWN:
@@ -148,22 +212,60 @@ export function handleError(error: unknown, context?: string): void {
 
 	console.error(`[${errorType}] ${context || "Error"}:`, error);
 
-	// Use notification for critical errors, message for others
-	if (errorType === ErrorType.API || errorType === ErrorType.DATABASE) {
-		ElNotification({
-			title: "错误",
-			message: message,
-			type: "error",
-			duration: 5000,
-			position: "top-right",
-		});
-	} else {
-		ElMessage({
-			message: message,
-			type: "error",
-			duration: 4000,
-			showClose: true,
-		});
+	// 根据错误类型选择合适的提示方式
+	switch (errorType) {
+		case ErrorType.AUTH:
+			// 认证错误：使用警告通知
+			ElNotification({
+				title: "认证提示",
+				message: message,
+				type: "warning",
+				duration: 5000,
+				position: "top-right",
+			});
+			break;
+
+		case ErrorType.QUOTA:
+			// 配额错误：使用信息提示
+			ElMessage({
+				message: message,
+				type: "info",
+				duration: 5000,
+				showClose: true,
+			});
+			break;
+
+		case ErrorType.PERMISSION:
+			// 权限错误：使用警告提示
+			ElMessage({
+				message: message,
+				type: "warning",
+				duration: 4000,
+				showClose: true,
+			});
+			break;
+
+		case ErrorType.DATABASE:
+		case ErrorType.API:
+			// 数据库和 API 错误：使用错误通知
+			ElNotification({
+				title: "错误",
+				message: message,
+				type: "error",
+				duration: 5000,
+				position: "top-right",
+			});
+			break;
+
+		default:
+			// 其他错误：使用错误消息
+			ElMessage({
+				message: message,
+				type: "error",
+				duration: 4000,
+				showClose: true,
+			});
+			break;
 	}
 }
 
@@ -256,4 +358,84 @@ export async function retryWithBackoff<T>(
 	}
 
 	throw lastError;
+}
+
+/**
+ * Handle authentication errors specifically
+ *
+ * Requirements:
+ * - 2.3: 处理登录错误
+ */
+export function handleAuthError(error: unknown, context?: string): void {
+	const message = getUserFriendlyMessage(error);
+
+	console.error(`[AUTH ERROR] ${context || "Authentication"}:`, error);
+
+	ElNotification({
+		title: "认证错误",
+		message: message,
+		type: "warning",
+		duration: 5000,
+		position: "top-right",
+	});
+}
+
+/**
+ * Handle quota errors specifically
+ *
+ * Requirements:
+ * - 3.3: 配额用尽提示
+ * - 4.3: LLM 配额用尽提示
+ * - 4.5: 批量创建超配额提示
+ */
+export function handleQuotaError(error: unknown, context?: string): void {
+	const message = getUserFriendlyMessage(error);
+
+	console.warn(`[QUOTA] ${context || "Quota"}:`, error);
+
+	ElMessage({
+		message: message,
+		type: "info",
+		duration: 5000,
+		showClose: true,
+	});
+}
+
+/**
+ * Handle permission errors specifically
+ *
+ * Requirements:
+ * - RLS 权限错误提示
+ */
+export function handlePermissionError(error: unknown, context?: string): void {
+	const message = getUserFriendlyMessage(error);
+
+	console.warn(`[PERMISSION] ${context || "Permission"}:`, error);
+
+	ElMessage({
+		message: message,
+		type: "warning",
+		duration: 4000,
+		showClose: true,
+	});
+}
+
+/**
+ * Handle database errors specifically
+ *
+ * Requirements:
+ * - 数据库连接失败提示
+ */
+export function handleDatabaseError(error: unknown, context?: string): void {
+	const message = getUserFriendlyMessage(error);
+
+	console.error(`[DATABASE ERROR] ${context || "Database"}:`, error);
+
+	ElNotification({
+		title: "数据库错误",
+		message: message,
+		type: "error",
+		duration: 5000,
+		position: "top-right",
+	});
 }

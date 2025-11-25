@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { ElMessage } from "element-plus";
+import { Loading } from "@element-plus/icons-vue";
 import CalendarView from "./components/CalendarView.vue";
 import ListView from "./components/ListView.vue";
 import StatisticsView from "./components/StatisticsView.vue";
@@ -12,13 +13,30 @@ import TagManager from "./components/TagManager.vue";
 import TemplateManager from "./components/TemplateManager.vue";
 import FloatingInput from "./components/FloatingInput.vue";
 import PreviewDialog from "./components/PreviewDialog.vue";
+import VisitorBanner from "./components/VisitorBanner.vue";
+import AdminLoginDialog from "./components/AdminLoginDialog.vue";
+import MonitoringPage from "./components/MonitoringPage.vue";
 import { useEvents } from "@/composables/useEvents";
 import { useTheme } from "@/composables/useTheme";
 import { useSupabase } from "@/composables/useSupabase";
-import type { CalendarEvent, ParsedEvent } from "@/types";
+import { useAuth } from "@/composables/useAuth";
+import type { CalendarEvent, ParsedEvent, VisitorQuota } from "@/types";
 
 // Initialize theme on app startup
 const { toggleMode, theme } = useTheme();
+
+// Initialize auth (身份检查)
+const { isAuthChecking, mode, isAdmin, getVisitorQuota } = useAuth();
+
+// 访客配额状态
+const visitorQuota = ref<VisitorQuota>({
+	llmRemaining: 1,
+	eventsUsed: 0,
+	eventsRemaining: 3,
+});
+
+// 管理员登录对话框
+const adminLoginDialogVisible = ref(false);
 
 /**
  * Main Application Layout - Minimal Sidebar Design
@@ -30,11 +48,20 @@ const { toggleMode, theme } = useTheme();
  */
 
 // Composables
-const { events, updateEvent, deleteEvent, createEvent, fetchEvents } = useEvents();
+const {
+	events,
+	updateEvent,
+	deleteEvent,
+	createEvent,
+	fetchEvents,
+	ensureInitialized,
+	error: eventsError,
+	refreshEvents,
+} = useEvents();
 const { getAllTags } = useSupabase();
 
-// View mode: 'calendar', 'list', 'statistics'
-const currentViewMode = ref<"calendar" | "list" | "statistics">("calendar");
+// View mode: 'calendar', 'list', 'statistics', 'monitoring'
+const currentViewMode = ref<"calendar" | "list" | "statistics" | "monitoring">("calendar");
 
 // Tools section collapsed state
 const toolsCollapsed = ref(false);
@@ -123,7 +150,15 @@ const handleEventSave = async (event: CalendarEvent) => {
 		quickCreateData.value = undefined;
 	} catch (error) {
 		console.error("Failed to save event:", error);
-		ElMessage.error("保存事件失败");
+		// 配额错误已经在 useVisitorEvents 中显示了友好提示，这里不重复显示
+		if (error instanceof Error && error.message === "事件配额已满") {
+			// 配额错误，不显示通用错误提示
+		} else {
+			ElMessage.error("保存事件失败");
+		}
+	} finally {
+		// 无论成功还是失败，都刷新配额显示
+		await loadVisitorQuota();
 	}
 };
 
@@ -141,7 +176,7 @@ const handleEventDelete = async (id: string) => {
 };
 
 // Switch view mode
-const switchViewMode = (mode: "calendar" | "list" | "statistics") => {
+const switchViewMode = (mode: "calendar" | "list" | "statistics" | "monitoring") => {
 	currentViewMode.value = mode;
 };
 
@@ -190,8 +225,8 @@ const matchTags = async (tagNames: string[]): Promise<string[]> => {
 
 // Handle preview confirmation
 const handlePreviewConfirm = async (events: ParsedEvent[]) => {
+	let successCount = 0;
 	try {
-		let successCount = 0;
 		for (const event of events) {
 			if (!event.title && !event.startTime) {
 				continue;
@@ -239,17 +274,33 @@ const handlePreviewConfirm = async (events: ParsedEvent[]) => {
 				tagIds: tagIds.length > 0 ? tagIds : undefined,
 			};
 
-			await createEvent(eventData);
-			successCount++;
+			try {
+				await createEvent(eventData);
+				successCount++;
+			} catch (err) {
+				// 如果是配额错误，停止创建更多事件
+				if (err instanceof Error && err.message === "事件配额已满") {
+					break;
+				}
+				// 其他错误继续尝试创建下一个事件
+				console.warn("创建事件失败:", err);
+			}
 		}
 
-		ElMessage.success(`成功创建 ${successCount} 个日程事件`);
+		if (successCount > 0) {
+			ElMessage.success(`成功创建 ${successCount} 个日程事件`);
+		}
 		previewDialogVisible.value = false;
 		parsedEvents.value = [];
 		originalText.value = "";
 	} catch (err) {
 		console.error("Failed to create events:", err);
-		ElMessage.error("创建事件失败");
+		if (!(err instanceof Error && err.message === "事件配额已满")) {
+			ElMessage.error("创建事件失败");
+		}
+	} finally {
+		// 无论成功还是失败，都刷新配额显示
+		await loadVisitorQuota();
 	}
 };
 
@@ -276,10 +327,74 @@ const handleEditTemplate = (template: CalendarEvent) => {
 	eventDialogVisible.value = true;
 	templateManagerDialogVisible.value = false;
 };
+
+// 加载访客配额
+const loadVisitorQuota = async () => {
+	if (mode.value === "visitor") {
+		try {
+			visitorQuota.value = await getVisitorQuota();
+		} catch (error) {
+			console.error("Failed to load visitor quota:", error);
+		}
+	}
+};
+
+// 处理登录成功
+const handleLoginSuccess = async () => {
+	adminLoginDialogVisible.value = false;
+	ElMessage.success("欢迎回来，管理员");
+	// 刷新事件列表
+	await fetchEvents();
+};
+
+// 监听身份检查完成，初始化事件和配额
+import { watch } from "vue";
+watch(
+	isAuthChecking,
+	async (checking) => {
+		if (!checking) {
+			// 身份检查完成，初始化事件
+			await ensureInitialized();
+			// 注意：不需要 try-catch，错误已在 useEvents 中处理
+			// eventsError.value 会自动更新，UI 会显示错误状态
+
+			// 如果是访客模式，加载配额
+			if (mode.value === "visitor") {
+				await loadVisitorQuota();
+			}
+		}
+	},
+	{ immediate: true }
+);
+
+// 处理事件加载重试
+const handleEventsRetry = async () => {
+	await refreshEvents();
+	// 如果是访客模式，同时刷新配额
+	if (mode.value === "visitor") {
+		await loadVisitorQuota();
+	}
+};
 </script>
 
 <template>
-	<div class="app-layout">
+	<!-- 全屏 Loading - 身份检查中 -->
+	<div v-if="isAuthChecking" class="auth-loading-overlay">
+		<el-icon class="is-loading" :size="40">
+			<Loading />
+		</el-icon>
+		<p class="loading-text">正在加载...</p>
+	</div>
+
+	<!-- 主应用内容 - 身份确定后显示 -->
+	<div v-else class="app-layout">
+		<!-- 全局错误提示 - 事件加载失败 -->
+		<div v-if="eventsError" class="global-error-banner">
+			<span class="error-icon">⚠️</span>
+			<span class="error-message">{{ eventsError }}</span>
+			<button class="retry-button-small" @click="handleEventsRetry">重试</button>
+		</div>
+
 		<!-- Minimal Sidebar -->
 		<aside class="sidebar">
 			<!-- Main Navigation -->
@@ -307,6 +422,16 @@ const handleEditTemplate = (template: CalendarEvent) => {
 					title="统计分析">
 					<span class="sidebar-item-icon">📊</span>
 					<span class="sidebar-item-label">统计</span>
+				</div>
+
+				<!-- 监控页面（仅管理员可见） -->
+				<div
+					v-if="isAdmin"
+					:class="['sidebar-item', { active: currentViewMode === 'monitoring' }]"
+					@click="switchViewMode('monitoring')"
+					title="访客监控">
+					<span class="sidebar-item-icon">👥</span>
+					<span class="sidebar-item-label">监控</span>
 				</div>
 
 				<div class="sidebar-divider"></div>
@@ -378,12 +503,25 @@ const handleEditTemplate = (template: CalendarEvent) => {
 					<span class="sidebar-item-icon">⚙️</span>
 					<span class="sidebar-item-label">设置</span>
 				</div>
+
+				<!-- 管理员登录按钮（仅访客模式显示） -->
+				<div
+					v-if="mode === 'visitor'"
+					class="sidebar-item"
+					@click="adminLoginDialogVisible = true"
+					title="管理员登录">
+					<span class="sidebar-item-icon">🔐</span>
+					<span class="sidebar-item-label">登录</span>
+				</div>
 			</div>
 		</aside>
 
 		<!-- Main Content Area -->
 		<main class="main-content">
 			<div class="content-container">
+				<!-- 访客模式横幅 -->
+				<VisitorBanner v-if="mode === 'visitor'" :quota="visitorQuota" />
+
 				<!-- View Content -->
 				<div class="view-wrapper">
 					<CalendarView
@@ -398,6 +536,7 @@ const handleEditTemplate = (template: CalendarEvent) => {
 						@event-click="handleEventClick"
 						@filtered="handleFilteredEvents" />
 					<StatisticsView v-else-if="currentViewMode === 'statistics'" />
+					<MonitoringPage v-else-if="currentViewMode === 'monitoring'" />
 				</div>
 			</div>
 		</main>
@@ -437,7 +576,8 @@ const handleEditTemplate = (template: CalendarEvent) => {
 		<!-- Only show in calendar and list views -->
 		<FloatingInput
 			v-if="currentViewMode === 'calendar' || currentViewMode === 'list'"
-			@show-preview="handleShowPreview" />
+			@show-preview="handleShowPreview"
+			@quota-changed="loadVisitorQuota" />
 
 		<!-- Preview Dialog - Independent floating window -->
 		<PreviewDialog
@@ -446,10 +586,89 @@ const handleEditTemplate = (template: CalendarEvent) => {
 			:original-text="originalText"
 			@confirm="handlePreviewConfirm"
 			@cancel="handlePreviewCancel" />
+
+		<!-- Admin Login Dialog -->
+		<AdminLoginDialog v-model:visible="adminLoginDialogVisible" @success="handleLoginSuccess" />
 	</div>
 </template>
 
 <style scoped>
+/* Auth Loading Overlay - 防止竞态条件闪烁 */
+.auth-loading-overlay {
+	position: fixed;
+	inset: 0;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	background: var(--bg-color);
+	z-index: 9999;
+	gap: var(--spacing-md);
+}
+
+.loading-text {
+	color: var(--text-secondary);
+	font-size: 14px;
+	margin: 0;
+}
+
+/* Global Error Banner - 事件加载失败提示 */
+.global-error-banner {
+	position: fixed;
+	top: 0;
+	left: 80px;
+	right: 0;
+	background: var(--danger-color);
+	color: white;
+	padding: var(--spacing-sm) var(--spacing-lg);
+	display: flex;
+	align-items: center;
+	gap: var(--spacing-md);
+	z-index: 100;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+	animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+	from {
+		transform: translateY(-100%);
+	}
+	to {
+		transform: translateY(0);
+	}
+}
+
+.global-error-banner .error-icon {
+	font-size: 20px;
+}
+
+.global-error-banner .error-message {
+	flex: 1;
+	font-size: 14px;
+	font-weight: 500;
+}
+
+.global-error-banner .retry-button-small {
+	padding: var(--spacing-xs) var(--spacing-md);
+	background: white;
+	color: var(--danger-color);
+	border: none;
+	border-radius: var(--radius-md);
+	font-size: 13px;
+	font-weight: 600;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.global-error-banner .retry-button-small:hover {
+	background: rgba(255, 255, 255, 0.9);
+	transform: translateY(-1px);
+}
+
+.global-error-banner .retry-button-small:active {
+	transform: translateY(0);
+}
+
 /* Main Layout Container */
 .app-layout {
 	display: flex;
@@ -620,6 +839,13 @@ const handleEditTemplate = (template: CalendarEvent) => {
 
 /* Responsive Design - Tablet */
 @media (max-width: 768px) {
+	.global-error-banner {
+		left: 0;
+		bottom: 56px;
+		top: auto;
+		font-size: 13px;
+	}
+
 	.sidebar {
 		width: 100%;
 		height: 56px;

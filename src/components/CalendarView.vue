@@ -253,12 +253,11 @@ function setupDoubleClickListener() {
 
 /**
  * Save view preference to localStorage
- * Requirement 3.9: Maintain current selected date when switching views
+ * Only saves view type, not date (always start from today)
  */
 function saveViewPreference() {
 	try {
 		localStorage.setItem("calendar-view", currentView.value);
-		localStorage.setItem("calendar-date", currentDate.value.toISOString());
 	} catch (e) {
 		console.warn("Failed to save view preference:", e);
 	}
@@ -266,12 +265,11 @@ function saveViewPreference() {
 
 /**
  * Load view preference from localStorage
- * Requirement 3.9: Maintain current selected date when switching views
+ * Loads view type but always starts from today's date
  */
 function loadViewPreference() {
 	try {
 		const savedView = localStorage.getItem("calendar-view") as ViewType | null;
-		const savedDate = localStorage.getItem("calendar-date");
 
 		if (
 			savedView &&
@@ -280,9 +278,8 @@ function loadViewPreference() {
 			currentView.value = savedView;
 		}
 
-		if (savedDate) {
-			currentDate.value = new Date(savedDate);
-		}
+		// Always start from today
+		currentDate.value = new Date();
 	} catch (e) {
 		console.warn("Failed to load view preference:", e);
 	}

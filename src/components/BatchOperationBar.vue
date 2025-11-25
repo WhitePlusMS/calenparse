@@ -3,7 +3,13 @@
  * BatchOperationBar Component
  * Provides batch operation actions (delete, edit)
  * Implements requirements 12.3, 12.4, 12.5, 12.6, 12.7
+ * Requirement 1.9: 访客模式禁用批量操作
  */
+
+import { useAuth } from "@/composables/useAuth";
+import { ElMessage } from "element-plus";
+
+const { isAdmin } = useAuth();
 
 // Props
 interface Props {
@@ -22,16 +28,26 @@ const emit = defineEmits<{
 /**
  * Handle batch delete
  * Requirement 12.3: Implement batch delete with confirmation
+ * Requirement 1.9: 访客模式禁用批量操作
  */
 const handleDelete = () => {
+	if (!isAdmin.value) {
+		ElMessage.warning("访客模式不支持批量操作，请登录后使用完整功能");
+		return;
+	}
 	emit("delete");
 };
 
 /**
  * Handle batch edit
  * Requirement 12.4: Implement batch edit
+ * Requirement 1.9: 访客模式禁用批量操作
  */
 const handleEdit = () => {
+	if (!isAdmin.value) {
+		ElMessage.warning("访客模式不支持批量操作，请登录后使用完整功能");
+		return;
+	}
 	emit("edit");
 };
 
