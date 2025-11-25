@@ -82,85 +82,101 @@ const timeChartData = computed(() => {
 });
 
 // Chart options for time distribution
-const timeChartOptions = computed(() => ({
-	responsive: true,
-	maintainAspectRatio: false,
-	plugins: {
-		legend: {
-			display: true,
-			position: "top" as const,
-			labels: {
+const timeChartOptions = computed(() => {
+	// 依赖 theme.mode 以便主题切换时重新计算
+	const isDark = theme.value.mode === "dark";
+	const textColor = isDark ? "#e5e7eb" : "#1f2937";
+	const secondaryTextColor = isDark ? "#9ca3af" : "#6b7280";
+	const gridColor = isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.05)";
+
+	return {
+		responsive: true,
+		maintainAspectRatio: false,
+		plugins: {
+			legend: {
+				display: true,
+				position: "top" as const,
+				labels: {
+					color: getComputedStyle(document.documentElement)
+						.getPropertyValue("--text-primary")
+						.trim(),
+					font: {
+						size: 13,
+						weight: 600,
+					},
+					padding: 16,
+					usePointStyle: true,
+					pointStyle: "circle",
+				},
+			},
+			title: {
+				display: true,
+				text: "时间段分布统计",
+				color: getComputedStyle(document.documentElement)
+					.getPropertyValue("--text-primary")
+					.trim(),
 				font: {
-					size: 13,
+					size: 18,
+					weight: 700,
+				},
+				padding: {
+					top: 0,
+					bottom: 24,
+				},
+			},
+			tooltip: {
+				backgroundColor: "rgba(0, 0, 0, 0.8)",
+				titleFont: {
+					size: 14,
 					weight: 600,
 				},
-				padding: 16,
-				usePointStyle: true,
-				pointStyle: "circle",
-			},
-		},
-		title: {
-			display: true,
-			text: "时间段分布统计",
-			font: {
-				size: 18,
-				weight: 700,
-			},
-			padding: {
-				top: 0,
-				bottom: 24,
-			},
-		},
-		tooltip: {
-			backgroundColor: "rgba(0, 0, 0, 0.8)",
-			titleFont: {
-				size: 14,
-				weight: 600,
-			},
-			bodyFont: {
-				size: 13,
-			},
-			padding: 12,
-			cornerRadius: 8,
-			displayColors: true,
-			callbacks: {
-				label: function (context: any) {
-					const label = context.dataset.label || "";
-					const value = context.parsed.y || 0;
-					return `${label}: ${value} 个事件`;
+				bodyFont: {
+					size: 13,
+				},
+				padding: 12,
+				cornerRadius: 8,
+				displayColors: true,
+				callbacks: {
+					label: function (context: any) {
+						const label = context.dataset.label || "";
+						const value = context.parsed.y || 0;
+						return `${label}: ${value} 个事件`;
+					},
 				},
 			},
 		},
-	},
-	scales: {
-		y: {
-			beginAtZero: true,
-			ticks: {
-				stepSize: 1,
-				font: {
-					size: 12,
+		scales: {
+			y: {
+				beginAtZero: true,
+				ticks: {
+					color: secondaryTextColor,
+					stepSize: 1,
+					font: {
+						size: 12,
+					},
+				},
+				grid: {
+					color: gridColor,
 				},
 			},
-			grid: {
-				color: "rgba(0, 0, 0, 0.05)",
-			},
-		},
-		x: {
-			ticks: {
-				font: {
-					size: 12,
+			x: {
+				ticks: {
+					color: secondaryTextColor,
+					font: {
+						size: 12,
+					},
+				},
+				grid: {
+					display: false,
 				},
 			},
-			grid: {
-				display: false,
-			},
 		},
-	},
-	interaction: {
-		mode: "index" as const,
-		intersect: false,
-	},
-}));
+		interaction: {
+			mode: "index" as const,
+			intersect: false,
+		},
+	};
+});
 
 // Chart data for location distribution
 const locationChartData = computed(() => {
@@ -190,79 +206,88 @@ const locationChartData = computed(() => {
 });
 
 // Chart options for location distribution
-const locationChartOptions = computed(() => ({
-	responsive: true,
-	maintainAspectRatio: false,
-	plugins: {
-		legend: {
-			display: true,
-			position: "right" as const,
-			labels: {
+const locationChartOptions = computed(() => {
+	// 依赖 theme.mode 以便主题切换时重新计算
+	const isDark = theme.value.mode === "dark";
+	const textColor = isDark ? "#e5e7eb" : "#1f2937";
+
+	return {
+		responsive: true,
+		maintainAspectRatio: false,
+		plugins: {
+			legend: {
+				display: true,
+				position: "right" as const,
+				labels: {
+					color: textColor,
+					font: {
+						size: 13,
+						weight: 600,
+					},
+					padding: 12,
+					usePointStyle: true,
+					pointStyle: "circle",
+					generateLabels: function (chart: any) {
+						const data = chart.data;
+						if (data.labels.length && data.datasets.length) {
+							return data.labels.map((label: string, i: number) => {
+								const percentage =
+									locationDistribution.value[i]?.percentage || 0;
+								return {
+									text: `${label} (${percentage}%)`,
+									fillStyle: data.datasets[0].backgroundColor[i],
+									fontColor: textColor,
+									hidden: false,
+									index: i,
+								};
+							});
+						}
+						return [];
+					},
+				},
+			},
+			title: {
+				display: true,
+				text: "地点分布统计",
+				color: textColor,
 				font: {
-					size: 13,
+					size: 18,
+					weight: 700,
+				},
+				padding: {
+					top: 0,
+					bottom: 24,
+				},
+			},
+			tooltip: {
+				backgroundColor: "rgba(0, 0, 0, 0.8)",
+				titleFont: {
+					size: 14,
 					weight: 600,
 				},
+				bodyFont: {
+					size: 13,
+				},
 				padding: 12,
-				usePointStyle: true,
-				pointStyle: "circle",
-				generateLabels: function (chart: any) {
-					const data = chart.data;
-					if (data.labels.length && data.datasets.length) {
-						return data.labels.map((label: string, i: number) => {
-							const percentage =
-								locationDistribution.value[i]?.percentage || 0;
-							return {
-								text: `${label} (${percentage}%)`,
-								fillStyle: data.datasets[0].backgroundColor[i],
-								hidden: false,
-								index: i,
-							};
-						});
-					}
-					return [];
+				cornerRadius: 8,
+				displayColors: true,
+				callbacks: {
+					label: function (context: any) {
+						const label = context.label || "";
+						const value = context.parsed || 0;
+						const percentage =
+							locationDistribution.value[context.dataIndex]?.percentage || 0;
+						return `${label}: ${value} 个事件 (${percentage}%)`;
+					},
 				},
 			},
 		},
-		title: {
-			display: true,
-			text: "地点分布统计",
-			font: {
-				size: 18,
-				weight: 700,
-			},
-			padding: {
-				top: 0,
-				bottom: 24,
-			},
+		interaction: {
+			mode: "point" as const,
+			intersect: true,
 		},
-		tooltip: {
-			backgroundColor: "rgba(0, 0, 0, 0.8)",
-			titleFont: {
-				size: 14,
-				weight: 600,
-			},
-			bodyFont: {
-				size: 13,
-			},
-			padding: 12,
-			cornerRadius: 8,
-			displayColors: true,
-			callbacks: {
-				label: function (context: any) {
-					const label = context.label || "";
-					const value = context.parsed || 0;
-					const percentage =
-						locationDistribution.value[context.dataIndex]?.percentage || 0;
-					return `${label}: ${value} 个事件 (${percentage}%)`;
-				},
-			},
-		},
-	},
-	interaction: {
-		mode: "point" as const,
-		intersect: true,
-	},
-}));
+	};
+});
 
 // Shortcuts for date range picker
 const shortcuts = [
@@ -391,7 +416,9 @@ const handleRetry = async () => {
 		<!-- Empty state -->
 		<!-- Requirement 13.2: Friendly empty state with illustration and guidance -->
 		<div v-if="filteredEvents.length === 0" class="empty-state">
-			<div class="empty-icon">📭</div>
+			<div class="empty-icon">
+				<el-icon :size="64"><FolderOpened /></el-icon>
+			</div>
 			<p class="empty-text">暂无事件数据</p>
 			<p class="empty-hint">{{ dateRange ? "请调整时间范围或清除筛选条件" : "请先创建一些事件" }}</p>
 		</div>
