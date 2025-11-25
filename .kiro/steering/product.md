@@ -1,15 +1,105 @@
-# Product Overview
+---
+inclusion: always
+---
 
-CalenParse (智能日历解析器) is a pure frontend application that parses official announcement text using LLM and automatically creates calendar events.
+# 产品规范：CalenParse 倒计时应用
 
-## Core Features
+## 核心产品定位
 
-- Parse announcement text via LLM to extract schedule information
-- Preview and edit parsed results
-- Display events in an interactive calendar
-- Manage schedules (view, edit, delete)
-- Persist data to Supabase backend
+Vue 3 倒计时与事件管理应用，帮助用户追踪重要日期和截止日期。支持未来事件倒计时和过去事件计数。
 
-## Target Use Case
+## 关键架构约束
 
-Automates the process of converting textual announcements into structured calendar events, eliminating manual data entry.
+### 数据持久化（最高优先级）
+- **Supabase PostgreSQL 是唯一数据源**（single source of truth）
+- 所有 CRUD 操作必须直接与 Supabase 交互，禁止本地缓存或离线逻辑
+- 应用强依赖网络连接和有效的 Supabase 凭证
+- 数据流：Client ↔ Supabase（实时同步）
+- **禁止添加任何模拟数据或本地存储逻辑到 dev/prod 环境**
+
+### 核心数据模型
+```typescript
+interface CountdownEvent {
+  id: string              // UUID
+  title: string           // 必填
+  targetDate: string      // ISO 8601 格式
+  tags: string[]          // 用户自定义标签
+  color?: string          // 十六进制颜色 (#RRGGBB)
+  notes?: string          // 可选备注
+  createdAt: string       // 自动生成
+  updatedAt: string       // 自动更新
+}
+```
+
+### 日期处理规则
+- **强制使用 Day.js**，禁止原生 Date API
+- 支持过去日期（count-up）和未来日期（countdown）
+- 时区处理统一由 Day.js 管理
+
+## 业务规则（修改功能时必须遵守）
+
+### 事件管理
+- 允许重复的事件标题（通过 ID 区分）
+- 事件可以有 0 到多个标签
+- 删除标签时，仅从事件中移除标签引用，不删除事件本身
+- 批量操作仅影响已选中的事件，不影响被过滤隐藏的事件
+
+### 标签系统
+- 标签是用户自定义字符串
+- 标签单独存储，包含元数据（名称、颜色、使用次数）
+- 事件与标签是多对多关系
+
+### 搜索与过滤
+- 搜索不区分大小写
+- 搜索范围：标题、标签、备注
+- 过滤器可组合使用（标签 + 日期范围）
+
+### 用户交互
+- 破坏性操作（删除、批量修改）必须有确认提示
+- 主题设置需跨会话持久化
+- 每个视图（日历/列表/统计）维护独立的状态和过滤器
+
+## 功能模块
+
+### 必需功能（核心）
+- 事件 CRUD（创建、读取、更新、删除）
+- 三种视图：日历（FullCalendar）、列表、统计（Chart.js）
+- 标签管理
+- 搜索与过滤
+- 批量操作（选择多个事件进行编辑/删除）
+- 导入/导出（JSON 格式）
+
+### 可选功能
+- LLM 集成（需要 API 配置）：自然语言解析事件信息
+- 模板系统：快速创建预定义事件
+- 分享为图片
+
+## 性能要求
+
+- 必须流畅处理 1000+ 事件
+- 大列表使用虚拟滚动或分页
+- 避免模板中的方法调用，使用 computed 缓存
+
+## 错误处理策略
+
+- 网络错误必须有友好提示（使用 ElMessage/ElNotification）
+- Supabase 连接失败时，明确告知用户需要网络连接
+- 开发环境显示详细错误，生产环境显示通用提示
+- 所有异步操作必须有超时处理
+
+## 修改功能时的优先级
+
+1. **核心倒计时功能**必须始终可用（创建、查看、删除事件）
+2. **Supabase 云存储**是唯一数据源（无本地回退）
+3. **性能**优先（1000+ 事件流畅运行）
+4. **用户数据安全**（破坏性操作需确认）
+5. **无障碍访问**（键盘导航、屏幕阅读器）
+6. **网络容错**（优雅处理连接错误）
+
+## 禁止事项
+
+- ❌ 添加本地存储或离线支持（与 Supabase 单一数据源冲突）
+- ❌ 在 dev/prod 环境中使用模拟数据或 stub
+- ❌ 使用原生 Date API（必须用 Day.js）
+- ❌ 硬编码颜色（使用 Element Plus 主题变量）
+- ❌ 在没有确认的情况下执行破坏性操作
