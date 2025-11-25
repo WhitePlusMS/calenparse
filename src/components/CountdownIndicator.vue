@@ -2,6 +2,7 @@
 import { computed } from "vue";
 import type { CalendarEvent, TimeUnit } from "@/types";
 import { useCountdown } from "@/composables/useCountdown";
+import { VideoPlay, Timer, Warning } from "@element-plus/icons-vue";
 
 /**
  * CountdownIndicator Component
@@ -46,13 +47,13 @@ const countdownClass = computed(() => {
 // Get icon component based on countdown type
 const countdownIconComponent = computed(() => {
 	if (countdownInfo.value.type === "start") {
-		return "VideoPlay"; // Start icon
+		return VideoPlay; // Start icon
 	} else if (countdownInfo.value.type === "end") {
-		return "Timer"; // End icon
+		return Timer; // End icon
 	} else if (countdownInfo.value.type === "overdue") {
-		return "Warning"; // Overdue warning icon
+		return Warning; // Overdue warning icon
 	}
-	return "";
+	return null;
 });
 </script>
 

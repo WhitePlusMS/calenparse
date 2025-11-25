@@ -9,9 +9,13 @@ export function useCountdown() {
 
 	// Watch for settings changes and trigger update
 	const { settings } = useCountdownSettings();
-	const stopWatch = watch(settings, () => {
-		forceUpdate();
-	});
+	const stopWatch = watch(
+		settings,
+		() => {
+			forceUpdate();
+		},
+		{ deep: true }
+	);
 
 	// Clean up watcher when scope is disposed
 	onScopeDispose(() => {
