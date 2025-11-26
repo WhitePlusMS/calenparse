@@ -1,0 +1,2096 @@
+/* ========================================
+   移动端样式优化
+   Mobile Optimization Styles
+   ======================================== */
+
+/* 
+ * 本文件集中管理所有移动端样式优化
+ * 通过 CSS 媒体查询实现，不修改 HTML 结构和 JavaScript 逻辑
+ * 
+ * 断点策略:
+ * - 平板设备: ≤768px
+ * - 手机设备: ≤480px  
+ * - 小屏手机: ≤375px
+ */
+
+/* ========================================
+   1. 移动端媒体查询断点和基础变量
+   ======================================== */
+
+/* 平板设备 (≤768px) */
+@media (max-width: 768px) {
+	:root {
+		/* 字体系统 - 需求 2.1, 2.2, 2.3 */
+		--font-size-base-mobile: 15px;
+		--font-size-sm-mobile: 13px;
+		--font-size-xs-mobile: 12px;
+		--font-size-lg-mobile: 17px;
+		--font-size-xl-mobile: 19px;
+
+		/* 间距系统 - 需求 4.1, 4.3 */
+		--spacing-sm-mobile: 10px;
+		--spacing-md-mobile: 16px;
+		--spacing-lg-mobile: 24px;
+		--spacing-xl-mobile: 32px;
+
+		/* 触摸目标最小尺寸 - 需求 1.1-1.7 */
+		--touch-target-min: 44px;
+
+		/* 侧边栏高度 - 需求 3.1 */
+		--sidebar-height-mobile: 56px;
+
+		/* 内容边距 - 需求 4.1, 4.3 */
+		--content-padding-mobile: 16px;
+		--card-padding-mobile: 20px;
+
+		/* 行高 - 需求 2.5 */
+		--line-height-mobile: 1.7;
+	}
+
+	/* 防止横向滚动 */
+	html,
+	body {
+		overflow-x: hidden !important;
+		max-width: 100vw !important;
+	}
+
+	body {
+		position: relative !important;
+	}
+
+	/* 允许媒体元素响应式缩放 */
+	img,
+	video,
+	iframe {
+		max-width: 100%;
+		height: auto;
+	}
+}
+
+/* 手机设备 (≤480px) */
+@media (max-width: 480px) {
+	:root {
+		/* 字体系统 - 需求 2.1, 2.4 */
+		--font-size-base-mobile: 15px;
+		--font-size-sm-mobile: 13px;
+		--font-size-xs-mobile: 12px;
+		--font-size-lg-mobile: 16px;
+		--font-size-xl-mobile: 18px;
+		--font-size-input-mobile: 16px; /* 防止 iOS 自动缩放 - 需求 2.4 */
+
+		/* 间距系统 - 需求 4.2, 4.4 */
+		--spacing-xs-mobile: 6px;
+		--spacing-sm-mobile: 10px;
+		--spacing-md-mobile: 16px;
+		--spacing-lg-mobile: 20px;
+		--spacing-xl-mobile: 28px;
+
+		/* 触摸目标最小尺寸 - 需求 1.1-1.4 */
+		--touch-target-min: 48px;
+
+		/* 侧边栏高度 - 需求 3.2 */
+		--sidebar-height-mobile: 60px;
+
+		/* 内容边距 - 需求 4.2, 4.4 */
+		--content-padding-mobile: 12px;
+		--card-padding-mobile: 16px;
+
+		/* 卡片间距 - 需求 2.6 */
+		--card-gap-mobile: 20px;
+
+		/* 列表项内边距 - 需求 2.7 */
+		--list-item-padding-mobile: 20px;
+	}
+
+	/* 强制防止横向滚动 */
+	html,
+	body {
+		overflow-x: hidden !important;
+		max-width: 100vw !important;
+		width: 100vw !important;
+	}
+}
+
+/* ========================================
+   2. 全局移动端字体和排版优化
+   ======================================== */
+
+/* 平板设备字体优化 */
+@media (max-width: 768px) {
+	body {
+		font-size: var(--font-size-base-mobile);
+		line-height: var(--line-height-mobile);
+	}
+
+	/* 标题字体调整 - 需求 2.2 */
+	h1 {
+		font-size: calc(var(--font-size-5xl) + 1px);
+	}
+
+	h2 {
+		font-size: calc(var(--font-size-3xl) + 1px);
+	}
+
+	h3 {
+		font-size: calc(var(--font-size-xl) + 1px);
+	}
+
+	/* 最小字体限制 - 需求 2.3 */
+	* {
+		min-font-size: var(--font-size-xs-mobile);
+	}
+}
+
+/* 手机设备字体优化 */
+@media (max-width: 480px) {
+	/* 标题字体进一步调整 - 需求 2.2 */
+	h1 {
+		font-size: calc(var(--font-size-5xl) + 2px);
+	}
+
+	h2 {
+		font-size: calc(var(--font-size-3xl) + 2px);
+	}
+
+	h3 {
+		font-size: calc(var(--font-size-xl) + 2px);
+	}
+}
+
+/* ========================================
+   3. 触摸目标优化
+   ======================================== */
+
+/* 平板设备触摸目标 - 需求 1.1-1.7 */
+@media (max-width: 768px) {
+	/* 所有可交互元素最小触摸目标 */
+	button,
+	a,
+	input[type="checkbox"],
+	input[type="radio"],
+	.clickable,
+	[role="button"],
+	[role="tab"],
+	[role="menuitem"] {
+		min-width: var(--touch-target-min);
+		min-height: var(--touch-target-min);
+	}
+
+	/* 主要操作按钮内边距 - 需求 1.5 */
+	button:not(.btn-text):not(.btn-link),
+	.btn-primary,
+	.btn-success,
+	.btn-warning,
+	.btn-danger {
+		padding: 12px 16px;
+	}
+
+	/* 次要操作按钮内边距 - 需求 1.6 */
+	.btn-text,
+	.btn-link,
+	.btn-secondary {
+		padding: 10px 14px;
+	}
+
+	/* 链接可点击区域 - 需求 1.7 */
+	a {
+		padding-top: 8px;
+		padding-bottom: 8px;
+	}
+}
+
+/* 手机设备触摸目标增强 - 需求 1.1-1.4 */
+@media (max-width: 480px) {
+	button,
+	a,
+	.clickable,
+	[role="button"] {
+		min-height: var(--touch-target-min);
+	}
+
+	/* 主要操作按钮 */
+	button:not(.btn-text):not(.btn-link),
+	.btn-primary,
+	.btn-success,
+	.btn-warning,
+	.btn-danger {
+		padding: 12px 16px;
+		min-height: var(--touch-target-min);
+	}
+}
+
+/* ========================================
+   4. iOS Safari 特殊优化
+   ======================================== */
+
+@media (max-width: 480px) {
+	/* 防止 iOS 自动缩放 - 需求 2.4, 11.1 */
+	input,
+	textarea,
+	select,
+	.el-input__inner,
+	.el-textarea__inner {
+		font-size: var(--font-size-input-mobile) !important;
+	}
+
+	/* 移除 iOS 点击高亮 */
+	button,
+	a,
+	input,
+	textarea,
+	select {
+		-webkit-tap-highlight-color: transparent;
+	}
+
+	/* 优化滚动性能 */
+	.scrollable,
+	.event-list,
+	.calendar-view,
+	[class*="scroll"] {
+		-webkit-overflow-scrolling: touch;
+		scroll-behavior: smooth;
+	}
+}
+
+/* ========================================
+   5. 内容区域边距优化
+   ======================================== */
+
+/* 平板设备内容边距 - 需求 4.1, 4.3 */
+@media (max-width: 768px) {
+	.content-container,
+	.main-content {
+		padding-left: var(--content-padding-mobile);
+		padding-right: var(--content-padding-mobile);
+	}
+
+	.card,
+	.event-card,
+	[class*="card"] {
+		padding: var(--card-padding-mobile);
+	}
+}
+
+/* 手机设备内容边距 - 需求 4.2, 4.4 */
+@media (max-width: 480px) {
+	.content-container,
+	.main-content {
+		padding-left: var(--content-padding-mobile);
+		padding-right: var(--content-padding-mobile);
+	}
+
+	.card,
+	.event-card,
+	[class*="card"] {
+		padding: var(--card-padding-mobile);
+	}
+
+	/* 卡片间距 - 需求 2.6 */
+	.card + .card,
+	.event-card + .event-card {
+		margin-top: var(--card-gap-mobile);
+	}
+
+	/* 列表项内边距 - 需求 2.7 */
+	.list-item,
+	.event-item,
+	[class*="list-item"] {
+		padding: var(--list-item-padding-mobile);
+	}
+}
+
+/* ========================================
+   6. 性能优化
+   ======================================== */
+
+@media (max-width: 768px) {
+	/* 优化动画性能 */
+	.sidebar,
+	.floating-input-container,
+	.batch-operation-bar,
+	[class*="animated"] {
+		will-change: transform;
+	}
+
+	/* 优化滚动性能 */
+	.scrollable,
+	.overflow-auto,
+	[class*="scroll"] {
+		-webkit-overflow-scrolling: touch;
+		scroll-behavior: smooth;
+	}
+}
+
+/* ========================================
+   7. 触摸操作优化
+   ======================================== */
+
+@media (max-width: 768px) {
+	/* 优化触摸延迟 */
+	button,
+	a,
+	[role="button"],
+	.clickable {
+		touch-action: manipulation;
+	}
+
+	/* 防止长按选择文本 */
+	button,
+	.btn,
+	[role="button"] {
+		-webkit-user-select: none;
+		user-select: none;
+	}
+}
+
+/* ========================================
+   8. 移动端可访问性增强
+   ======================================== */
+
+@media (max-width: 768px) {
+	/* 增强焦点可见性 */
+	*:focus-visible {
+		outline-width: 3px;
+		outline-offset: 3px;
+	}
+
+	/* 增加按钮间距避免误触 */
+	button + button,
+	.btn + .btn {
+		margin-left: 12px;
+	}
+}
+
+@media (max-width: 480px) {
+	/* 进一步增加按钮间距 */
+	button + button,
+	.btn + .btn {
+		margin-left: 16px;
+	}
+}
+
+/* ========================================
+   9. App.vue 主布局移动端适配
+   需求: 3.1-3.5, 4.1-4.4
+   ======================================== */
+
+/* 平板设备 (≤768px) - 需求 3.1, 3.4, 4.1 */
+@media (max-width: 768px) {
+	/* 防止主要布局容器超出视口 */
+	.app-layout,
+	#app {
+		overflow-x: hidden !important;
+	}
+
+	/* 全局错误横幅移动端定位 - 需求 3.5 */
+	.global-error-banner {
+		left: 0 !important;
+		bottom: var(--sidebar-height-mobile) !important;
+		top: auto !important;
+		font-size: 13px !important;
+		padding: 12px 16px !important;
+	}
+
+	/* 侧边栏转换为底部水平布局 - 需求 3.1, 3.3 */
+	.sidebar {
+		width: 100% !important;
+		height: var(--sidebar-height-mobile) !important;
+		bottom: 0 !important;
+		top: auto !important;
+		border-right: none !important;
+		border-top: 1px solid var(--border-light) !important;
+		flex-direction: row !important;
+	}
+
+	/* 侧边栏导航横向布局 - 需求 3.3 */
+	.sidebar-nav {
+		flex-direction: row !important;
+		justify-content: space-around !important;
+		padding: 0 !important;
+		flex: 1 !important;
+		overflow-x: auto !important;
+		overflow-y: hidden !important;
+	}
+
+	/* 侧边栏底部操作区域 - 需求 3.3 */
+	.sidebar-footer {
+		display: flex !important;
+		flex-direction: row !important;
+		border-left: 1px solid var(--border-light) !important;
+		padding: 0 var(--spacing-sm) !important;
+	}
+
+	/* 侧边栏项目尺寸 - 需求 3.1, 3.5 */
+	.sidebar-item {
+		width: 64px !important;
+		min-height: var(--sidebar-height-mobile) !important;
+	}
+
+	/* 侧边栏文字大小 - 需求 3.5 */
+	.sidebar-item-label {
+		font-size: 9px !important;
+	}
+
+	/* 隐藏分隔线 */
+	.sidebar-divider {
+		display: none !important;
+	}
+
+	/* 主内容区域调整 - 需求 3.4, 4.1 */
+	.main-content {
+		margin-left: 0 !important;
+		margin-bottom: var(--sidebar-height-mobile) !important;
+		overflow-x: hidden !important;
+	}
+
+	/* 内容容器边距 - 需求 4.1 */
+	.content-container {
+		padding: var(--content-padding-mobile) !important;
+	}
+
+	/* 视图包装器边距 - 需求 4.3 */
+	.view-wrapper {
+		padding: var(--spacing-lg) !important;
+	}
+}
+
+/* 手机设备 (≤480px) - 需求 3.2, 3.4, 4.2 */
+@media (max-width: 480px) {
+	/* 全局错误横幅手机端优化 - 需求 3.5 */
+	.global-error-banner {
+		bottom: var(--sidebar-height-mobile) !important;
+		padding: 10px 12px !important;
+	}
+
+	.global-error-banner .error-message {
+		font-size: 13px !important;
+	}
+
+	.global-error-banner .retry-button-small {
+		padding: 6px 12px !important;
+		font-size: 12px !important;
+	}
+
+	/* 侧边栏手机端高度 - 需求 3.2 */
+	.sidebar {
+		height: var(--sidebar-height-mobile) !important;
+	}
+
+	/* 侧边栏项目手机端尺寸 - 需求 3.2 */
+	.sidebar-item {
+		width: 56px !important;
+		min-height: var(--sidebar-height-mobile) !important;
+		padding: 8px 4px !important;
+	}
+
+	/* 侧边栏图标手机端大小 - 需求 3.5 */
+	.sidebar-item-icon {
+		font-size: 24px !important;
+	}
+
+	/* 侧边栏文字手机端大小 - 需求 3.5 */
+	.sidebar-item-label {
+		font-size: 10px !important;
+	}
+
+	/* 主内容区域手机端调整 - 需求 3.4 */
+	.main-content {
+		margin-bottom: var(--sidebar-height-mobile) !important;
+	}
+
+	/* 内容容器手机端边距 - 需求 4.2 */
+	.content-container {
+		padding: var(--content-padding-mobile) !important;
+	}
+
+	/* 视图包装器手机端边距 - 需求 4.4 */
+	.view-wrapper {
+		padding: var(--spacing-md) !important;
+		border-radius: var(--radius-lg) !important;
+	}
+}
+
+/* ========================================
+   10. CalendarView.vue 日历视图移动端优化
+   需求: 6.1-6.4, 7.1-7.3, 12.1-12.4
+   ======================================== */
+
+/* 平板设备 (≤768px) */
+@media (max-width: 768px) {
+	/* 日历视图容器防止横向滚动 */
+	.calendar-view {
+		overflow-x: hidden !important;
+	}
+
+	/* 视图切换按钮优化 - 需求 6.3, 6.4 */
+	.calendar-view .view-switcher {
+		gap: 8px !important;
+		flex-wrap: wrap !important;
+		padding: 8px !important;
+	}
+
+	.calendar-view .view-button {
+		min-width: 64px !important;
+		min-height: 44px !important;
+		padding: 10px 16px !important;
+		font-size: 14px !important;
+	}
+
+	.calendar-view .view-icon {
+		font-size: 18px !important;
+	}
+
+	.calendar-view .view-label {
+		font-size: 13px !important;
+	}
+
+	/* FullCalendar 日期单元格优化 - 需求 6.1 */
+	.calendar-view :deep(.fc-daygrid-day) {
+		min-height: 56px !important;
+	}
+
+	.calendar-view :deep(.fc-daygrid-day-frame) {
+		min-height: 56px !important;
+	}
+
+	/* 事件卡片优化 - 需求 6.2 */
+	.calendar-view :deep(.fc-event) {
+		font-size: 13px !important;
+		padding: 4px 6px !important;
+	}
+
+	.calendar-view :deep(.fc-event-title) {
+		font-size: 13px !important;
+	}
+
+	.calendar-view :deep(.fc-event-time) {
+		font-size: 11px !important;
+	}
+
+	/* 月份切换按钮 - 需求 6.3 */
+	.calendar-view :deep(.fc-button) {
+		min-width: 44px !important;
+		min-height: 44px !important;
+		padding: 8px 12px !important;
+		font-size: 14px !important;
+	}
+
+	/* 搜索筛选面板按钮 - 需求 12.1 */
+	.calendar-view .filter-toggle-btn {
+		min-height: 48px !important;
+		padding: 12px 20px !important;
+		font-size: 15px !important;
+	}
+
+	/* 筛选面板内容 */
+	.calendar-view .filter-section {
+		padding: 16px !important;
+	}
+
+	.calendar-view .section-title {
+		font-size: 14px !important;
+	}
+
+	/* 标签筛选按钮 - 需求 12.2 */
+	.calendar-view .tag-filter-item {
+		min-height: 44px !important;
+		padding: 10px 16px !important;
+		font-size: 14px !important;
+		margin: 4px !important;
+	}
+
+	/* 日期选择器 - 需求 12.4 */
+	.calendar-view :deep(.el-date-picker) {
+		font-size: 14px !important;
+	}
+
+	.calendar-view :deep(.el-picker-panel) {
+		font-size: 14px !important;
+	}
+}
+
+/* 手机设备 (≤480px) */
+@media (max-width: 480px) {
+	/* 日历视图容器手机端防止横向滚动 */
+	.calendar-view {
+		overflow-x: hidden !important;
+	}
+
+	/* 视图切换按钮手机端优化 - 需求 6.3, 6.4 */
+	.calendar-view .view-switcher {
+		gap: 6px !important;
+		padding: 6px !important;
+	}
+
+	.calendar-view .view-button {
+		min-width: 56px !important;
+		min-height: 48px !important;
+		padding: 8px 12px !important;
+		font-size: 13px !important;
+		gap: 4px !important;
+	}
+
+	.calendar-view .view-icon {
+		font-size: 20px !important;
+	}
+
+	.calendar-view .view-label {
+		font-size: 11px !important;
+	}
+
+	/* FullCalendar 日期单元格手机端优化 - 需求 6.1 */
+	.calendar-view :deep(.fc-daygrid-day) {
+		min-height: 48px !important;
+	}
+
+	.calendar-view :deep(.fc-daygrid-day-frame) {
+		min-height: 48px !important;
+		padding: 4px !important;
+	}
+
+	.calendar-view :deep(.fc-daygrid-day-number) {
+		padding: 4px !important;
+		font-size: 12px !important;
+	}
+
+	/* 事件卡片简化显示 - 需求 7.1, 7.2, 7.3 */
+	.calendar-view :deep(.fc-event) {
+		padding: 2px 4px !important;
+		font-size: 12px !important;
+	}
+
+	.calendar-view :deep(.fc-event-title) {
+		font-size: 12px !important;
+	}
+
+	.calendar-view :deep(.fc-event-time) {
+		font-size: 10px !important;
+	}
+
+	/* 隐藏地点信息 - 需求 7.2 */
+	.calendar-view :deep(.fc-event-location) {
+		display: none !important;
+	}
+
+	/* 限制标签显示数量 - 需求 7.3 */
+	.calendar-view :deep(.fc-event-tags) {
+		max-width: 100px !important;
+		overflow: hidden !important;
+	}
+
+	.calendar-view :deep(.fc-event-tag) {
+		font-size: 9px !important;
+		padding: 1px 4px !important;
+	}
+
+	/* 最多显示 2 个标签 - 需求 7.3 */
+	.calendar-view :deep(.fc-event-tag:nth-child(n + 3)) {
+		display: none !important;
+	}
+
+	/* 月份切换按钮手机端 - 需求 6.3 */
+	.calendar-view :deep(.fc-button) {
+		min-width: 44px !important;
+		min-height: 44px !important;
+		padding: 6px 10px !important;
+		font-size: 13px !important;
+	}
+
+	.calendar-view :deep(.fc-toolbar-title) {
+		font-size: 1.2em !important;
+	}
+
+	/* 搜索筛选面板手机端 - 需求 12.1 */
+	.calendar-view .filter-toggle-btn {
+		min-height: 48px !important;
+		padding: 12px 16px !important;
+		font-size: 14px !important;
+	}
+
+	.calendar-view .filter-icon {
+		font-size: 18px !important;
+	}
+
+	.calendar-view .filter-label {
+		font-size: 14px !important;
+	}
+
+	/* 筛选面板内容手机端 */
+	.calendar-view .filter-panel-content {
+		padding: 16px !important;
+	}
+
+	.calendar-view .filter-section {
+		padding: 12px !important;
+		margin-bottom: 16px !important;
+	}
+
+	.calendar-view .section-title {
+		font-size: 14px !important;
+	}
+
+	.calendar-view .section-icon {
+		font-size: 16px !important;
+	}
+
+	/* 标签筛选按钮手机端 - 需求 12.2 */
+	.calendar-view .tag-filter-item {
+		min-height: 48px !important;
+		padding: 12px 16px !important;
+		font-size: 13px !important;
+		margin: 4px !important;
+	}
+
+	.calendar-view .tag-filter-list {
+		gap: 8px !important;
+	}
+
+	/* 日期选择器全屏显示 - 需求 12.3 */
+	.calendar-view :deep(.el-date-picker) {
+		width: 100% !important;
+		max-width: 100% !important;
+	}
+
+	.calendar-view :deep(.el-picker-panel) {
+		width: 100% !important;
+		max-width: 100% !important;
+	}
+
+	.calendar-view :deep(.el-date-range-picker) {
+		width: 100% !important;
+	}
+
+	/* 下拉选择器选项 - 需求 12.4 */
+	.calendar-view :deep(.el-select-dropdown__item) {
+		min-height: 44px !important;
+		padding: 10px 16px !important;
+		font-size: 14px !important;
+	}
+
+	/* 输入框优化 */
+	.calendar-view :deep(.el-input__inner) {
+		font-size: 16px !important;
+		min-height: 44px !important;
+	}
+
+	.calendar-view .search-input :deep(.el-input__inner) {
+		font-size: 16px !important;
+	}
+
+	/* 日期范围选择器 */
+	.calendar-view .date-range-picker {
+		width: 100% !important;
+	}
+
+	.calendar-view .date-range-picker :deep(.el-input__inner) {
+		font-size: 14px !important;
+	}
+
+	/* 日期预设按钮 */
+	.calendar-view .date-presets {
+		gap: 8px !important;
+	}
+
+	.calendar-view .date-presets :deep(.el-button) {
+		min-height: 40px !important;
+		padding: 8px 12px !important;
+		font-size: 13px !important;
+	}
+
+	/* 完成状态筛选 */
+	.calendar-view .completion-status-group :deep(.el-radio-button__inner) {
+		min-height: 44px !important;
+		padding: 10px 16px !important;
+		font-size: 14px !important;
+	}
+
+	/* 活动筛选标签 */
+	.calendar-view .active-filters-list :deep(.el-tag) {
+		font-size: 12px !important;
+		padding: 6px 10px !important;
+		margin: 4px !important;
+	}
+
+	/* 结果统计 */
+	.calendar-view .results-text {
+		font-size: 14px !important;
+	}
+
+	.calendar-view .results-text strong {
+		font-size: 16px !important;
+	}
+}
+
+/* ========================================
+   11. ListView.vue 列表视图移动端优化
+   需求: 8.1-8.3, 9.1-9.3
+   ======================================== */
+
+/* 平板设备 (≤768px) */
+@media (max-width: 768px) {
+	/* 列表视图容器防止横向滚动 */
+	.list-view {
+		overflow-x: hidden !important;
+	}
+
+	/* 顶部工具栏按钮优化 - 需求 8.1 */
+	.list-view .top-toolbar {
+		gap: 12px !important;
+		flex-wrap: wrap !important;
+		margin-bottom: 16px !important;
+	}
+
+	.list-view .filter-toggle-btn,
+	.list-view .batch-toggle-btn {
+		min-height: 48px !important;
+		padding: 12px 20px !important;
+		font-size: 15px !important;
+	}
+
+	.list-view .filter-icon,
+	.list-view .batch-icon {
+		font-size: 18px !important;
+	}
+
+	.list-view .filter-label,
+	.list-view .batch-text {
+		font-size: 15px !important;
+	}
+
+	/* 列表项优化 - 需求 8.1, 8.2 */
+	.list-view .event-item {
+		display: flex !important;
+		align-items: stretch !important;
+		padding: 20px !important;
+		gap: 16px !important;
+		box-sizing: border-box !important;
+	}
+
+	.list-view .event-item--selectable {
+		padding-left: 16px !important;
+	}
+
+	/* 日期徽章优化 - 需求 8.1 */
+	.list-view .event-date-badge {
+		flex-shrink: 0 !important;
+		width: 64px !important;
+		height: 64px !important;
+		display: flex !important;
+		flex-direction: column !important;
+		align-items: center !important;
+		justify-content: center !important;
+	}
+
+	.list-view .event-date-badge__day {
+		font-size: 26px !important;
+	}
+
+	.list-view .event-date-badge__month {
+		font-size: 11px !important;
+	}
+
+	.list-view .event-date-badge__weekday {
+		font-size: 10px !important;
+	}
+
+	/* 事件详情区域优化 - 需求 8.2 */
+	.list-view .event-details {
+		flex: 1 !important;
+		display: flex !important;
+		flex-direction: column !important;
+		min-width: 0 !important;
+	}
+
+	.list-view .event-title {
+		font-size: 17px !important;
+	}
+
+	.list-view .event-meta-item {
+		font-size: 14px !important;
+	}
+
+	.list-view .event-meta-icon {
+		font-size: 16px !important;
+	}
+
+	.list-view .event-description {
+		font-size: 14px !important;
+	}
+
+	/* 批量选择复选框 - 需求 9.1 */
+	.list-view .event-checkbox-container {
+		display: flex !important;
+		align-items: center !important;
+		justify-content: center !important;
+		flex-shrink: 0 !important;
+	}
+
+	.list-view .event-checkbox {
+		width: 24px !important;
+		height: 24px !important;
+	}
+
+	.list-view .select-all-checkbox {
+		width: 24px !important;
+		height: 24px !important;
+	}
+
+	/* 批量操作栏 - 需求 9.2 */
+	.list-view .select-all-toolbar {
+		padding: 16px 20px !important;
+		min-height: 56px !important;
+	}
+
+	/* 月份分组头部 */
+	.list-view .month-group-header {
+		padding: 16px 20px !important;
+	}
+
+	.list-view .month-group-title {
+		font-size: 17px !important;
+	}
+
+	.list-view .month-group-count {
+		min-width: 28px !important;
+		height: 28px !important;
+		font-size: 13px !important;
+	}
+}
+
+/* 手机设备 (≤480px) */
+@media (max-width: 480px) {
+	/* 列表视图容器手机端防止横向滚动 */
+	.list-view {
+		overflow-x: hidden !important;
+	}
+
+	/* 顶部工具栏手机端优化 - 需求 8.1 */
+	.list-view .top-toolbar {
+		gap: 8px !important;
+		margin-bottom: 12px !important;
+	}
+
+	.list-view .filter-toggle-btn,
+	.list-view .batch-toggle-btn {
+		flex: 1 !important;
+		min-width: 0 !important;
+		min-height: 48px !important;
+		padding: 12px 16px !important;
+		font-size: 14px !important;
+	}
+
+	.list-view .filter-icon,
+	.list-view .batch-icon {
+		font-size: 16px !important;
+	}
+
+	.list-view .filter-label,
+	.list-view .batch-text {
+		font-size: 14px !important;
+	}
+
+	/* 列表项紧凑布局 - 需求 8.1, 8.2, 8.3 */
+	.list-view .event-item {
+		display: flex !important;
+		align-items: stretch !important;
+		padding: 16px 12px !important;
+		gap: 12px !important;
+		box-sizing: border-box !important;
+	}
+
+	.list-view .event-item--selectable {
+		padding-left: 12px !important;
+	}
+
+	/* 日期徽章手机端尺寸 - 需求 8.1 */
+	.list-view .event-date-badge {
+		flex-shrink: 0 !important;
+		width: 48px !important;
+		height: 48px !important;
+		display: flex !important;
+		flex-direction: column !important;
+		align-items: center !important;
+		justify-content: center !important;
+	}
+
+	.list-view .event-date-badge__day {
+		font-size: 18px !important;
+		margin-bottom: 0 !important;
+	}
+
+	.list-view .event-date-badge__month {
+		font-size: 10px !important;
+		margin-bottom: 0 !important;
+	}
+
+	.list-view .event-date-badge__weekday {
+		font-size: 9px !important;
+	}
+
+	/* 完成状态切换按钮手机端优化 */
+	.list-view .completion-toggle-btn {
+		width: 28px !important;
+		height: 28px !important;
+		top: -10px !important;
+		right: -10px !important;
+	}
+
+	.list-view .completion-icon {
+		font-size: 16px !important;
+	}
+
+	/* 事件详情区域手机端优化 - 需求 8.2 */
+	.list-view .event-details {
+		flex: 1 !important;
+		display: flex !important;
+		flex-direction: column !important;
+		gap: 10px !important;
+		min-width: 0 !important;
+	}
+
+	.list-view .event-header {
+		gap: 8px !important;
+	}
+
+	.list-view .event-title {
+		font-size: 16px !important;
+		line-height: 1.4 !important;
+		word-wrap: break-word !important;
+		overflow-wrap: break-word !important;
+	}
+
+	.list-view .event-tags-inline {
+		gap: 4px !important;
+	}
+
+	.list-view .event-tag {
+		font-size: 10px !important;
+		padding: 3px 8px !important;
+	}
+
+	.list-view .event-badges {
+		gap: 4px !important;
+	}
+
+	.list-view .badge {
+		font-size: 10px !important;
+		padding: 3px 8px !important;
+	}
+
+	/* 事件元信息手机端优化 - 需求 8.2 */
+	.list-view .event-meta {
+		gap: 10px !important;
+	}
+
+	.list-view .event-meta-item {
+		font-size: 13px !important;
+	}
+
+	.list-view .event-meta-icon {
+		font-size: 14px !important;
+	}
+
+	/* 事件描述手机端优化 - 需求 8.2 */
+	.list-view .event-description {
+		font-size: 13px !important;
+		line-height: 1.5 !important;
+		padding: 8px 10px !important;
+		word-wrap: break-word !important;
+		overflow-wrap: break-word !important;
+	}
+
+	/* 隐藏箭头图标 - 需求 8.3 */
+	.list-view .event-arrow {
+		display: none !important;
+	}
+
+	/* 批量选择复选框手机端 - 需求 9.1 */
+	.list-view .event-checkbox-container {
+		display: flex !important;
+		align-items: center !important;
+		justify-content: center !important;
+		flex-shrink: 0 !important;
+		width: 24px !important;
+		padding-right: 8px !important;
+	}
+
+	.list-view .event-checkbox {
+		width: 24px !important;
+		height: 24px !important;
+	}
+
+	.list-view .select-all-checkbox {
+		width: 24px !important;
+		height: 24px !important;
+	}
+
+	/* 批量操作栏手机端 - 需求 9.2, 9.3 */
+	.list-view .select-all-toolbar {
+		padding: 12px 16px !important;
+		min-height: 56px !important;
+		gap: 12px !important;
+	}
+
+	.list-view .select-all-label {
+		gap: 8px !important;
+	}
+
+	.list-view .select-all-text {
+		font-size: 14px !important;
+	}
+
+	.list-view .selection-count {
+		font-size: 13px !important;
+		padding: 8px 12px !important;
+	}
+
+	.list-view .selection-count strong {
+		font-size: 15px !important;
+	}
+
+	/* 月份分组手机端优化 */
+	.list-view .month-group-header {
+		padding: 12px 16px !important;
+	}
+
+	.list-view .month-group-icon {
+		font-size: 20px !important;
+	}
+
+	.list-view .month-group-title {
+		font-size: 16px !important;
+	}
+
+	.list-view .month-group-count {
+		min-width: 24px !important;
+		height: 24px !important;
+		padding: 0 8px !important;
+		font-size: 12px !important;
+	}
+
+	.list-view .month-group-arrow {
+		font-size: 14px !important;
+	}
+
+	.list-view .month-group-events {
+		padding-left: 8px !important;
+		gap: 8px !important;
+	}
+
+	/* 筛选面板手机端优化 */
+	.list-view .filter-panel-content {
+		padding: 16px !important;
+	}
+
+	.list-view .filter-section {
+		padding: 12px !important;
+		margin-bottom: 16px !important;
+	}
+
+	.list-view .section-title {
+		font-size: 14px !important;
+	}
+
+	.list-view .section-icon {
+		font-size: 16px !important;
+	}
+
+	/* 标签筛选按钮手机端 */
+	.list-view .tag-filter-item {
+		min-height: 48px !important;
+		padding: 12px 16px !important;
+		font-size: 13px !important;
+	}
+
+	/* 输入框优化 */
+	.list-view :deep(.el-input__inner) {
+		font-size: 16px !important;
+		min-height: 44px !important;
+	}
+
+	/* 日期选择器 */
+	.list-view .date-range-picker {
+		width: 100% !important;
+	}
+
+	.list-view .date-range-picker :deep(.el-input__inner) {
+		font-size: 14px !important;
+	}
+
+	/* 日期预设按钮 */
+	.list-view .date-presets {
+		gap: 8px !important;
+	}
+
+	.list-view .date-presets :deep(.el-button) {
+		min-height: 40px !important;
+		padding: 8px 12px !important;
+		font-size: 13px !important;
+	}
+
+	/* 完成状态筛选 */
+	.list-view .completion-status-group :deep(.el-radio-button__inner) {
+		min-height: 44px !important;
+		padding: 10px 16px !important;
+		font-size: 14px !important;
+	}
+
+	/* 活动筛选标签 */
+	.list-view .active-filters-list :deep(.el-tag) {
+		font-size: 12px !important;
+		padding: 6px 10px !important;
+		margin: 4px !important;
+	}
+
+	/* 结果统计 */
+	.list-view .results-text {
+		font-size: 14px !important;
+	}
+
+	.list-view .results-text strong {
+		font-size: 16px !important;
+	}
+
+	/* 空状态优化 */
+	.list-view .empty-icon {
+		font-size: 48px !important;
+	}
+
+	.list-view .empty-title {
+		font-size: 16px !important;
+	}
+
+	.list-view .empty-hint {
+		font-size: 13px !important;
+	}
+
+	/* 加载状态优化 */
+	.list-view .spinner-ring {
+		width: 50px !important;
+		height: 50px !important;
+	}
+
+	.list-view .spinner-ring:nth-child(2) {
+		width: 40px !important;
+		height: 40px !important;
+	}
+
+	.list-view .spinner-ring:nth-child(3) {
+		width: 30px !important;
+		height: 30px !important;
+	}
+
+	.list-view .loading-text {
+		margin-top: 70px !important;
+		font-size: 13px !important;
+	}
+}
+
+/* ========================================
+   12. FloatingInput.vue 浮动输入框移动端定位
+   需求: 10.1-10.4, 11.1-11.2
+   ======================================== */
+
+/* 平板设备 (≤768px) */
+@media (max-width: 768px) {
+	/* 容器定位优化 - 需求 10.1 */
+	.floating-input-container {
+		bottom: 72px !important; /* 避开底部导航 */
+		margin-left: 0 !important;
+		width: calc(100% - 32px) !important;
+		max-width: none !important;
+	}
+
+	/* 输入框样式优化 - 需求 11.1 */
+	.floating-input-container .input-box {
+		padding: 12px 16px !important;
+	}
+
+	.floating-input-container .input-field {
+		font-size: 16px !important; /* 防止 iOS 自动缩放 */
+	}
+
+	/* 发送按钮尺寸 - 需求 10.4 */
+	.floating-input-container .send-button {
+		width: 48px !important;
+		height: 48px !important;
+	}
+
+	.floating-input-container .send-button--collapsed {
+		width: 44px !important;
+		height: 44px !important;
+	}
+
+	/* 展开状态优化 - 需求 10.3 */
+	.floating-input-container .input-box.expanded {
+		padding: 16px !important;
+	}
+
+	.floating-input-container .input-field--expanded {
+		min-height: 100px !important;
+		max-height: 180px !important;
+	}
+
+	/* 输入框图标和按钮 */
+	.floating-input-container .send-icon,
+	.floating-input-container .loading-icon {
+		font-size: 18px !important;
+	}
+
+	/* 输入框元信息 */
+	.floating-input-container .input-meta {
+		font-size: 13px !important;
+	}
+
+	.floating-input-container .char-count {
+		font-size: 13px !important;
+	}
+
+	.floating-input-container .shortcut-hint {
+		font-size: 12px !important;
+	}
+
+	/* 加载指示器 */
+	.floating-input-container .loading-indicator {
+		padding: 10px 0 !important;
+	}
+
+	.floating-input-container .loading-text {
+		font-size: 13px !important;
+	}
+}
+
+/* 手机设备 (≤480px) */
+@media (max-width: 480px) {
+	/* 容器定位手机端优化 - 需求 10.1, 10.2 */
+	.floating-input-container {
+		bottom: 76px !important; /* 避开底部导航 */
+		width: calc(100% - 24px) !important;
+	}
+
+	/* 输入框样式手机端优化 - 需求 11.1 */
+	.floating-input-container .input-box {
+		padding: 10px 14px !important;
+	}
+
+	.floating-input-container .input-field {
+		font-size: 16px !important; /* 防止 iOS 自动缩放 */
+	}
+
+	/* 展开状态手机端优化 - 需求 10.3 */
+	.floating-input-container .input-box.expanded {
+		padding: 16px !important;
+	}
+
+	.floating-input-container .input-field--expanded {
+		min-height: 100px !important;
+		max-height: 180px !important;
+	}
+
+	/* 发送按钮手机端尺寸 - 需求 10.4 */
+	.floating-input-container .send-button {
+		width: 48px !important;
+		height: 48px !important;
+	}
+
+	.floating-input-container .send-button--collapsed {
+		width: 44px !important;
+		height: 44px !important;
+	}
+
+	/* 输入框元信息手机端 */
+	.floating-input-container .input-meta {
+		flex-direction: column !important;
+		gap: 6px !important;
+		font-size: 12px !important;
+	}
+
+	.floating-input-container .char-count {
+		font-size: 12px !important;
+	}
+
+	.floating-input-container .shortcut-hint {
+		font-size: 11px !important;
+	}
+
+	/* 输入框图标 */
+	.floating-input-container .send-icon,
+	.floating-input-container .loading-icon {
+		font-size: 18px !important;
+	}
+
+	/* 加载指示器手机端 */
+	.floating-input-container .loading-indicator {
+		padding: 8px 0 !important;
+	}
+
+	.floating-input-container .loading-text {
+		font-size: 12px !important;
+	}
+
+	.floating-input-container .loading-dot {
+		width: 5px !important;
+		height: 5px !important;
+	}
+}
+
+/* ========================================
+   13. EventDialog.vue 对话框移动端适配
+   需求: 5.1-5.3
+   ======================================== */
+
+/* 平板设备 (≤768px) */
+@media (max-width: 768px) {
+	/* 对话框尺寸优化 - 需求 5.1 */
+	.event-dialog :deep(.el-dialog) {
+		width: 90% !important;
+		max-width: 600px !important;
+	}
+
+	/* 对话框内容区域 */
+	.event-dialog :deep(.el-dialog__header) {
+		padding: 18px 20px !important;
+	}
+
+	.event-dialog :deep(.el-dialog__body) {
+		padding: 20px !important;
+	}
+
+	.event-dialog :deep(.el-dialog__footer) {
+		padding: 16px 20px !important;
+	}
+
+	/* 表单元素优化 */
+	.event-dialog :deep(.el-form-item) {
+		margin-bottom: 20px !important;
+	}
+
+	.event-dialog :deep(.el-form-item__label) {
+		font-size: 15px !important;
+	}
+
+	/* 输入框高度 */
+	.event-dialog :deep(.el-input__inner) {
+		font-size: 15px !important;
+		height: 44px !important;
+	}
+
+	.event-dialog :deep(.el-textarea__inner) {
+		font-size: 15px !important;
+	}
+
+	/* 按钮尺寸 */
+	.event-dialog :deep(.el-button) {
+		min-height: 44px !important;
+		padding: 10px 20px !important;
+		font-size: 15px !important;
+	}
+
+	/* 日期选择器 */
+	.event-dialog :deep(.el-date-picker) {
+		font-size: 15px !important;
+	}
+
+	/* 标签选择器 */
+	.event-dialog :deep(.el-select) {
+		font-size: 15px !important;
+	}
+
+	.event-dialog :deep(.el-select__tags) {
+		max-height: 120px !important;
+		overflow-y: auto !important;
+	}
+
+	/* 视图模式样式 */
+	.event-dialog .event-dialog__label {
+		font-size: 14px !important;
+	}
+
+	.event-dialog .event-dialog__value {
+		font-size: 14px !important;
+	}
+
+	.event-dialog .event-dialog__value--title {
+		font-size: 17px !important;
+	}
+
+	/* 元数据 */
+	.event-dialog .event-dialog__metadata-item {
+		font-size: 12px !important;
+	}
+}
+
+/* 手机设备 (≤480px) */
+@media (max-width: 480px) {
+	/* 对话框尺寸手机端优化 - 需求 5.1, 5.2, 5.3 */
+	.event-dialog :deep(.el-dialog) {
+		width: 95% !important;
+		max-width: calc(100% - 24px) !important;
+		max-height: 90vh !important;
+		margin: 5vh auto !important;
+		border-radius: 12px !important;
+	}
+
+	/* 对话框内容区域手机端 */
+	.event-dialog :deep(.el-dialog__header) {
+		padding: 16px !important;
+	}
+
+	.event-dialog :deep(.el-dialog__title) {
+		font-size: 17px !important;
+	}
+
+	.event-dialog :deep(.el-dialog__body) {
+		padding: 16px !important;
+		max-height: calc(90vh - 120px) !important;
+		overflow-y: auto !important;
+	}
+
+	.event-dialog :deep(.el-dialog__footer) {
+		padding: 12px 16px !important;
+	}
+
+	/* 表单元素手机端优化 */
+	.event-dialog :deep(.el-form-item) {
+		margin-bottom: 16px !important;
+	}
+
+	.event-dialog :deep(.el-form-item__label) {
+		width: 80px !important;
+		font-size: 14px !important;
+	}
+
+	/* 输入框高度和字体 - 需求 5.3 */
+	.event-dialog :deep(.el-input__inner) {
+		font-size: 16px !important; /* 防止 iOS 缩放 */
+		height: 48px !important;
+	}
+
+	.event-dialog :deep(.el-textarea__inner) {
+		font-size: 16px !important; /* 防止 iOS 缩放 */
+		min-height: 80px !important;
+	}
+
+	/* 按钮尺寸手机端 - 需求 5.3 */
+	.event-dialog :deep(.el-button) {
+		min-height: 48px !important;
+		padding: 12px 20px !important;
+		font-size: 15px !important;
+	}
+
+	/* 日期选择器手机端 */
+	.event-dialog :deep(.el-date-picker) {
+		width: 100% !important;
+		font-size: 16px !important;
+	}
+
+	.event-dialog :deep(.el-date-editor) {
+		width: 100% !important;
+	}
+
+	.event-dialog :deep(.el-date-editor .el-input__inner) {
+		font-size: 16px !important;
+	}
+
+	/* 标签选择器手机端 */
+	.event-dialog :deep(.el-select) {
+		width: 100% !important;
+		font-size: 16px !important;
+	}
+
+	.event-dialog :deep(.el-select .el-input__inner) {
+		font-size: 16px !important;
+	}
+
+	.event-dialog :deep(.el-select__tags) {
+		max-height: 100px !important;
+		overflow-y: auto !important;
+	}
+
+	.event-dialog :deep(.el-tag) {
+		font-size: 13px !important;
+		padding: 4px 10px !important;
+		margin: 2px 4px 2px 0 !important;
+	}
+
+	/* 开关组件 */
+	.event-dialog :deep(.el-switch) {
+		height: 24px !important;
+	}
+
+	.event-dialog :deep(.el-switch__core) {
+		height: 24px !important;
+		min-width: 48px !important;
+	}
+
+	/* 视图模式样式手机端 */
+	.event-dialog .event-dialog__section {
+		gap: 6px !important;
+		margin-bottom: 16px !important;
+	}
+
+	.event-dialog .event-dialog__label {
+		font-size: 13px !important;
+	}
+
+	.event-dialog .event-dialog__value {
+		font-size: 14px !important;
+		line-height: 1.6 !important;
+	}
+
+	.event-dialog .event-dialog__value--title {
+		font-size: 16px !important;
+	}
+
+	.event-dialog .event-dialog__value--description {
+		font-size: 14px !important;
+		line-height: 1.6 !important;
+	}
+
+	/* 标签显示 */
+	.event-dialog .event-dialog__tags {
+		gap: 6px !important;
+	}
+
+	.event-dialog .event-dialog__tags .el-tag {
+		font-size: 12px !important;
+		padding: 4px 10px !important;
+	}
+
+	/* 原始文本区域 */
+	.event-dialog .event-dialog__original {
+		font-size: 13px !important;
+		padding: 10px !important;
+		max-height: 150px !important;
+	}
+
+	/* 元数据 */
+	.event-dialog .event-dialog__metadata {
+		padding-top: 10px !important;
+	}
+
+	.event-dialog .event-dialog__metadata-item {
+		font-size: 11px !important;
+	}
+
+	/* 底部操作按钮布局 */
+	.event-dialog .event-dialog__footer-actions {
+		flex-direction: column !important;
+		gap: 10px !important;
+	}
+
+	.event-dialog .event-dialog__footer-left,
+	.event-dialog .event-dialog__footer-right {
+		width: 100% !important;
+		flex-direction: column !important;
+		gap: 10px !important;
+	}
+
+	.event-dialog .event-dialog__footer-actions .el-button {
+		width: 100% !important;
+	}
+
+	/* 表单分组样式 */
+	.event-dialog .form-section {
+		margin-bottom: 20px !important;
+	}
+
+	.event-dialog .form-section__header {
+		margin-bottom: 10px !important;
+	}
+
+	.event-dialog .form-section__icon {
+		font-size: 16px !important;
+	}
+
+	.event-dialog .form-section__title {
+		font-size: 14px !important;
+	}
+
+	.event-dialog .form-section__divider {
+		margin-bottom: 12px !important;
+	}
+
+	/* 表单标签图标 */
+	.event-dialog .form-label-with-icon {
+		gap: 4px !important;
+	}
+
+	.event-dialog .form-label-icon {
+		font-size: 13px !important;
+	}
+
+	/* 全天事件控制 */
+	.event-dialog .all-day-control {
+		flex-direction: column !important;
+		align-items: flex-start !important;
+		gap: 8px !important;
+	}
+
+	.event-dialog .all-day-hint {
+		font-size: 12px !important;
+		line-height: 1.4 !important;
+	}
+
+	/* 完成状态按钮 */
+	.event-dialog .completion-icon {
+		font-size: 14px !important;
+	}
+
+	.event-dialog .completion-text {
+		font-size: 14px !important;
+	}
+
+	/* 模板信息 */
+	.event-dialog .template-badge {
+		padding: 6px 10px !important;
+		font-size: 13px !important;
+	}
+
+	.event-dialog .template-icon {
+		font-size: 14px !important;
+	}
+
+	.event-dialog .template-text {
+		font-size: 13px !important;
+	}
+
+	.event-dialog .template-name {
+		font-size: 13px !important;
+	}
+
+	/* 模板选择区域 */
+	.event-dialog .template-section {
+		padding: 16px !important;
+		margin-top: 20px !important;
+	}
+
+	.event-dialog .template-hint {
+		padding: 10px !important;
+		font-size: 12px !important;
+	}
+
+	/* 模板对话框 */
+	.template-dialog :deep(.el-dialog) {
+		width: 95% !important;
+		max-width: calc(100% - 24px) !important;
+		border-radius: 12px !important;
+	}
+
+	.template-dialog :deep(.el-dialog__header) {
+		padding: 16px !important;
+	}
+
+	.template-dialog :deep(.el-dialog__body) {
+		padding: 16px !important;
+	}
+
+	.template-dialog :deep(.el-dialog__footer) {
+		padding: 12px 16px !important;
+	}
+
+	.template-dialog .template-dialog__description {
+		font-size: 13px !important;
+		margin-bottom: 16px !important;
+	}
+
+	.template-dialog :deep(.el-form-item__label) {
+		width: 80px !important;
+		font-size: 14px !important;
+	}
+
+	.template-dialog :deep(.el-input__inner) {
+		font-size: 16px !important;
+		height: 48px !important;
+	}
+
+	.template-dialog .template-dialog__footer {
+		gap: 10px !important;
+	}
+
+	.template-dialog .template-dialog__footer .el-button {
+		flex: 1 !important;
+		min-height: 48px !important;
+	}
+}
+
+/* ========================================
+   14. VisitorBanner.vue 访客横幅移动端布局
+   需求: 13.1-13.3
+   ======================================== */
+
+/* 平板设备 (≤768px) */
+@media (max-width: 768px) {
+	/* 访客横幅布局优化 - 需求 13.1, 13.3 */
+	.visitor-banner {
+		margin-bottom: var(--spacing-md) !important;
+	}
+
+	.visitor-banner :deep(.el-alert) {
+		padding: 16px 20px !important;
+	}
+
+	/* 横幅内容布局 - 需求 13.1 */
+	.visitor-banner .banner-content {
+		flex-wrap: wrap !important;
+		gap: 12px !important;
+	}
+
+	/* 标题样式 - 需求 13.2 */
+	.visitor-banner .banner-title {
+		font-size: 14px !important;
+		padding: 4px 10px !important;
+	}
+
+	.visitor-banner .title-icon {
+		font-size: 15px !important;
+	}
+
+	/* 配额信息 - 需求 13.2 */
+	.visitor-banner .banner-quota {
+		font-size: 14px !important;
+	}
+
+	.visitor-banner .banner-quota strong {
+		font-size: 15px !important;
+	}
+
+	.visitor-banner .refresh-hint {
+		font-size: 12px !important;
+	}
+
+	/* 提示信息 - 需求 13.2 */
+	.visitor-banner .banner-notice {
+		font-size: 13px !important;
+	}
+
+	.visitor-banner .notice-icon {
+		font-size: 14px !important;
+	}
+}
+
+/* 手机设备 (≤480px) */
+@media (max-width: 480px) {
+	/* 访客横幅手机端布局 - 需求 13.1, 13.3 */
+	.visitor-banner {
+		margin-bottom: var(--spacing-sm) !important;
+	}
+
+	.visitor-banner :deep(.el-alert) {
+		padding: 12px 16px !important;
+	}
+
+	/* 垂直堆叠布局 - 需求 13.1 */
+	.visitor-banner .banner-content {
+		flex-direction: column !important;
+		align-items: flex-start !important;
+		gap: 10px !important;
+	}
+
+	/* 标题样式手机端 - 需求 13.2 */
+	.visitor-banner .banner-title {
+		font-size: 13px !important;
+		padding: 3px 10px !important;
+	}
+
+	.visitor-banner .title-icon {
+		font-size: 14px !important;
+	}
+
+	/* 配额信息手机端 - 需求 13.2 */
+	.visitor-banner .banner-quota {
+		font-size: 13px !important;
+		line-height: 1.5 !important;
+	}
+
+	.visitor-banner .banner-quota strong {
+		font-size: 14px !important;
+	}
+
+	.visitor-banner .refresh-hint {
+		font-size: 12px !important;
+	}
+
+	/* 隐藏分隔符 - 需求 13.3 */
+	.visitor-banner .banner-divider {
+		display: none !important;
+	}
+
+	/* 提示信息手机端 - 需求 13.2, 13.3 */
+	.visitor-banner .banner-notice {
+		font-size: 12px !important;
+		gap: 6px !important;
+	}
+
+	.visitor-banner .notice-icon {
+		font-size: 13px !important;
+	}
+
+	/* 部署链接 */
+	.visitor-banner .deploy-link {
+		font-size: 12px !important;
+	}
+}
+
+/* ========================================
+   15. BatchOperationBar.vue 批量操作栏移动端优化
+   需求: 9.1-9.3
+   ======================================== */
+
+/* 平板设备 (≤768px) */
+@media (max-width: 768px) {
+	/* 批量操作栏固定在底部 - 需求 9.2 */
+	.batch-operation-bar {
+		position: fixed !important;
+		bottom: var(--sidebar-height-mobile) !important; /* 在侧边栏上方 */
+		left: 50% !important;
+		transform: translateX(-50%) !important;
+		min-height: 56px !important;
+		min-width: auto !important;
+		width: calc(100% - 40px) !important;
+		max-width: 600px !important;
+		padding: 14px 18px !important;
+		gap: 16px !important;
+	}
+
+	/* 批量操作信息区域 */
+	.batch-operation-bar .batch-operation-info {
+		gap: 10px !important;
+		font-size: 14px !important;
+	}
+
+	.batch-operation-bar .batch-operation-icon {
+		width: 26px !important;
+		height: 26px !important;
+		font-size: 13px !important;
+	}
+
+	.batch-operation-bar .batch-operation-text {
+		font-size: 14px !important;
+	}
+
+	/* 批量操作按钮区域 - 需求 9.3 */
+	.batch-operation-bar .batch-operation-actions {
+		gap: 12px !important;
+	}
+
+	/* 批量操作按钮尺寸 - 需求 9.3 */
+	.batch-operation-bar .batch-action-btn {
+		min-height: 44px !important;
+		padding: 10px 16px !important;
+		font-size: 14px !important;
+		gap: 6px !important;
+	}
+
+	.batch-operation-bar .action-icon {
+		font-size: 16px !important;
+	}
+
+	.batch-operation-bar .action-text {
+		font-size: 14px !important;
+	}
+}
+
+/* 手机设备 (≤480px) */
+@media (max-width: 480px) {
+	/* 批量操作栏手机端优化 - 需求 9.2 */
+	.batch-operation-bar {
+		bottom: calc(var(--sidebar-height-mobile) + 4px) !important; /* 在侧边栏上方留出间隙 */
+		width: calc(100% - 20px) !important;
+		padding: 12px 14px !important;
+		gap: 12px !important;
+		flex-direction: column !important; /* 垂直布局 */
+		align-items: stretch !important;
+	}
+
+	/* 批量操作信息区域手机端 */
+	.batch-operation-bar .batch-operation-info {
+		width: 100% !important;
+		justify-content: center !important;
+		gap: 8px !important;
+		font-size: 14px !important;
+	}
+
+	.batch-operation-bar .batch-operation-icon {
+		width: 24px !important;
+		height: 24px !important;
+		font-size: 12px !important;
+	}
+
+	.batch-operation-bar .batch-operation-text {
+		font-size: 14px !important;
+	}
+
+	.batch-operation-bar .batch-operation-text strong {
+		font-size: 15px !important;
+	}
+
+	/* 批量操作按钮区域手机端 - 需求 9.3 */
+	.batch-operation-bar .batch-operation-actions {
+		width: 100% !important;
+		justify-content: center !important;
+		flex-wrap: wrap !important;
+		gap: 8px !important;
+	}
+
+	/* 批量操作按钮手机端尺寸 - 需求 9.3 */
+	.batch-operation-bar .batch-action-btn {
+		flex: 1 !important;
+		min-width: 100px !important;
+		min-height: 48px !important;
+		padding: 12px 16px !important;
+		font-size: 14px !important;
+		justify-content: center !important;
+		gap: 6px !important;
+	}
+
+	.batch-operation-bar .action-icon {
+		font-size: 16px !important;
+	}
+
+	.batch-operation-bar .action-text {
+		font-size: 14px !important;
+	}
+
+	/* 取消按钮在手机端占满宽度 */
+	.batch-operation-bar .batch-action-btn--cancel {
+		flex: 1 1 100% !important;
+		min-width: 100% !important;
+	}
+}
+
+/* 小屏手机 (≤375px) */
+@media (max-width: 375px) {
+	/* 小屏手机进一步优化 */
+	.batch-operation-bar {
+		width: calc(100% - 16px) !important;
+		padding: 10px 12px !important;
+		gap: 10px !important;
+	}
+
+	.batch-operation-bar .batch-operation-info {
+		font-size: 13px !important;
+	}
+
+	.batch-operation-bar .batch-operation-text {
+		font-size: 13px !important;
+	}
+
+	.batch-operation-bar .batch-operation-text strong {
+		font-size: 14px !important;
+	}
+
+	.batch-operation-bar .batch-action-btn {
+		min-width: 90px !important;
+		padding: 10px 14px !important;
+		font-size: 13px !important;
+	}
+
+	.batch-operation-bar .action-icon {
+		font-size: 14px !important;
+	}
+
+	.batch-operation-bar .action-text {
+		font-size: 13px !important;
+	}
+}

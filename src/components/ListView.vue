@@ -2034,7 +2034,7 @@ const handleRetry = async () => {
 /* Mobile Responsiveness */
 @media (max-width: 768px) {
 	.list-view {
-		padding: 12px;
+		padding: 8px;
 	}
 
 	.batch-toolbar {
@@ -2053,6 +2053,8 @@ const handleRetry = async () => {
 	.batch-toggle-btn {
 		justify-content: center;
 		width: 100%;
+		padding: 10px 16px;
+		font-size: 14px;
 	}
 
 	.select-all-container {
@@ -2063,53 +2065,132 @@ const handleRetry = async () => {
 		text-align: center;
 	}
 
+	/* 手机端事件卡片：增加宽度，纵向布局 */
 	.event-item {
-		gap: 12px;
-		padding: 12px;
+		gap: 10px;
+		padding: 14px 10px;
+		flex-direction: column;
+		align-items: flex-start;
 	}
 
 	.event-item--selectable {
 		padding-left: 10px;
 	}
 
+	/* 手机端：日期徽章和复选框放在同一行 */
+	.event-checkbox-container {
+		position: absolute;
+		top: 12px;
+		left: 12px;
+		width: 20px;
+		padding: 0;
+	}
+
+	.event-checkbox {
+		width: 18px;
+		height: 18px;
+	}
+
+	/* 手机端：日期徽章缩小 */
 	.event-date-badge {
-		width: 70px;
-		height: 70px;
-		padding: var(--spacing-xs);
+		width: 60px;
+		height: 60px;
+		padding: 6px;
+		align-self: flex-start;
 	}
 
 	.event-date-badge__day {
-		font-size: var(--font-size-3xl);
+		font-size: 24px;
 	}
 
 	.event-date-badge__month {
-		font-size: 11px;
-	}
-
-	.event-date-badge__weekday {
 		font-size: 10px;
 	}
 
-	.completion-badge {
-		width: 20px;
-		height: 20px;
-		font-size: 12px;
+	.event-date-badge__weekday {
+		font-size: 9px;
+	}
+
+	/* 手机端：完成按钮移到卡片外面左上角 */
+	.completion-toggle-btn {
+		width: 28px;
+		height: 28px;
+		top: 8px;
+		left: 8px;
+		right: auto;
+		border-width: 2px;
+	}
+
+	.completion-icon {
+		font-size: 15px;
+	}
+
+	/* 手机端：事件详情占满宽度 */
+	.event-details {
+		width: 100%;
+		gap: 10px;
+	}
+
+	/* 手机端：标题行改为纵向布局 */
+	.event-header {
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 8px;
 	}
 
 	.event-title {
 		font-size: 16px;
+		width: 100%;
 	}
 
+	/* 手机端：标签独立一行 */
+	.event-tags-inline {
+		width: 100%;
+		gap: 6px;
+	}
+
+	.event-tag {
+		font-size: 11px;
+		padding: 3px 8px;
+	}
+
+	/* 手机端：徽章独立一行 */
+	.event-badges {
+		width: 100%;
+		margin-left: 0;
+		gap: 6px;
+	}
+
+	.badge {
+		font-size: 11px;
+		padding: 3px 8px;
+	}
+
+	/* 手机端：元信息纵向排列 */
 	.event-meta {
-		gap: 12px;
+		flex-direction: column;
+		gap: 8px;
+		width: 100%;
 	}
 
 	.event-meta-item {
 		font-size: 13px;
 	}
 
+	.event-meta-icon {
+		font-size: 15px;
+	}
+
+	/* 手机端：描述文字缩小 */
 	.event-description {
-		font-size: 13px;
+		font-size: 12px;
+		-webkit-line-clamp: 2;
+		padding: 8px 10px;
+	}
+
+	/* 手机端：隐藏箭头 */
+	.event-arrow {
+		display: none;
 	}
 
 	.empty-icon {
@@ -2123,11 +2204,27 @@ const handleRetry = async () => {
 	.empty-hint {
 		font-size: 13px;
 	}
+
+	/* 手机端：月份分组头部 */
+	.month-group-header {
+		padding: 12px 14px;
+	}
+
+	.month-group-title {
+		font-size: 16px;
+	}
+
+	.month-group-count {
+		min-width: 24px;
+		height: 24px;
+		padding: 0 8px;
+		font-size: 12px;
+	}
 }
 
 @media (max-width: 480px) {
 	.list-view {
-		padding: 8px;
+		padding: 6px;
 	}
 
 	.batch-toolbar {
@@ -2136,7 +2233,7 @@ const handleRetry = async () => {
 	}
 
 	.batch-toggle-btn {
-		padding: 6px 12px;
+		padding: 8px 14px;
 		font-size: 13px;
 	}
 
@@ -2149,9 +2246,10 @@ const handleRetry = async () => {
 		padding: 6px 12px;
 	}
 
+	/* 超小屏幕：进一步优化布局 */
 	.event-item {
-		gap: 10px;
-		padding: 10px;
+		gap: 8px;
+		padding: 12px 8px;
 	}
 
 	.event-item--selectable {
@@ -2159,8 +2257,8 @@ const handleRetry = async () => {
 	}
 
 	.event-checkbox-container {
-		width: 20px;
-		padding-right: 6px;
+		top: 10px;
+		left: 10px;
 	}
 
 	.event-checkbox {
@@ -2168,40 +2266,50 @@ const handleRetry = async () => {
 		height: 16px;
 	}
 
+	/* 超小屏幕：日期徽章再缩小 */
 	.event-date-badge {
-		width: 50px;
-		padding: 8px 4px;
+		width: 55px;
+		height: 55px;
+		padding: 4px;
 	}
 
 	.event-date-badge__day {
-		font-size: 20px;
+		font-size: 22px;
 	}
 
 	.event-date-badge__month {
-		font-size: 10px;
+		font-size: 9px;
 	}
 
 	.event-date-badge__weekday {
-		font-size: 9px;
+		font-size: 8px;
+	}
+
+	/* 超小屏幕：完成按钮保持在卡片外左上角 */
+	.completion-toggle-btn {
+		width: 26px;
+		height: 26px;
+		top: 6px;
+		left: 6px;
+		right: auto;
+	}
+
+	.completion-icon {
+		font-size: 14px;
 	}
 
 	.event-title {
 		font-size: 15px;
 	}
 
-	.event-badges {
-		flex-direction: column;
-		gap: 4px;
+	.event-tag {
+		font-size: 10px;
+		padding: 2px 6px;
 	}
 
 	.badge {
 		font-size: 10px;
 		padding: 2px 6px;
-	}
-
-	.event-meta {
-		flex-direction: column;
-		gap: 8px;
 	}
 
 	.event-meta-item {
@@ -2213,16 +2321,9 @@ const handleRetry = async () => {
 	}
 
 	.event-description {
-		font-size: 12px;
+		font-size: 11px;
 		-webkit-line-clamp: 1;
-	}
-
-	.event-arrow {
-		width: 20px;
-	}
-
-	.arrow-icon {
-		font-size: 20px;
+		padding: 6px 8px;
 	}
 
 	.spinner-ring {
@@ -2243,6 +2344,26 @@ const handleRetry = async () => {
 	.loading-text {
 		margin-top: 70px;
 		font-size: 13px;
+	}
+
+	/* 超小屏幕：月份分组 */
+	.month-group-header {
+		padding: 10px 12px;
+	}
+
+	.month-group-title {
+		font-size: 15px;
+	}
+
+	.month-group-count {
+		min-width: 22px;
+		height: 22px;
+		padding: 0 6px;
+		font-size: 11px;
+	}
+
+	.month-group-icon {
+		font-size: 20px;
 	}
 }
 </style>
