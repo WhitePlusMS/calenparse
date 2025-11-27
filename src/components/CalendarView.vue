@@ -10,6 +10,7 @@ import type { CalendarEvent, Tag } from "@/types";
 import { useEvents } from "@/composables/useEvents";
 import { useSupabase } from "@/composables/useSupabase";
 import { useSearch } from "@/composables/useSearch";
+import { useSearchPersistence } from "@/composables/useSearchPersistence";
 import ErrorState from "./ErrorState.vue";
 import dayjs from "dayjs";
 
@@ -38,6 +39,11 @@ const emit = defineEmits<{
 const { events: allEvents, fetchEvents, loading, error, clearError } = useEvents();
 const { getAllTags } = useSupabase();
 const { getUniqueLocations } = useSearch();
+const {
+	filters: persistedFilters,
+	completionStatus: persistedCompletionStatus,
+	clearAllFilters: clearPersistedFilters,
+} = useSearchPersistence("calendar");
 
 // State
 const calendarRef = ref<InstanceType<typeof FullCalendar> | null>(null);
@@ -47,11 +53,33 @@ const isCalendarMounted = ref(false);
 
 // Integrated filter panel state
 const showFilterPanel = ref(false);
-const searchKeyword = ref("");
-const dateRange = ref<[Date, Date] | null>(null);
-const selectedLocations = ref<string[]>([]);
-const selectedTagIds = ref<string[]>([]);
-const completionStatus = ref<"all" | "completed" | "uncompleted">("all");
+// 使用持久化的搜索参数 - 从 filters 对象中提取
+const searchKeyword = computed({
+	get: () => persistedFilters.value.keyword || "",
+	set: (val) => {
+		persistedFilters.value.keyword = val || undefined;
+	},
+});
+const dateRange = computed({
+	get: () => persistedFilters.value.dateRange || null,
+	set: (val) => {
+		persistedFilters.value.dateRange = val || undefined;
+	},
+});
+const selectedLocations = computed({
+	get: () => persistedFilters.value.locations || [],
+	set: (val) => {
+		persistedFilters.value.locations = val.length > 0 ? val : undefined;
+	},
+});
+const selectedTagIds = computed({
+	get: () => persistedFilters.value.tagIds || [],
+	set: (val) => {
+		persistedFilters.value.tagIds = val.length > 0 ? val : undefined;
+	},
+});
+// 使用持久化的 completionStatus
+const completionStatus = persistedCompletionStatus;
 
 // Tag data
 const availableTags = ref<Tag[]>([]);
@@ -180,11 +208,7 @@ const removeTag = (tagId: string) => {
 };
 
 const clearAllFilters = () => {
-	searchKeyword.value = "";
-	dateRange.value = null;
-	selectedLocations.value = [];
-	selectedTagIds.value = [];
-	completionStatus.value = "all";
+	clearPersistedFilters();
 	emit("filtered", filteredEvents.value);
 };
 

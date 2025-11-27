@@ -79,7 +79,11 @@ export interface SearchFilters {
 	dateRange?: [Date, Date]; // 日期范围
 	locations?: string[]; // 地点筛选
 	tagIds?: string[]; // 标签筛选
+	completionStatus?: "all" | "completed" | "uncompleted"; // 完成状态筛选
 }
+
+// 完成状态类型（用于类型安全）
+export type CompletionStatus = "all" | "completed" | "uncompleted";
 
 // ============================================
 // 访问控制相关类型

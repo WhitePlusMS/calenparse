@@ -7,6 +7,7 @@ import { useEvents } from "@/composables/useEvents";
 import { useBatchSelection } from "@/composables/useBatchSelection";
 import { useSupabase } from "@/composables/useSupabase";
 import { useSearch } from "@/composables/useSearch";
+import { useSearchPersistence } from "@/composables/useSearchPersistence";
 import { useCountdownSettings } from "@/composables/useCountdownSettings";
 import { useCountdown } from "@/composables/useCountdown";
 import BatchOperationBar from "./BatchOperationBar.vue";
@@ -46,13 +47,43 @@ const {
 	toggleEventCompletion,
 } = useEvents();
 
+// 使用持久化的搜索参数
+const {
+	filters: persistedFilters,
+	completionStatus: persistedCompletionStatus,
+	clearAllFilters: clearPersistedFilters,
+} = useSearchPersistence("list");
+
 // Integrated filter panel state
 const showFilterPanel = ref(false);
-const searchKeyword = ref("");
-const dateRange = ref<[Date, Date] | null>(null);
-const selectedLocations = ref<string[]>([]);
-const selectedTagIds = ref<string[]>([]);
-const completionStatus = ref<"all" | "completed" | "uncompleted">("all");
+
+// 从 filters 对象中提取搜索参数
+const searchKeyword = computed({
+	get: () => persistedFilters.value.keyword || "",
+	set: (val) => {
+		persistedFilters.value.keyword = val || undefined;
+	},
+});
+const dateRange = computed({
+	get: () => persistedFilters.value.dateRange || null,
+	set: (val) => {
+		persistedFilters.value.dateRange = val || undefined;
+	},
+});
+const selectedLocations = computed({
+	get: () => persistedFilters.value.locations || [],
+	set: (val) => {
+		persistedFilters.value.locations = val.length > 0 ? val : undefined;
+	},
+});
+const selectedTagIds = computed({
+	get: () => persistedFilters.value.tagIds || [],
+	set: (val) => {
+		persistedFilters.value.tagIds = val.length > 0 ? val : undefined;
+	},
+});
+// 使用持久化的 completionStatus
+const completionStatus = persistedCompletionStatus;
 
 // Composables for filtering
 const { getUniqueLocations } = useSearch();
@@ -169,11 +200,7 @@ const removeTag = (tagId: string) => {
 };
 
 const clearAllFilters = () => {
-	searchKeyword.value = "";
-	dateRange.value = null;
-	selectedLocations.value = [];
-	selectedTagIds.value = [];
-	completionStatus.value = "all";
+	clearPersistedFilters();
 	emit("filtered", filteredEvents.value);
 };
 
