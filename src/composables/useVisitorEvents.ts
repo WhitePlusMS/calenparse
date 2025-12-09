@@ -448,9 +448,11 @@ ${input}`;
 			const processedEvents: VisitorLLMResult["events"] = [];
 
 			// Normalize existing tags for case-insensitive matching
-			const normalizedExistingTags = existingTags
-				? new Set(existingTags.map((tag) => tag.toLowerCase().trim()))
-				: null;
+			// Check for non-empty array to avoid filtering all tags when array is empty
+			const normalizedExistingTags =
+				existingTags && existingTags.length > 0
+					? new Set(existingTags.map((tag) => tag.toLowerCase().trim()))
+					: null;
 
 			for (const rawEvent of parsedEvents) {
 				try {
