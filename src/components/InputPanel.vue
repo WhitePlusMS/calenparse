@@ -23,7 +23,7 @@ import type { ParsedEvent } from "@/types";
 const inputText = ref("");
 const { parseText, isLoading, error } = useLLM();
 const { createEvent } = useEvents();
-const { getAllTags, createTag } = useSupabase();
+const { getAllTags } = useSupabase();
 
 // Preview dialog state
 const showPreview = ref(false);
@@ -61,8 +61,12 @@ const handleParse = async () => {
 	}
 
 	try {
-		// Requirement 1.2: Trigger LLM parsing
-		const events = await parseText(trimmedText);
+		// Get existing tags to pass to LLM for tag selection
+		const existingTags = await getAllTags();
+		const existingTagNames = existingTags.map((tag) => tag.name);
+
+		// Requirement 1.2: Trigger LLM parsing with existing tags
+		const events = await parseText(trimmedText, existingTagNames);
 
 		console.log("Parsed events:", events);
 
@@ -83,8 +87,8 @@ const handleParse = async () => {
 };
 
 /**
- * Match or create tags from tag names
- * Requirement 18.7: Match suggested tags with existing tags or create new ones
+ * Match tags from tag names (only match existing tags, do not create new ones)
+ * Requirement 18.7: Match suggested tags with existing tags only
  */
 const matchOrCreateTags = async (tagNames: string[]): Promise<string[]> => {
 	if (!tagNames || tagNames.length === 0) return [];
@@ -93,20 +97,6 @@ const matchOrCreateTags = async (tagNames: string[]): Promise<string[]> => {
 		// Get all existing tags
 		const existingTags = await getAllTags();
 		const tagIds: string[] = [];
-
-		// Predefined colors for new tags
-		const colors = [
-			"#409EFF",
-			"#67C23A",
-			"#E6A23C",
-			"#F56C6C",
-			"#909399",
-			"#B37FEB",
-			"#FF85C0",
-			"#13C2C2",
-			"#52C41A",
-			"#FA8C16",
-		];
 
 		for (const tagName of tagNames) {
 			const normalizedName = tagName.trim().toLowerCase();
@@ -117,16 +107,16 @@ const matchOrCreateTags = async (tagNames: string[]): Promise<string[]> => {
 			if (existingTag) {
 				tagIds.push(existingTag.id);
 			} else {
-				// Create new tag with a random color
-				const color = colors[Math.floor(Math.random() * colors.length)] || "#409EFF";
-				const newTag = await createTag(tagName.trim(), color);
-				tagIds.push(newTag.id);
+				// Skip tags that don't exist (no longer creating new tags)
+				if (import.meta.env.DEV) {
+					console.warn(`标签 "${tagName}" 不存在，已跳过`);
+				}
 			}
 		}
 
 		return tagIds;
 	} catch (error) {
-		console.error("Failed to match or create tags:", error);
+		console.error("Failed to match tags:", error);
 		return [];
 	}
 };

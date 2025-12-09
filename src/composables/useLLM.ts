@@ -50,7 +50,7 @@ export function useLLM() {
 	 * Requirements: 4.1, 4.2, 4.3 - 访客模式配额检查
 	 *
 	 * @param text - The announcement text to parse
-	 * @param existingTags - Optional array of existing tag names to suggest from
+	 * @param existingTags - Array of existing tag names to choose from (required for tag filtering)
 	 */
 	const parseText = async (text: string, existingTags?: string[]): Promise<ParsedEvent[]> => {
 		validateInput(text);
@@ -90,7 +90,7 @@ export function useLLM() {
 			const prompt = buildPrompt(text, existingTags);
 			const response = await callLLMApi(config, prompt);
 			const parsedResponse = parseResponse(response);
-			const events = processEvents(parsedResponse);
+			const events = processEvents(parsedResponse, existingTags);
 
 			if (events.length === 0) {
 				throw new Error(ERROR_MESSAGES.NO_EVENTS_FOUND);
@@ -258,10 +258,13 @@ export function useLLM() {
 		// Build existing tags section
 		const existingTagsSection =
 			existingTags && existingTags.length > 0
-				? `\n\n现有标签列表：${existingTags.join(
-						", "
-				  )}\n请优先从现有标签中选择合适的标签。如果现有标签都不合适，可以建议新标签，但请尽量精简。`
-				: "";
+				? `\n\n重要：标签选择规则
+现有标签列表：${existingTags.join(", ")}
+- suggestedTags 字段必须且只能从上述现有标签列表中选择
+- 严禁生成任何不在现有标签列表中的新标签
+- 如果现有标签中没有合适的标签，则 suggestedTags 字段应该为空数组 [] 或不包含该字段
+- 请根据事件内容，从现有标签中选择最相关的1-3个标签`
+				: `\n\n注意：当前没有可用的标签，suggestedTags 字段应该为空数组 [] 或不包含该字段`;
 
 		return `请从以下通告文本中提取日程事件信息。
 
@@ -285,7 +288,7 @@ export function useLLM() {
    - eventType: 事件类型（如：会议、考试、活动、截止日期、报名、评审、公示等）
    - participants: 参与人员
    - contact: 联系方式
-   - suggestedTags: 建议的标签数组（字符串数组，如：["比赛", "重要", "学术"]）${existingTagsSection}
+   - suggestedTags: 建议的标签数组（字符串数组）${existingTagsSection}
 
 2. 时间识别规则：
    - 对于"今日起至X日期"这样的表述，startTime 应该是今天 ${currentDate}，endTime 是 X 日期
@@ -303,7 +306,6 @@ export function useLLM() {
    - 如果多个阶段共享相同信息（如地点、联系方式），可以在相应的事件中包含这些信息
 
 4. 如果某个字段无法识别或不存在，请不要包含该字段（不要生成虚假信息）
-5. 标签建议：根据事件类型、主题、重要性等因素，建议1-3个合适的标签
 
 请以 JSON 数组格式返回，每个阶段对应一个事件对象。
 
@@ -342,9 +344,16 @@ ${text}
 	/**
 	 * Process and validate parsed events
 	 * Requirements: 2.10, 2.11 - Handle missing fields gracefully
+	 * @param rawEvents - Raw events from LLM response
+	 * @param existingTags - Optional array of existing tag names to filter tags
 	 */
-	const processEvents = (rawEvents: any[]): ParsedEvent[] => {
+	const processEvents = (rawEvents: any[], existingTags?: string[]): ParsedEvent[] => {
 		const events: ParsedEvent[] = [];
+
+		// Normalize existing tags for case-insensitive matching
+		const normalizedExistingTags = existingTags
+			? new Set(existingTags.map((tag) => tag.toLowerCase().trim()))
+			: null;
 
 		for (const rawEvent of rawEvents) {
 			try {
@@ -437,13 +446,41 @@ ${text}
 					event.description = descriptionParts.join("\n");
 				}
 
-				// Extract suggested tags (Requirement 18.7)
+				// Extract and filter suggested tags (Requirement 18.7)
+				// Only keep tags that exist in the existing tags list
 				if (rawEvent.suggestedTags && Array.isArray(rawEvent.suggestedTags)) {
-					// Store suggested tag names in the tags field
-					// These will be matched or created when the event is saved
-					event.tags = rawEvent.suggestedTags
-						.filter((tag: any) => typeof tag === "string" && tag.trim().length > 0)
-						.map((tag: string) => tag.trim());
+					const validTags: string[] = [];
+
+					for (const tag of rawEvent.suggestedTags) {
+						if (typeof tag === "string" && tag.trim().length > 0) {
+							const trimmedTag = tag.trim();
+							
+							// If existingTags is provided, only keep tags that exist in the list
+							if (normalizedExistingTags) {
+								// Case-insensitive matching
+								if (normalizedExistingTags.has(trimmedTag.toLowerCase())) {
+									// Find the original tag name (preserve case)
+									const originalTag = existingTags!.find(
+										(t) => t.toLowerCase() === trimmedTag.toLowerCase()
+									);
+									if (originalTag) {
+										validTags.push(originalTag);
+									}
+								} else if (import.meta.env.DEV) {
+									console.warn(
+										`标签 "${trimmedTag}" 不在现有标签列表中，已过滤`
+									);
+								}
+							} else {
+								// If no existingTags provided, keep all tags (backward compatibility)
+								validTags.push(trimmedTag);
+							}
+						}
+					}
+
+					if (validTags.length > 0) {
+						event.tags = validTags;
+					}
 				}
 
 				// Only add event if it has at least a title or start time
