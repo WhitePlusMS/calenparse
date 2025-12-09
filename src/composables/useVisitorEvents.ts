@@ -513,15 +513,32 @@ ${input}`;
 					}
 
 					// 转换为 UTC ISO-8601 格式
-					const event = {
+					// Only include optional fields when they have actual values (consistent with admin mode)
+					const event: VisitorLLMResult["events"][0] = {
 						title: rawEvent.title.trim(),
 						start_time: dayjs(startTime).utc().toISOString(),
 						end_time: dayjs(endTime).utc().toISOString(),
 						is_all_day: rawEvent.isAllDay || false,
-						location: rawEvent.location?.trim(),
-						description: rawEvent.description?.trim(),
-						tags: filteredTags, // 包含已过滤的标签
 					};
+
+					// Optional fields - only include when they have values
+					if (rawEvent.location && typeof rawEvent.location === "string") {
+						const trimmedLocation = rawEvent.location.trim();
+						if (trimmedLocation) {
+							event.location = trimmedLocation;
+						}
+					}
+
+					if (rawEvent.description && typeof rawEvent.description === "string") {
+						const trimmedDescription = rawEvent.description.trim();
+						if (trimmedDescription) {
+							event.description = trimmedDescription;
+						}
+					}
+
+					if (filteredTags && filteredTags.length > 0) {
+						event.tags = filteredTags;
+					}
 
 					processedEvents.push(event);
 				} catch (err) {
