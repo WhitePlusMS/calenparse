@@ -29,7 +29,7 @@ export interface UseVisitorEventsReturn {
 	) => Promise<{ created: number; total: number }>;
 
 	// LLM 相关
-	callLLM: (input: string, fingerprint: string) => Promise<VisitorLLMResult>;
+	callLLM: (input: string, fingerprint: string, existingTags?: string[]) => Promise<VisitorLLMResult>;
 	checkLLMQuota: (fingerprint: string) => Promise<boolean>;
 	recordLLMUsage: (fingerprint: string, tokenUsed: number) => Promise<void>;
 }
@@ -316,7 +316,7 @@ export function useVisitorEvents(): UseVisitorEventsReturn {
 	 * @returns {Promise<VisitorLLMResult>} LLM 解析结果
 	 * @throws {Error} LLM 调用失败或配额已满
 	 */
-	const callLLM = async (input: string, fingerprint: string): Promise<VisitorLLMResult> => {
+	const callLLM = async (input: string, fingerprint: string, existingTags?: string[]): Promise<VisitorLLMResult> => {
 		if (!input || !input.trim()) {
 			throw new Error("输入文本不能为空");
 		}
@@ -349,6 +349,17 @@ export function useVisitorEvents(): UseVisitorEventsReturn {
 			const today = new Date();
 			const currentDate = today.toISOString().split("T")[0];
 
+			// 构建标签选择规则部分
+			const existingTagsSection =
+				existingTags && existingTags.length > 0
+					? `\n\n重要：标签选择规则
+现有标签列表：${existingTags.join(", ")}
+- suggestedTags 字段必须且只能从上述现有标签列表中选择
+- 严禁生成任何不在现有标签列表中的新标签
+- 如果现有标签中没有合适的标签，则 suggestedTags 字段应该为空数组 [] 或不包含该字段
+- 请根据事件内容，从现有标签中选择最相关的1-3个标签`
+					: `\n\n注意：当前没有可用的标签，suggestedTags 字段应该为空数组 [] 或不包含该字段`;
+
 			const prompt = `请从以下文本中提取日程事件信息。
 
 重要：今天的日期是 ${currentDate}，请根据这个日期来推断事件的年份。
@@ -361,6 +372,7 @@ export function useVisitorEvents(): UseVisitorEventsReturn {
    - isAllDay: 是否全天事件（布尔值）
    - location: 地点
    - description: 描述或备注
+   - suggestedTags: 建议的标签数组（字符串数组）${existingTagsSection}
 
 2. 时间识别规则：
    - 对于相对日期（如"明天"、"下周三"），请基于今天的日期 ${currentDate} 转换为绝对日期
@@ -432,8 +444,13 @@ ${input}`;
 				throw new Error("无法解析 LLM 返回的 JSON 格式");
 			}
 
-			// 处理解析的事件
+			// 处理解析的事件，包括标签过滤
 			const processedEvents: VisitorLLMResult["events"] = [];
+
+			// Normalize existing tags for case-insensitive matching
+			const normalizedExistingTags = existingTags
+				? new Set(existingTags.map((tag) => tag.toLowerCase().trim()))
+				: null;
 
 			for (const rawEvent of parsedEvents) {
 				try {
@@ -455,6 +472,44 @@ ${input}`;
 						endTime = new Date(startTime.getTime() + 60 * 60 * 1000);
 					}
 
+					// Extract and filter suggested tags
+					// Only keep tags that exist in the existing tags list
+					let filteredTags: string[] | undefined = undefined;
+					if (rawEvent.suggestedTags && Array.isArray(rawEvent.suggestedTags)) {
+						const validTags: string[] = [];
+
+						for (const tag of rawEvent.suggestedTags) {
+							if (typeof tag === "string" && tag.trim().length > 0) {
+								const trimmedTag = tag.trim();
+
+								// If existingTags is provided, only keep tags that exist in the list
+								if (normalizedExistingTags) {
+									// Case-insensitive matching
+									if (normalizedExistingTags.has(trimmedTag.toLowerCase())) {
+										// Find the original tag name (preserve case)
+										const originalTag = existingTags!.find(
+											(t) => t.toLowerCase() === trimmedTag.toLowerCase()
+										);
+										if (originalTag) {
+											validTags.push(originalTag);
+										}
+									} else if (import.meta.env.DEV) {
+										console.warn(
+											`访客模式：标签 "${trimmedTag}" 不在现有标签列表中，已过滤`
+										);
+									}
+								} else {
+									// If no existingTags provided, keep all tags (backward compatibility)
+									validTags.push(trimmedTag);
+								}
+							}
+						}
+
+						if (validTags.length > 0) {
+							filteredTags = validTags;
+						}
+					}
+
 					// 转换为 UTC ISO-8601 格式
 					const event = {
 						title: rawEvent.title.trim(),
@@ -463,6 +518,7 @@ ${input}`;
 						is_all_day: rawEvent.isAllDay || false,
 						location: rawEvent.location?.trim(),
 						description: rawEvent.description?.trim(),
+						tags: filteredTags, // 包含已过滤的标签
 					};
 
 					processedEvents.push(event);

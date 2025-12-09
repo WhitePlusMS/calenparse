@@ -141,6 +141,7 @@ export interface VisitorLLMResult {
 		is_all_day: boolean;
 		location?: string;
 		description?: string;
+		tags?: string[]; // 已过滤的标签列表
 	}>;
 	tokensUsed?: number;
 }

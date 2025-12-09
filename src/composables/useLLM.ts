@@ -65,10 +65,11 @@ export function useLLM() {
 					throw new Error("访客指纹未初始化");
 				}
 
-				// 调用访客 LLM（含配额检查）
-				const llmResult = await visitorEvents.callLLM(text, fingerprint.value);
+				// 调用访客 LLM（含配额检查），传入 existingTags 进行标签过滤
+				const llmResult = await visitorEvents.callLLM(text, fingerprint.value, existingTags);
 
 				// 将访客事件格式转换为 ParsedEvent 格式
+				// 注意：访客模式的标签过滤已经在 callLLM 内部完成
 				const events: ParsedEvent[] = llmResult.events.map((ve) => ({
 					title: ve.title,
 					startTime: new Date(ve.start_time),
@@ -76,6 +77,7 @@ export function useLLM() {
 					isAllDay: ve.is_all_day,
 					location: ve.location,
 					description: ve.description,
+					tags: ve.tags, // 包含已过滤的标签
 				}));
 
 				if (events.length === 0) {
