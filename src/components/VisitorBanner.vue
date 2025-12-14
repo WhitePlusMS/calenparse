@@ -11,6 +11,9 @@ import type { VisitorQuota } from "@/types";
  * - 优化后：添加试用提示和本地部署引导
  */
 
+// 配额配置
+const EVENT_QUOTA = Number(import.meta.env.VITE_VISITOR_EVENT_QUOTA) || 5;
+
 // Props
 interface Props {
 	quota: VisitorQuota;
@@ -29,7 +32,8 @@ const props = defineProps<Props>();
 					</span>
 					<span class="banner-quota">
 						剩余 <strong>{{ props.quota.llmRemaining }}</strong> 次 LLM 调用，
-						<strong>{{ props.quota.eventsRemaining }}/3</strong> 条事件配额
+						<strong>{{ props.quota.eventsRemaining }}/{{ EVENT_QUOTA }}</strong>
+						条事件配额
 						<span class="refresh-hint">（每日刷新）</span>
 					</span>
 					<span class="banner-divider">|</span>

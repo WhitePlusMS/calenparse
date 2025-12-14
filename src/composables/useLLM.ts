@@ -129,6 +129,9 @@ export function useLLM() {
 		const apiKey = import.meta.env.VITE_LLM_API_KEY;
 		const apiEndpoint = import.meta.env.VITE_LLM_API_ENDPOINT;
 		const model = import.meta.env.VITE_LLM_MODEL || DEFAULT_MODEL;
+		// Provider support: 'zhipu' (default, standard format), 'baidu'
+		// If not specified, inferred from endpoint or defaults to 'zhipu'
+		const provider = import.meta.env.VITE_LLM_PROVIDER || "zhipu";
 
 		if (!apiKey || !apiEndpoint) {
 			const configError = new Error(ERROR_MESSAGES.MISSING_CONFIG);
@@ -137,24 +140,27 @@ export function useLLM() {
 		}
 
 		if (import.meta.env.DEV) {
-			console.log("LLM Config:", { model, apiEndpoint });
+			console.log("LLM Config:", { model, apiEndpoint, provider });
 		}
 
-		return { apiKey, apiEndpoint, model };
+		return { apiKey, apiEndpoint, model, provider };
 	};
 
 	/**
 	 * Call LLM API with retry logic
 	 */
 	const callLLMApi = async (
-		config: { apiKey: string; apiEndpoint: string; model: string },
+		config: { apiKey: string; apiEndpoint: string; model: string; provider: string },
 		prompt: string
 	): Promise<string> => {
-		const { apiKey, apiEndpoint, model } = config;
+		const { apiKey, apiEndpoint, model, provider } = config;
 
 		const callApi = async () => {
-			const requestBody = {
-				model,
+			let requestUrl = apiEndpoint;
+			let requestHeaders: Record<string, string> = {
+				"Content-Type": "application/json",
+			};
+			let requestBody: any = {
 				messages: [
 					{
 						role: "system",
@@ -168,16 +174,32 @@ export function useLLM() {
 				temperature: LLM_TEMPERATURE,
 			};
 
+			// Provider-specific adjustments
+			if (provider === "baidu") {
+				// Baidu Wenxin (Ernie Bot)
+				// Expects access_token in query param
+				// Expects NO 'model' in body (model is implied by endpoint)
+				// Response format is { result: "..." }
+				if (apiEndpoint.includes("?")) {
+					requestUrl = `${apiEndpoint}&access_token=${apiKey}`;
+				} else {
+					requestUrl = `${apiEndpoint}?access_token=${apiKey}`;
+				}
+				// Baidu headers usually don't need Authorization if access_token is in URL
+				// But we can keep Content-Type
+			} else {
+				// Zhipu (Standard Format)
+				requestHeaders["Authorization"] = `Bearer ${apiKey}`;
+				requestBody.model = model;
+			}
+
 			if (import.meta.env.DEV) {
 				console.log("LLM Request:", JSON.stringify(requestBody, null, 2));
 			}
 
-			const response = await fetch(apiEndpoint, {
+			const response = await fetch(requestUrl, {
 				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-					Authorization: `Bearer ${apiKey}`,
-				},
+				headers: requestHeaders,
 				body: JSON.stringify(requestBody),
 			});
 
@@ -195,7 +217,16 @@ export function useLLM() {
 			console.log("LLM Response:", data);
 		}
 
-		const content = data.choices?.[0]?.message?.content;
+		// Handle different response formats
+		let content;
+		if (provider === "baidu") {
+			// Baidu format: { result: "..." }
+			content = data.result;
+		} else {
+			// Standard format (Zhipu): { choices: [{ message: { content: "..." } }] }
+			content = data.choices?.[0]?.message?.content;
+		}
+
 		if (!content) {
 			console.error("Invalid LLM response structure:", JSON.stringify(data, null, 2));
 			throw new Error(
@@ -458,14 +489,20 @@ ${text}
 					for (const tag of rawEvent.suggestedTags) {
 						if (typeof tag === "string" && tag.trim().length > 0) {
 							const trimmedTag = tag.trim();
-							
+
 							// If existingTags is provided, only keep tags that exist in the list
 							if (normalizedExistingTags) {
 								// Case-insensitive matching
-								if (normalizedExistingTags.has(trimmedTag.toLowerCase())) {
+								if (
+									normalizedExistingTags.has(
+										trimmedTag.toLowerCase()
+									)
+								) {
 									// Find the original tag name (preserve case)
 									const originalTag = existingTags!.find(
-										(t) => t.toLowerCase() === trimmedTag.toLowerCase()
+										(t) =>
+											t.toLowerCase() ===
+											trimmedTag.toLowerCase()
 									);
 									if (originalTag) {
 										validTags.push(originalTag);

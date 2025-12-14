@@ -10,6 +10,10 @@ import utc from "dayjs/plugin/utc";
 // 启用 UTC 插件
 dayjs.extend(utc);
 
+// 配额配置
+const EVENT_QUOTA = Number(import.meta.env.VITE_VISITOR_EVENT_QUOTA) || 5;
+const LLM_QUOTA = Number(import.meta.env.VITE_VISITOR_LLM_QUOTA) || 3;
+
 /**
  * useVisitorEvents 返回接口
  */
@@ -135,7 +139,7 @@ export function useVisitorEvents(): UseVisitorEventsReturn {
 			}
 
 			const eventsUsed = count || 0;
-			return eventsUsed < 3;
+			return eventsUsed < EVENT_QUOTA;
 		} catch (err) {
 			const error = createAppError(
 				ErrorType.DATABASE,
@@ -170,7 +174,7 @@ export function useVisitorEvents(): UseVisitorEventsReturn {
 			const hasQuota = await checkEventQuota(event.fingerprint);
 
 			if (!hasQuota) {
-				ElMessage.warning("已达到试用上限（3 条），请登录获取无限存储");
+				ElMessage.warning(`已达到试用上限（${EVENT_QUOTA} 条），请登录获取无限存储`);
 				throw new Error("事件配额已满");
 			}
 
@@ -190,7 +194,7 @@ export function useVisitorEvents(): UseVisitorEventsReturn {
 			if (error) {
 				// 检查是否是 RLS 策略阻止（配额检查）
 				if (error.message.includes("violates row-level security policy")) {
-					ElMessage.warning("已达到试用上限（3 条），请登录获取无限存储");
+					ElMessage.warning(`已达到试用上限（${EVENT_QUOTA} 条），请登录获取无限存储`);
 					throw new Error("事件配额已满");
 				}
 				throw new Error(`创建访客事件失败: ${error.message}`);
@@ -248,7 +252,7 @@ export function useVisitorEvents(): UseVisitorEventsReturn {
 			}
 
 			const llmUsedCount = data?.llm_used_count || 0;
-			return llmUsedCount === 0;
+			return llmUsedCount < LLM_QUOTA;
 		} catch (err) {
 			const error = createAppError(
 				ErrorType.DATABASE,
@@ -316,7 +320,11 @@ export function useVisitorEvents(): UseVisitorEventsReturn {
 	 * @returns {Promise<VisitorLLMResult>} LLM 解析结果
 	 * @throws {Error} LLM 调用失败或配额已满
 	 */
-	const callLLM = async (input: string, fingerprint: string, existingTags?: string[]): Promise<VisitorLLMResult> => {
+	const callLLM = async (
+		input: string,
+		fingerprint: string,
+		existingTags?: string[]
+	): Promise<VisitorLLMResult> => {
 		if (!input || !input.trim()) {
 			throw new Error("输入文本不能为空");
 		}
@@ -332,7 +340,7 @@ export function useVisitorEvents(): UseVisitorEventsReturn {
 			const hasLLMQuota = await checkLLMQuota(fingerprint);
 
 			if (!hasLLMQuota) {
-				ElMessage.warning("试用次数已用完（1/1），请登录获取无限调用");
+				ElMessage.warning(`试用次数已用完（${LLM_QUOTA}/${LLM_QUOTA}），请登录获取无限调用`);
 				throw new Error("LLM 配额已满");
 			}
 
@@ -487,10 +495,16 @@ ${input}`;
 								// If existingTags is provided, only keep tags that exist in the list
 								if (normalizedExistingTags) {
 									// Case-insensitive matching
-									if (normalizedExistingTags.has(trimmedTag.toLowerCase())) {
+									if (
+										normalizedExistingTags.has(
+											trimmedTag.toLowerCase()
+										)
+									) {
 										// Find the original tag name (preserve case)
 										const originalTag = existingTags!.find(
-											(t) => t.toLowerCase() === trimmedTag.toLowerCase()
+											(t) =>
+												t.toLowerCase() ===
+												trimmedTag.toLowerCase()
 										);
 										if (originalTag) {
 											validTags.push(originalTag);
@@ -613,13 +627,13 @@ ${input}`;
 			}
 
 			const eventsUsed = count || 0;
-			const remaining = Math.max(0, 3 - eventsUsed);
+			const remaining = Math.max(0, EVENT_QUOTA - eventsUsed);
 
 			// 计算可创建的事件数量
 			const eventsToCreate = Math.min(llmEvents.length, remaining);
 
 			if (eventsToCreate === 0) {
-				ElMessage.warning("已达到试用上限（3 条），请登录获取无限存储");
+				ElMessage.warning(`已达到试用上限（${EVENT_QUOTA} 条），请登录获取无限存储`);
 				return { created: 0, total: llmEvents.length };
 			}
 
@@ -677,7 +691,7 @@ ${input}`;
 					`已创建 ${createdCount}/${llmEvents.length} 个事件，剩余配额不足，请登录获取无限存储`
 				);
 			} else {
-				ElMessage.warning("已达到试用上限（3 条），请登录获取无限存储");
+				ElMessage.warning(`已达到试用上限（${EVENT_QUOTA} 条），请登录获取无限存储`);
 			}
 
 			return { created: createdCount, total: llmEvents.length };

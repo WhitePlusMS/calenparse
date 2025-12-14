@@ -202,10 +202,13 @@ export function useAuth(): UseAuthReturn {
 		const eventsUsed = count || 0;
 		const llmUsed = session?.llm_used_count || 0;
 
+		const EVENT_QUOTA = Number(import.meta.env.VITE_VISITOR_EVENT_QUOTA) || 5;
+		const LLM_QUOTA = Number(import.meta.env.VITE_VISITOR_LLM_QUOTA) || 3;
+
 		return {
-			llmRemaining: llmUsed === 0 ? 1 : 0,
+			llmRemaining: Math.max(0, LLM_QUOTA - llmUsed),
 			eventsUsed,
-			eventsRemaining: Math.max(0, 3 - eventsUsed),
+			eventsRemaining: Math.max(0, EVENT_QUOTA - eventsUsed),
 		};
 	};
 
