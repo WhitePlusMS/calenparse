@@ -180,12 +180,14 @@ const handleLocationChange = () => {
 };
 
 const toggleTagFilter = (tagId: string) => {
-	const index = selectedTagIds.value.indexOf(tagId);
+	const newTags = [...selectedTagIds.value];
+	const index = newTags.indexOf(tagId);
 	if (index > -1) {
-		selectedTagIds.value.splice(index, 1);
+		newTags.splice(index, 1);
 	} else {
-		selectedTagIds.value.push(tagId);
+		newTags.push(tagId);
 	}
+	selectedTagIds.value = newTags;
 	emit("filtered", filteredEvents.value);
 };
 
